@@ -1,7 +1,8 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
 import { Theme } from './types';
-import { theme } from './theme';
+import { generateTheme } from './themeGenerator';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface ThemeContextType {
   theme: Theme;
@@ -14,6 +15,13 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+  const { settings } = useSettings();
+  
+  // Generate theme based on selected theme ID
+  const theme = useMemo(() => {
+    return generateTheme(settings.theme);
+  }, [settings.theme]);
+
   return (
     <ThemeContext.Provider value={{ theme }}>
       <StyledThemeProvider theme={theme}>

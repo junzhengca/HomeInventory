@@ -3,6 +3,8 @@ export interface Theme {
     primary: string;
     primaryDark: string;
     primaryLight: string;
+    primaryLightest: string;
+    primaryExtraLight: string;
     secondary: string;
     background: string;
     backgroundLight: string;
@@ -12,8 +14,11 @@ export interface Theme {
     textLight: string;
     border: string;
     borderLight: string;
+    inputFocus: string;
     error: string;
+    errorLight: string;
     success: string;
+    successLight: string;
     warning: string;
     notification: string;
   };
@@ -56,6 +61,7 @@ export interface Theme {
     md: number;
     lg: number;
     xl: number;
+    xxl: number;
     full: number;
   };
 }

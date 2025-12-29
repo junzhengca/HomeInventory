@@ -2,22 +2,27 @@ import { Theme } from './types';
 
 export const theme: Theme = {
   colors: {
-    primary: '#2E7D32', // Dark green
-    primaryDark: '#1B5E20',
-    primaryLight: '#4CAF50',
-    secondary: '#81C784', // Light green
-    background: '#F1F8E9', // Light green background
+    primary: '#00897B', // Teal green from screenshot
+    primaryDark: '#00695C',
+    primaryLight: '#4DB6AC',
+    primaryLightest: '#F1FBF9', // Light background for header
+    primaryExtraLight: '#F8FEFC', // Extra light for icon containers
+    secondary: '#81C784',
+    background: '#F1FBF9',
     backgroundLight: '#FFFFFF',
     surface: '#FFFFFF',
-    text: '#212121',
+    text: '#424242', // Professional dark grey
     textSecondary: '#757575',
     textLight: '#9E9E9E',
     border: '#E0E0E0',
-    borderLight: '#F5F5F5',
+    borderLight: '#F0F0F0',
+    inputFocus: '#B2F5EA',
     error: '#D32F2F',
+    errorLight: '#FFEBEE',
     success: '#388E3C',
+    successLight: '#E8F5E9',
     warning: '#F57C00',
-    notification: '#FFC107', // Yellow for notification badge
+    notification: '#FFB300', // Yellow badge
   },
   typography: {
     fontFamily: {
@@ -58,6 +63,7 @@ export const theme: Theme = {
     md: 8,
     lg: 12,
     xl: 16,
+    xxl: 24,
     full: 9999,
   },
 };

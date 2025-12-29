@@ -14,6 +14,11 @@ export const TabNavigator: React.FC = () => {
       tabBar={(props) => <BottomNavBar {...props} />}
       screenOptions={{
         headerShown: false,
+        tabBarStyle: {
+          position: 'absolute',
+          borderTopWidth: 0,
+          elevation: 0,
+        },
       }}
     >
       <Tab.Screen name="HomeTab" component={HomeStack} />

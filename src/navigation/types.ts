@@ -18,9 +18,14 @@ export type TabParamList = {
   NotesTab: NavigatorScreenParams<NotesStackParamList>;
 };
 
+export type RootStackParamList = {
+  MainTabs: NavigatorScreenParams<TabParamList>;
+  Settings: undefined;
+};
+
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends TabParamList {}
+    interface RootParamList extends RootStackParamList {}
   }
 }
 
