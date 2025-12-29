@@ -1,0 +1,30 @@
+{
+  "name": "homeinventory",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "dependencies": {
+    "expo": "~54.0.30",
+    "expo-dev-client": "~6.0.20",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "styled-components": "^6.1.19"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-native": "^0.72.8",
+    "@types/styled-components": "^5.1.36",
+    "@types/styled-components-react-native": "^5.2.5",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3"
+  }
+}
