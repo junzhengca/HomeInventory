@@ -4,6 +4,7 @@ import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { StyledProps } from '../utils/styledComponents';
 
 import { PageHeader } from '../components/PageHeader';
@@ -11,10 +12,12 @@ import { SearchInput } from '../components/SearchInput';
 import { CategorySelector } from '../components/CategorySelector';
 import { SummaryCards } from '../components/SummaryCards';
 import { RecentlyAdded } from '../components/RecentlyAdded';
+import { EmptyState } from '../components/EmptyState';
 import { InventoryItem } from '../types/inventory';
-import { RootStackParamList } from '../navigation/types';
+import { RootStackParamList, TabParamList } from '../navigation/types';
 import { getAllItems } from '../services/InventoryService';
 import { useInventory } from '../contexts/InventoryContext';
+import { useSelectedCategory } from '../contexts/SelectedCategoryContext';
 import { calculateBottomPadding } from '../utils/layout';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -43,6 +46,7 @@ export const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { registerRefreshCallback } = useInventory();
+  const { setHomeCategory, setInventoryCategory } = useSelectedCategory();
 
   const loadItems = async () => {
     setIsLoading(true);
@@ -93,7 +97,13 @@ export const HomeScreen: React.FC = () => {
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
+    setHomeCategory(categoryId);
   };
+
+  // Sync context when component mounts or selectedCategory changes
+  useEffect(() => {
+    setHomeCategory(selectedCategory);
+  }, [selectedCategory, setHomeCategory]);
 
   const handleItemPress = (item: InventoryItem) => {
     // Navigate to ItemDetails in RootStack
@@ -104,8 +114,13 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleViewAll = () => {
-    console.log('View all pressed');
-    // TODO: Navigate to full inventory list
+    // Set the inventory category to the currently selected category
+    setInventoryCategory(selectedCategory);
+    // Navigate to InventoryTab - get the tab navigator (parent of HomeStack)
+    const tabNavigation = navigation.getParent<BottomTabNavigationProp<TabParamList>>();
+    if (tabNavigation) {
+      tabNavigation.navigate('InventoryTab', { screen: 'Inventory' });
+    }
   };
 
   const handleSettingsPress = () => {
@@ -143,7 +158,7 @@ export const HomeScreen: React.FC = () => {
       />
       <Content 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: bottomPadding }}
+        contentContainerStyle={{ paddingBottom: bottomPadding, flexGrow: 1 }}
       >
         <SearchInput 
           value={searchQuery}
@@ -153,13 +168,23 @@ export const HomeScreen: React.FC = () => {
           selectedCategory={selectedCategory}
           onCategoryChange={handleCategoryChange} 
         />
-        <SummaryCards items={filteredItems} />
-        <RecentlyAdded
-          items={filteredItems}
-          maxItems={3}
-          onItemPress={handleItemPress}
-          onViewAll={handleViewAll}
-        />
+        {filteredItems.length === 0 ? (
+          <EmptyState
+            icon="cube-outline"
+            title="还没有物品"
+            description="开始添加您的第一个物品来管理您的家庭资产吧！"
+          />
+        ) : (
+          <>
+            <SummaryCards items={filteredItems} />
+            <RecentlyAdded
+              items={filteredItems}
+              maxItems={3}
+              onItemPress={handleItemPress}
+              onViewAll={handleViewAll}
+            />
+          </>
+        )}
       </Content>
     </Container>
   );

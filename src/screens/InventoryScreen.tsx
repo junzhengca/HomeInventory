@@ -10,10 +10,12 @@ import { PageHeader } from '../components/PageHeader';
 import { SearchInput } from '../components/SearchInput';
 import { CategorySelector } from '../components/CategorySelector';
 import { ItemCard } from '../components/ItemCard';
+import { EmptyState } from '../components/EmptyState';
 import { InventoryItem } from '../types/inventory';
 import { RootStackParamList } from '../navigation/types';
 import { getAllItems } from '../services/InventoryService';
 import { useInventory } from '../contexts/InventoryContext';
+import { useSelectedCategory } from '../contexts/SelectedCategoryContext';
 import { calculateBottomPadding } from '../utils/layout';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,6 +48,7 @@ export const InventoryScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { registerRefreshCallback } = useInventory();
+  const { inventoryCategory, setInventoryCategory } = useSelectedCategory();
 
   const loadItems = async () => {
     setIsLoading(true);
@@ -62,6 +65,13 @@ export const InventoryScreen: React.FC = () => {
   useEffect(() => {
     loadItems();
   }, []);
+
+  // Initialize and sync selectedCategory from context
+  useEffect(() => {
+    if (inventoryCategory) {
+      setSelectedCategory(inventoryCategory);
+    }
+  }, [inventoryCategory]);
 
   useEffect(() => {
     const unregister = registerRefreshCallback(loadItems);
@@ -96,7 +106,13 @@ export const InventoryScreen: React.FC = () => {
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
+    setInventoryCategory(categoryId);
   };
+
+  // Sync context when component mounts or selectedCategory changes
+  useEffect(() => {
+    setInventoryCategory(selectedCategory);
+  }, [selectedCategory, setInventoryCategory]);
 
   const handleItemPress = (item: InventoryItem) => {
     const rootNavigation = navigation.getParent();
@@ -150,15 +166,25 @@ export const InventoryScreen: React.FC = () => {
           onCategoryChange={handleCategoryChange} 
         />
         <ListContainer>
-          <FlatList
-            data={filteredItems}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <ItemCard item={item} onPress={handleItemPress} />
-            )}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: bottomPadding }}
-          />
+          {filteredItems.length === 0 ? (
+            <EmptyState
+              icon="list-outline"
+              title="没有找到物品"
+              description={searchQuery.trim() || selectedCategory !== 'all' 
+                ? "尝试调整搜索条件或选择其他分类" 
+                : "开始添加您的第一个物品来管理您的家庭资产吧！"}
+            />
+          ) : (
+            <FlatList
+              data={filteredItems}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <ItemCard item={item} onPress={handleItemPress} />
+              )}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: bottomPadding }}
+            />
+          )}
         </ListContainer>
       </Content>
     </Container>

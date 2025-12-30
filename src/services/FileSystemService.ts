@@ -93,3 +93,26 @@ export const deleteFile = async (filename: string): Promise<boolean> => {
   }
 };
 
+/**
+ * List all JSON files in the data directory
+ */
+export const listJsonFiles = async (): Promise<string[]> => {
+  try {
+    await ensureDirectoryExists();
+    const docDir = getDocumentDirectory();
+    const dataDir = `${docDir}${DATA_DIRECTORY}`;
+    
+    const dirInfo = await FileSystem.getInfoAsync(dataDir);
+    if (!dirInfo.exists) {
+      return [];
+    }
+    
+    const files = await FileSystem.readDirectoryAsync(dataDir);
+    // Filter to only JSON files
+    return files.filter(file => file.endsWith('.json'));
+  } catch (error) {
+    console.error('Error listing JSON files:', error);
+    return [];
+  }
+};
+

@@ -16,6 +16,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 import { PageHeader } from '../components/PageHeader';
+import { TodoCard } from '../components/TodoCard';
+import { EmptyState } from '../components/EmptyState';
 import { RootStackParamList } from '../navigation/types';
 import { useTodos } from '../contexts/TodoContext';
 import { useTheme } from '../theme/ThemeProvider';
@@ -71,58 +73,7 @@ const SectionTitle = styled(Text)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
-const EmptyState = styled(View)`
-  align-items: center;
-  justify-content: center;
-  padding: ${({ theme }: StyledProps) => theme.spacing.xl}px;
-`;
 
-const EmptyStateText = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
-  text-align: center;
-`;
-
-const TodoItemContainer = styled(View)`
-  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  flex-direction: row;
-  align-items: center;
-  position: relative;
-  
-  /* Subtle shadow for the card */
-  shadow-color: #000;
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.05;
-  shadow-radius: 8px;
-  elevation: 2;
-`;
-
-const TodoText = styled(Text)<{ completed: boolean }>`
-  flex: 1;
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme, completed }: StyledPropsWith<{ completed: boolean }>) => (completed ? theme.typography.fontWeight.regular : theme.typography.fontWeight.bold)};
-  color: ${({ theme, completed }: StyledPropsWith<{ completed: boolean }>) => (completed ? theme.colors.textSecondary : theme.colors.text)};
-  text-decoration-line: ${({ completed }: { completed: boolean }) => (completed ? 'line-through' : 'none')};
-`;
-
-const Checkbox = styled(TouchableOpacity)`
-  width: 24px;
-  height: 24px;
-  border-radius: 12px;
-  border-width: 2px;
-  border-color: ${({ theme, checked }: StyledPropsWith<{ checked: boolean }>) => (checked ? theme.colors.primary : theme.colors.border)};
-  background-color: ${({ theme, checked }: StyledPropsWith<{ checked: boolean }>) => (checked ? theme.colors.primary : 'transparent')};
-  align-items: center;
-  justify-content: center;
-  margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;
-`;
-
-const DeleteButton = styled(TouchableOpacity)`
-  padding: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
 
 const _SwipeActionsContainer = styled(View)`
   flex-direction: row;
@@ -195,19 +146,12 @@ export const NotesScreen: React.FC = () => {
   );
 
   const renderTodoItem = (todo: TodoItem) => (
-    <TodoItemContainer key={todo.id}>
-      <Checkbox
-        checked={todo.completed}
-        onPress={() => handleToggleTodo(todo.id)}
-        activeOpacity={0.7}
-      >
-        {todo.completed && <Ionicons name="checkmark" size={16} color="white" />}
-      </Checkbox>
-      <TodoText completed={todo.completed}>{todo.text}</TodoText>
-      <DeleteButton onPress={() => handleDeleteTodo(todo.id)} activeOpacity={0.7}>
-        <Ionicons name="trash-outline" size={20} color="#ff3b30" />
-      </DeleteButton>
-    </TodoItemContainer>
+    <TodoCard
+      key={todo.id}
+      todo={todo}
+      onToggle={handleToggleTodo}
+      onDelete={handleDeleteTodo}
+    />
   );
 
   const renderSwipeableTodo = (todo: TodoItem) => {
@@ -217,7 +161,11 @@ export const NotesScreen: React.FC = () => {
         renderRightActions={renderDeleteAction}
         onSwipeableOpen={() => handleDeleteTodo(todo.id)}
       >
-        {renderTodoItem(todo)}
+        <TodoCard
+          todo={todo}
+          onToggle={handleToggleTodo}
+          onDelete={handleDeleteTodo}
+        />
       </Swipeable>
     );
   };
@@ -284,11 +232,11 @@ export const NotesScreen: React.FC = () => {
           )}
 
           {pendingTodos.length === 0 && completedTodos.length === 0 && (
-            <EmptyState>
-              <Ionicons name="clipboard-outline" size={64} color="#ccc" />
-              <EmptyStateText style={{ marginTop: 16 }}>No todos yet</EmptyStateText>
-              <EmptyStateText>Add a todo above to get started!</EmptyStateText>
-            </EmptyState>
+            <EmptyState
+              icon="clipboard-outline"
+              title="还没有待办事项"
+              description="在上方添加您的第一个待办事项来开始管理任务吧！"
+            />
           )}
         </Content>
       </Container>

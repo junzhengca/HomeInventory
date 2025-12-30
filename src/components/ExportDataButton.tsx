@@ -2,7 +2,12 @@ import React from 'react';
 import { TouchableOpacity, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { StyledProps } from '../utils/styledComponents';
+import type { RootStackParamList } from '../navigation/types';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface ExportDataButtonProps {
   onPress?: () => void;
@@ -46,12 +51,22 @@ const ButtonText = styled(Text)`
 export const ExportDataButton: React.FC<ExportDataButtonProps> = ({
   onPress,
 }) => {
+  const navigation = useNavigation<NavigationProp>();
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      navigation.navigate('ExportData');
+    }
+  };
+
   return (
-    <Button onPress={onPress}>
+    <Button onPress={handlePress}>
       <IconContainer>
         <Icon name="download-outline" size={20} />
       </IconContainer>
-      <ButtonText>Export asset report (CSV)</ButtonText>
+      <ButtonText>Export data (JSON)</ButtonText>
     </Button>
   );
 };

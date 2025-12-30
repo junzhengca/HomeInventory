@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { TouchableOpacity, Alert, View, ScrollView, Text } from 'react-native';
+import { TouchableOpacity, Alert, View, ScrollView, Text, TextInput, Keyboard } from 'react-native';
 import styled from 'styled-components/native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,8 +12,10 @@ import { getAllCategories } from '../services/CategoryService';
 import { createItem } from '../services/InventoryService';
 import { useInventory } from '../contexts/InventoryContext';
 import { useCategory } from '../contexts/CategoryContext';
+import { useSelectedCategory } from '../contexts/SelectedCategoryContext';
 import { filterItemCategories } from '../utils/categoryUtils';
 import { CategoryManagerBottomSheet } from './CategoryManagerBottomSheet';
+import { TabParamList } from '../navigation/types';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -178,16 +180,19 @@ const HalfInput = styled(Input)`
 interface CreateItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal>;
   onItemCreated?: () => void;
+  activeTab?: keyof TabParamList;
 }
 
 export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   bottomSheetRef,
   onItemCreated,
+  activeTab,
 }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { refreshItems } = useInventory();
   const { registerRefreshCallback } = useCategory();
+  const { homeCategory, inventoryCategory } = useSelectedCategory();
   const [name, setName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
@@ -195,8 +200,10 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const [detailedLocation, setDetailedLocation] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const scrollViewRef = React.useRef<ScrollView>(null);
   const categoryManagerRef = React.useRef<BottomSheetModal>(null);
+  const nameInputRef = React.useRef<TextInput>(null);
 
   // Filter to get only item-type categories (exclude location categories)
   const itemTypeCategories = useMemo(() => {
@@ -222,6 +229,80 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     return unregister;
   }, [registerRefreshCallback, loadCategories]);
 
+  // Helper function to determine which category to select based on active tab
+  const getCategoryToSelect = useCallback(() => {
+    if (itemTypeCategories.length === 0) {
+      return '';
+    }
+    
+    let categoryToSelect = '';
+    
+    if (activeTab === 'HomeTab' && homeCategory && homeCategory !== 'all') {
+      const categoryExists = itemTypeCategories.some((cat) => cat.id === homeCategory);
+      if (categoryExists) {
+        categoryToSelect = homeCategory;
+      }
+    } else if (activeTab === 'InventoryTab' && inventoryCategory && inventoryCategory !== 'all') {
+      const categoryExists = itemTypeCategories.some((cat) => cat.id === inventoryCategory);
+      if (categoryExists) {
+        categoryToSelect = inventoryCategory;
+      }
+    }
+    
+    // If no category was selected from the active tab, fall back to "Other"
+    if (!categoryToSelect) {
+      const otherCategory = itemTypeCategories.find((cat) => cat.id === 'other');
+      if (otherCategory) {
+        categoryToSelect = otherCategory.id;
+      }
+    }
+    
+    return categoryToSelect;
+  }, [itemTypeCategories, activeTab, homeCategory, inventoryCategory]);
+
+  // Auto-select category based on active tab when categories load
+  useEffect(() => {
+    if (itemTypeCategories.length > 0 && !selectedCategory) {
+      const categoryToSelect = getCategoryToSelect();
+      if (categoryToSelect) {
+        setSelectedCategory(categoryToSelect);
+      }
+    }
+  }, [itemTypeCategories, selectedCategory, getCategoryToSelect]);
+
+  // Auto-select first location when location is empty
+  useEffect(() => {
+    if (locations.length > 0 && !selectedLocation) {
+      setSelectedLocation(locations[0].id);
+    }
+  }, [selectedLocation]);
+
+  // Track keyboard visibility to adjust footer padding
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', () => {
+      setIsKeyboardVisible(true);
+    });
+
+    const keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
   const handleCategoriesChanged = useCallback(() => {
     loadCategories();
   }, [loadCategories]);
@@ -234,6 +315,8 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
 
   const handleClose = useCallback(() => {
+    // Dismiss keyboard immediately when closing starts
+    Keyboard.dismiss();
     bottomSheetRef.current?.dismiss();
     // Reset form
     setName('');
@@ -296,13 +379,53 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     []
   );
 
+  const handleSheetChange = useCallback((index: number) => {
+    // Dismiss keyboard immediately when sheet starts closing
+    if (index === -1) {
+      Keyboard.dismiss();
+      return;
+    }
+    // When sheet opens (index 0), set category based on active tab
+    if (index === 0) {
+      const categoryToSelect = getCategoryToSelect();
+      if (categoryToSelect) {
+        setSelectedCategory(categoryToSelect);
+      }
+      
+      // Focus the name input immediately when sheet opens
+      if (nameInputRef.current) {
+        nameInputRef.current.focus();
+      }
+    }
+  }, [getCategoryToSelect]);
+
+  const handleSheetAnimate = useCallback((fromIndex: number, toIndex: number) => {
+    // Set category and focus input while sheet is animating to open (transitioning from -1 to 0)
+    // This happens immediately as the sheet starts opening, before it's fully visible
+    if (fromIndex === -1 && toIndex === 0) {
+      const categoryToSelect = getCategoryToSelect();
+      if (categoryToSelect) {
+        setSelectedCategory(categoryToSelect);
+      }
+      
+      // Focus input while sheet is animating to open
+      if (nameInputRef.current) {
+        nameInputRef.current.focus();
+      }
+    }
+    // Dismiss keyboard while sheet is animating to close (transitioning from 0 to -1)
+    if (fromIndex === 0 && toIndex === -1) {
+      Keyboard.dismiss();
+    }
+  }, [getCategoryToSelect]);
+
   const renderFooter = useCallback(
     () => (
       <View style={{ 
         backgroundColor: theme.colors.surface,
         paddingHorizontal: theme.spacing.lg,
         paddingVertical: theme.spacing.md,
-        paddingBottom: insets.bottom + theme.spacing.md,
+        paddingBottom: isKeyboardVisible ? theme.spacing.md : insets.bottom + theme.spacing.md,
         borderTopWidth: 1,
         borderTopColor: theme.colors.borderLight,
       }}>
@@ -333,7 +456,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
         </TouchableOpacity>
       </View>
     ),
-    [handleSubmit, isLoading, theme, insets.bottom]
+    [handleSubmit, isLoading, theme, insets.bottom, isKeyboardVisible]
   );
 
   return (
@@ -351,6 +474,8 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
       index={0}
       footerComponent={renderFooter}
       enableDynamicSizing={false}
+      onChange={handleSheetChange}
+      onAnimate={handleSheetAnimate}
     >
       <ContentContainer>
         <BottomSheetScrollView
@@ -375,6 +500,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
               <FormSection>
                 <Label>名字</Label>
                 <Input
+                  ref={nameInputRef}
                   placeholder="例如:可爱的小杯子"
                   value={name}
                   onChangeText={setName}

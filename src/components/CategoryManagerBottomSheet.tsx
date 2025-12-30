@@ -12,6 +12,7 @@ import { getAllCategories, createCategory, updateCategory, deleteCategory, isCat
 import { useCategory } from '../contexts/CategoryContext';
 import { IconSelector } from './IconSelector';
 import { ColorPalette } from './ColorPalette';
+import { CategoryPreviewCard } from './CategoryPreviewCard';
 import { categoryIcons } from '../data/categoryIcons';
 import { categoryColors } from '../data/categoryColors';
 
@@ -80,40 +81,6 @@ const Input = styled(BottomSheetTextInput)`
 
 const CategoriesList = styled(View)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
-`;
-
-const CategoryItem = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-width: 1px;
-  border-color: ${({ theme }: StyledProps) => theme.colors.border};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
-
-const CategoryIcon = styled(View)`
-  margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;
-`;
-
-const CategoryInfo = styled(View)`
-  flex: 1;
-`;
-
-const CategoryName = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-`;
-
-const CategoryActions = styled(View)`
-  flex-direction: row;
-  gap: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
-
-const ActionButton = styled(TouchableOpacity)`
-  padding: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 
@@ -474,26 +441,12 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
               ) : (
                 <CategoriesList>
                   {customCategories.map((category) => (
-                    <CategoryItem key={category.id}>
-                      <CategoryIcon>
-                        <Ionicons
-                          name={category.icon || 'cube-outline'}
-                          size={24}
-                          color={category.iconColor || theme.colors.primary}
-                        />
-                      </CategoryIcon>
-                      <CategoryInfo>
-                        <CategoryName>{category.label}</CategoryName>
-                      </CategoryInfo>
-                      <CategoryActions>
-                        <ActionButton onPress={() => handleStartEdit(category)} activeOpacity={0.7}>
-                          <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
-                        </ActionButton>
-                        <ActionButton onPress={() => handleDelete(category.id)} activeOpacity={0.7}>
-                          <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
-                        </ActionButton>
-                      </CategoryActions>
-                    </CategoryItem>
+                    <CategoryPreviewCard
+                      key={category.id}
+                      category={category}
+                      onEdit={handleStartEdit}
+                      onDelete={handleDelete}
+                    />
                   ))}
                 </CategoriesList>
               )}

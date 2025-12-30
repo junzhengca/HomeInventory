@@ -174,7 +174,11 @@ export const BottomNavBar: React.FC<BottomTabBarProps> = ({ state, navigation })
           </ActionButtonsContainer>
         </NavBar>
       </NavBarContainer>
-      <CreateItemBottomSheet bottomSheetRef={bottomSheetRef} onItemCreated={refreshItems} />
+      <CreateItemBottomSheet 
+        bottomSheetRef={bottomSheetRef} 
+        onItemCreated={refreshItems}
+        activeTab={state.routes[state.index]?.name as keyof TabParamList}
+      />
     </>
   );
 };

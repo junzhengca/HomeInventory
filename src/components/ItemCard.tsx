@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { InventoryItem } from '../types/inventory';
@@ -8,23 +8,7 @@ import { getCurrencySymbol } from './CurrencySelector';
 import { formatPrice } from '../utils/formatters';
 import { getLightColor } from '../utils/colors';
 import type { StyledProps } from '../utils/styledComponents';
-
-const Card = styled(TouchableOpacity)`
-  flex-direction: row;
-  align-items: center;
-  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  position: relative;
-  
-  /* Subtle shadow for the card */
-  shadow-color: #000;
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.05;
-  shadow-radius: 8px;
-  elevation: 2;
-`;
+import { BaseCard } from './BaseCard';
 
 const IconContainer = styled(View)<{ backgroundColor: string }>`
   width: 72px;
@@ -92,7 +76,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
   };
 
   return (
-    <Card onPress={handlePress} activeOpacity={0.8}>
+    <BaseCard onPress={handlePress} activeOpacity={0.8}>
       <IconContainer backgroundColor={getLightColor(item.iconColor)}>
         <Ionicons name={item.icon} size={32} color={item.iconColor} />
       </IconContainer>
@@ -110,7 +94,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
           <AmountText>x{item.amount}</AmountText>
         </AmountBadge>
       )}
-    </Card>
+    </BaseCard>
   );
 };
 

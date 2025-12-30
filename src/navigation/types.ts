@@ -22,6 +22,8 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<TabParamList>;
   Settings: undefined;
   ItemDetails: { itemId: string };
+  ExportData: undefined;
+  ExportDataDetail: { filename: string };
 };
 
 declare global {
