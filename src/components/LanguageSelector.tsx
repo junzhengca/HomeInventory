@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 export type LanguageOption = {
@@ -92,13 +93,15 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   selectedLanguageId = 'zh-cn',
   onLanguageSelect,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Container>
       <Header>
         <IconContainer>
           <Icon name="globe" size={20} />
         </IconContainer>
-        <Title>语言设置</Title>
+        <Title>{t('language.title')}</Title>
       </Header>
       <OptionsContainer>
         {defaultLanguages.map((language) => (

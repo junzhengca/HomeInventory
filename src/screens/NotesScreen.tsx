@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ScrollView,
   TextInput,
@@ -12,12 +12,15 @@ import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
+import { useTranslation } from 'react-i18next';
 
 import { PageHeader } from '../components/PageHeader';
 import { TodoCard } from '../components/TodoCard';
 import { EmptyState } from '../components/EmptyState';
+import { EditTodoBottomSheet } from '../components/EditTodoBottomSheet';
 import { RootStackParamList } from '../navigation/types';
 import { useTodos } from '../contexts/TodoContext';
 import { useTheme } from '../theme/ThemeProvider';
@@ -73,36 +76,70 @@ const SectionTitle = styled(Text)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
+const SwipeableWrapper = styled(View)`
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
 
+const CardWrapper = styled(View)`
+  margin-bottom: 0;
+`;
 
-const _SwipeActionsContainer = styled(View)`
+const SwipeActionsContainer = styled(View)`
   flex-direction: row;
-  margin-top: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  border-top-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  border-bottom-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  overflow: hidden;
 `;
 
-const DeleteAction = styled(View)`
-  background-color: #ff3b30;
+const ActionButton = styled(TouchableOpacity)`
   justify-content: center;
-  align-items: flex-end;
-  padding-right: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  align-items: center;
   width: 80px;
+  align-self: stretch;
+  position: relative;
 `;
 
-const DeleteActionText = styled(Text)`
-  color: white;
-  font-weight: 600;
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+const EditAction = styled(ActionButton)`
+  background-color: ${({ theme }: StyledProps) => theme.colors.warning};
+  border-top-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  border-bottom-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  
+  /* Shadow for depth */
+  shadow-color: ${({ theme }: StyledProps) => theme.colors.warning};
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.2;
+  shadow-radius: 4px;
+  elevation: 3;
+`;
+
+const DeleteAction = styled(ActionButton)`
+  background-color: ${({ theme }: StyledProps) => theme.colors.error};
+  border-top-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  border-bottom-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  margin-left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  
+  /* Shadow for depth */
+  shadow-color: ${({ theme }: StyledProps) => theme.colors.error};
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.2;
+  shadow-radius: 4px;
+  elevation: 3;
 `;
 
 export const NotesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { pendingTodos, completedTodos, loading, refreshTodos, addTodo, toggleTodoCompletion, removeTodo } =
+  const { pendingTodos, completedTodos, loading, refreshTodos, addTodo, toggleTodoCompletion, removeTodo, updateTodo } =
     useTodos();
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const [newTodoText, setNewTodoText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [editingTodo, setEditingTodo] = useState<{ id: string; text: string } | null>(null);
+  
+  const editBottomSheetRef = useRef<BottomSheetModal>(null);
+  const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
 
   useEffect(() => {
     refreshTodos();
@@ -124,50 +161,93 @@ export const NotesScreen: React.FC = () => {
   };
 
   const handleDeleteTodo = (id: string) => {
-    Alert.alert('Delete Todo', 'Are you sure you want to delete this todo?', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await removeTodo(id);
+    Alert.alert(
+      t('notes.deleteTodo.title'),
+      t('notes.deleteTodo.message'),
+      [
+        {
+          text: t('notes.deleteTodo.cancel'),
+          style: 'cancel',
         },
-      },
-    ]);
+        {
+          text: t('notes.deleteTodo.confirm'),
+          style: 'destructive',
+          onPress: async () => {
+            await removeTodo(id);
+          },
+        },
+      ]
+    );
   };
 
-  const renderDeleteAction = () => (
-    <DeleteAction>
-      <DeleteActionText>Delete</DeleteActionText>
-    </DeleteAction>
-  );
+  const handleEditTodo = (id: string, text: string) => {
+    setEditingTodo({ id, text });
+    editBottomSheetRef.current?.present();
+  };
 
-  const renderTodoItem = (todo: TodoItem) => (
-    <TodoCard
-      key={todo.id}
-      todo={todo}
-      onToggle={handleToggleTodo}
-      onDelete={handleDeleteTodo}
-    />
-  );
+  const handleTodoUpdated = () => {
+    setEditingTodo(null);
+  };
 
-  const renderSwipeableTodo = (todo: TodoItem) => {
+  const renderSwipeActions = (todo: TodoItem) => {
     return (
-      <Swipeable
-        key={todo.id}
-        renderRightActions={renderDeleteAction}
-        onSwipeableOpen={() => handleDeleteTodo(todo.id)}
-      >
+      <SwipeActionsContainer>
+        <EditAction
+          onPress={() => {
+            handleEditTodo(todo.id, todo.text);
+            swipeableRefs.current.get(todo.id)?.close();
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="create" size={22} color="white" />
+        </EditAction>
+        <DeleteAction
+          onPress={() => {
+            handleDeleteTodo(todo.id);
+            swipeableRefs.current.get(todo.id)?.close();
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="trash" size={22} color="white" />
+        </DeleteAction>
+      </SwipeActionsContainer>
+    );
+  };
+
+  const renderTodoItem = (todo: TodoItem, isPending: boolean = false) => {
+    if (isPending) {
+      return (
+        <SwipeableWrapper key={todo.id}>
+          <Swipeable
+            ref={(ref) => {
+              if (ref) {
+                swipeableRefs.current.set(todo.id, ref);
+              }
+            }}
+            renderRightActions={() => renderSwipeActions(todo)}
+            rightThreshold={40}
+            friction={2}
+            enableTrackpadTwoFingerGesture
+          >
+            <CardWrapper>
+              <TodoCard
+                todo={todo}
+                onToggle={handleToggleTodo}
+                style={{ marginBottom: 0 }}
+              />
+            </CardWrapper>
+          </Swipeable>
+        </SwipeableWrapper>
+      );
+    } else {
+      return (
         <TodoCard
+          key={todo.id}
           todo={todo}
           onToggle={handleToggleTodo}
-          onDelete={handleDeleteTodo}
         />
-      </Swipeable>
-    );
+      );
+    }
   };
 
   // Calculate bottom padding: nav bar height (60) + margin (16*2) + safe area + extra spacing
@@ -178,8 +258,8 @@ export const NotesScreen: React.FC = () => {
       <Container>
         <PageHeader
           icon="document-text"
-          title="Notes"
-          subtitle="Your todos"
+          title={t('notes.title')}
+          subtitle={t('notes.subtitle')}
           onSettingsPress={handleSettingsPress}
         />
       </Container>
@@ -191,8 +271,8 @@ export const NotesScreen: React.FC = () => {
       <Container>
         <PageHeader
           icon="document-text"
-          title="Notes"
-          subtitle="Your todos"
+          title={t('notes.title')}
+          subtitle={t('notes.subtitle')}
           onSettingsPress={handleSettingsPress}
         />
         <Content
@@ -201,7 +281,7 @@ export const NotesScreen: React.FC = () => {
         >
           <AddTodoContainer isFocused={isFocused}>
             <TodoInput
-              placeholder="Add a new todo..."
+              placeholder={t('notes.addTodo')}
               placeholderTextColor={theme.colors.textLight}
               value={newTodoText}
               onChangeText={setNewTodoText}
@@ -210,35 +290,46 @@ export const NotesScreen: React.FC = () => {
               onBlur={() => setIsFocused(false)}
               autoCorrect={false}
             />
-            <AddButton onPress={handleAddTodo} activeOpacity={0.7}>
+            <AddButton 
+              onPress={handleAddTodo} 
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Ionicons name="add" size={18} color="white" />
             </AddButton>
           </AddTodoContainer>
 
           {pendingTodos.length > 0 && (
             <>
-              <SectionTitle>Pending ({pendingTodos.length})</SectionTitle>
-              {pendingTodos.map(renderSwipeableTodo)}
+              <SectionTitle>{t('notes.pending')} ({pendingTodos.length})</SectionTitle>
+              {pendingTodos.map((todo) => renderTodoItem(todo, true))}
             </>
           )}
 
           {completedTodos.length > 0 && (
             <>
               <SectionTitle style={{ marginTop: 20 }}>
-                Completed ({completedTodos.length})
+                {t('notes.completed')} ({completedTodos.length})
               </SectionTitle>
-              {completedTodos.map(renderTodoItem)}
+              {completedTodos.map((todo) => renderTodoItem(todo, false))}
             </>
           )}
 
           {pendingTodos.length === 0 && completedTodos.length === 0 && (
             <EmptyState
               icon="clipboard-outline"
-              title="还没有待办事项"
-              description="在上方添加您的第一个待办事项来开始管理任务吧！"
+              title={t('notes.empty.title')}
+              description={t('notes.empty.description')}
             />
           )}
         </Content>
+        
+        <EditTodoBottomSheet
+          bottomSheetRef={editBottomSheetRef}
+          todoId={editingTodo?.id || ''}
+          initialText={editingTodo?.text || ''}
+          onTodoUpdated={handleTodoUpdated}
+        />
       </Container>
     </GestureHandlerRootView>
   );

@@ -84,6 +84,15 @@ module.exports = {
       },
     ],
   },
+  overrides: [
+    {
+      files: ['*.json'],
+      rules: {
+        '@typescript-eslint/no-unused-expressions': 'off',
+        'no-undef': 'off',
+      },
+    },
+  ],
   settings: {
     react: {
       version: 'detect',

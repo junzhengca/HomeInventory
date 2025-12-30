@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { TouchableOpacity, Alert, View, Text } from 'react-native';
+import { TouchableOpacity, Alert, View, Text, Keyboard } from 'react-native';
 import styled from 'styled-components/native';
 // Note: View and Text are imported above and will be used in styled components
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
 import { Category } from '../types/inventory';
@@ -15,6 +16,7 @@ import { ColorPalette } from './ColorPalette';
 import { CategoryPreviewCard } from './CategoryPreviewCard';
 import { categoryIcons } from '../data/categoryIcons';
 import { categoryColors } from '../data/categoryColors';
+import { BottomActionBar } from './BottomActionBar';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -106,6 +108,7 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
 }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { refreshCategories } = useCategory();
   const [_categories, setCategories] = useState<Category[]>([]);
   const [customCategories, setCustomCategories] = useState<Category[]>([]);
@@ -116,11 +119,12 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
   const [selectedIcon, setSelectedIcon] = useState<keyof typeof Ionicons.glyphMap>(categoryIcons?.[0] || 'cube-outline');
   const [selectedColor, setSelectedColor] = useState<string>(categoryColors?.[0] || '#4A90E2');
   const [isLoading, setIsLoading] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  const snapPoints = useMemo(() => ['90%'], []);
+  const snapPoints = useMemo(() => ['100%'], []);
 
-  const keyboardBehavior = useMemo(() => 'interactive', []);
-  const keyboardBlurBehavior = useMemo(() => 'restore', []);
+  const keyboardBehavior = useMemo(() => 'interactive' as const, []);
+  const keyboardBlurBehavior = useMemo(() => 'restore' as const, []);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -134,6 +138,32 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
       }
     };
     loadCategories();
+  }, []);
+
+  // Track keyboard visibility to adjust footer padding
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', () => {
+      setIsKeyboardVisible(true);
+    });
+
+    const keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
   }, []);
 
   const handleClose = useCallback(() => {
@@ -175,7 +205,7 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
 
   const handleSave = useCallback(async () => {
     if (!categoryName.trim() || !categoryLabel.trim()) {
-      Alert.alert('错误', '请输入分类名称');
+      Alert.alert(t('categoryManager.errors.title'), t('categoryManager.errors.enterName'));
       return;
     }
 
@@ -224,31 +254,37 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
           onCategoriesChanged();
         }
       } else {
-        Alert.alert('错误', editingCategoryId ? '更新分类失败，请重试' : '创建分类失败，请重试');
+        Alert.alert(
+          t('categoryManager.errors.title'),
+          editingCategoryId ? t('categoryManager.errors.updateFailed') : t('categoryManager.errors.createFailed')
+        );
       }
     } catch (error: unknown) {
       console.error('Error saving category:', error);
       const errorMessage = error instanceof Error ? error.message : undefined;
-      Alert.alert('错误', errorMessage || (editingCategoryId ? '更新分类失败' : '创建分类失败'));
+      Alert.alert(
+        t('categoryManager.errors.title'),
+        errorMessage || (editingCategoryId ? t('categoryManager.errors.updateFailed') : t('categoryManager.errors.createFailed'))
+      );
     } finally {
       setIsLoading(false);
     }
-  }, [categoryName, categoryLabel, selectedIcon, selectedColor, editingCategoryId, onCategoriesChanged, refreshCategories]);
+  }, [categoryName, categoryLabel, selectedIcon, selectedColor, editingCategoryId, onCategoriesChanged, refreshCategories, t]);
 
   const handleDelete = useCallback(async (categoryId: string) => {
     Alert.alert(
-      '确认删除',
-      '确定要删除这个分类吗？',
+      t('categoryManager.delete.title'),
+      t('categoryManager.delete.message'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('categoryManager.buttons.cancel'), style: 'cancel' },
         {
-          text: '删除',
+          text: t('categoryManager.buttons.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               const inUse = await isCategoryInUse(categoryId);
               if (inUse) {
-                Alert.alert('错误', '无法删除正在使用的分类');
+                Alert.alert(t('categoryManager.errors.title'), t('categoryManager.errors.deleteInUse'));
                 return;
               }
 
@@ -268,18 +304,18 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
                   onCategoriesChanged();
                 }
               } else {
-                Alert.alert('错误', '删除分类失败，请重试');
+                Alert.alert(t('categoryManager.errors.title'), t('categoryManager.errors.deleteFailed'));
               }
             } catch (error: unknown) {
               console.error('Error deleting category:', error);
               const errorMessage = error instanceof Error ? error.message : undefined;
-              Alert.alert('错误', errorMessage || '删除分类失败');
+              Alert.alert(t('categoryManager.errors.title'), errorMessage || t('categoryManager.errors.deleteFailed'));
             }
           },
         },
       ]
     );
-  }, [onCategoriesChanged, refreshCategories]);
+  }, [onCategoriesChanged, refreshCategories, t]);
 
   const renderBackdrop = useCallback(
     (props: Parameters<typeof BottomSheetBackdrop>[0]) => <Backdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
@@ -292,104 +328,42 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
     () => {
       if (showForm) {
         return (
-          <View style={{ 
-            backgroundColor: theme.colors.surface,
-            paddingHorizontal: theme.spacing.lg,
-            paddingVertical: theme.spacing.md,
-            paddingBottom: insets.bottom + theme.spacing.md,
-            borderTopWidth: 1,
-            borderTopColor: theme.colors.borderLight,
-            flexDirection: 'row',
-            gap: theme.spacing.md,
-          }}>
-            <TouchableOpacity
-              onPress={handleCancel}
-              activeOpacity={0.7}
-              style={{
-                flex: 1,
-                backgroundColor: theme.colors.surface,
-                borderRadius: theme.borderRadius.md,
-                padding: theme.spacing.sm + 2,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1.5,
-                borderColor: theme.colors.border,
-                minHeight: 44,
-              }}
-            >
-              <Text style={{
-                fontSize: theme.typography.fontSize.sm,
-                fontWeight: theme.typography.fontWeight.medium,
-                color: theme.colors.text,
-              }}>
-                取消
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={isLoading}
-              activeOpacity={0.7}
-              style={{
-                flex: 1,
-                backgroundColor: theme.colors.primary,
-                borderRadius: theme.borderRadius.md,
-                padding: theme.spacing.sm + 2,
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'row',
-                minHeight: 44,
-                opacity: isLoading ? 0.5 : 1,
-              }}
-            >
-              <Ionicons name="checkmark" size={18} color={theme.colors.surface} />
-              <Text style={{
-                fontSize: theme.typography.fontSize.sm,
-                fontWeight: theme.typography.fontWeight.medium,
-                color: theme.colors.surface,
-                marginLeft: theme.spacing.xs,
-              }}>
-                保存
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <BottomActionBar
+            actions={[
+              {
+                label: t('categoryManager.buttons.cancel'),
+                onPress: handleCancel,
+                variant: 'outlined',
+              },
+              {
+                label: t('categoryManager.buttons.save'),
+                onPress: handleSave,
+                variant: 'filled',
+                icon: <Ionicons name="checkmark" size={18} color={theme.colors.surface} />,
+                disabled: isLoading,
+              },
+            ]}
+            safeArea={!isKeyboardVisible}
+            inBottomSheet={true}
+          />
         );
       }
       return (
-        <View style={{ 
-          backgroundColor: theme.colors.surface,
-          paddingHorizontal: theme.spacing.lg,
-          paddingVertical: theme.spacing.md,
-          paddingBottom: insets.bottom + theme.spacing.md,
-          borderTopWidth: 1,
-          borderTopColor: theme.colors.borderLight,
-        }}>
-          <TouchableOpacity
-            onPress={handleStartCreate}
-            activeOpacity={0.7}
-            style={{
-              backgroundColor: theme.colors.primary,
-              borderRadius: theme.borderRadius.md,
-              padding: theme.spacing.sm + 2,
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'row',
-              minHeight: 44,
-            }}
-          >
-            <Ionicons name="add" size={18} color={theme.colors.surface} />
-            <Text style={{
-              fontSize: theme.typography.fontSize.sm,
-              fontWeight: theme.typography.fontWeight.medium,
-              color: theme.colors.surface,
-              marginLeft: theme.spacing.xs,
-            }}>
-              新建分类
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <BottomActionBar
+          actions={[
+            {
+              label: t('categoryManager.buttons.create'),
+              onPress: handleStartCreate,
+              variant: 'filled',
+              icon: <Ionicons name="add" size={18} color={theme.colors.surface} />,
+            },
+          ]}
+          safeArea={!isKeyboardVisible}
+          inBottomSheet={true}
+        />
       );
     },
-    [showForm, handleCancel, handleSave, handleStartCreate, isLoading, theme, insets.bottom]
+    [showForm, handleCancel, handleSave, handleStartCreate, isLoading, theme, t, isKeyboardVisible]
   );
 
   return (
@@ -418,11 +392,15 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
         >
           <Header>
             <HeaderLeft>
-              <Title>{showForm ? (editingCategoryId ? '编辑分类' : '新建分类') : '管理分类'}</Title>
+              <Title>
+                {showForm
+                  ? (editingCategoryId ? t('categoryManager.editTitle') : t('categoryManager.createTitle'))
+                  : t('categoryManager.title')}
+              </Title>
               <Subtitle>
                 {showForm
-                  ? '设置分类名称、图标和颜色'
-                  : '创建和编辑自定义分类'}
+                  ? t('categoryManager.formSubtitle')
+                  : t('categoryManager.subtitle')}
               </Subtitle>
             </HeaderLeft>
             <CloseButton onPress={handleClose}>
@@ -433,10 +411,10 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
         {!showForm ? (
           <>
             <FormSection>
-              <Label>自定义分类</Label>
+              <Label>{t('categoryManager.customCategories')}</Label>
               {customCategories.length === 0 ? (
                 <EmptyState>
-                  <EmptyStateText>还没有自定义分类</EmptyStateText>
+                  <EmptyStateText>{t('categoryManager.emptyState')}</EmptyStateText>
                 </EmptyState>
               ) : (
                 <CategoriesList>
@@ -455,9 +433,9 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
         ) : (
           <>
             <FormSection>
-              <Label>分类名称（英文）</Label>
+              <Label>{t('categoryManager.nameEn')}</Label>
               <Input
-                placeholder="例如: electronics"
+                placeholder={t('categoryManager.placeholderEn')}
                 value={categoryName}
                 onChangeText={setCategoryName}
                 placeholderTextColor={theme.colors.textLight}
@@ -465,16 +443,16 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
             </FormSection>
 
             <FormSection>
-              <Label>分类名称（中文）</Label>
+              <Label>{t('categoryManager.nameZh')}</Label>
               <Input
-                placeholder="例如: 电子产品"
+                placeholder={t('categoryManager.placeholderZh')}
                 value={categoryLabel}
                 onChangeText={setCategoryLabel}
                 placeholderTextColor={theme.colors.textLight}
               />
             </FormSection>
 
-            <FormSection>
+            <FormSection style={{ marginBottom: theme.spacing.md }}>
               <IconSelector
                 selectedIcon={selectedIcon}
                 iconColor={selectedColor}

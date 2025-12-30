@@ -3,6 +3,7 @@ import { TextInput, View } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
+import { useTranslation } from 'react-i18next';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 const Container = styled(View)<{ isFocused: boolean }>`
@@ -38,12 +39,16 @@ interface SearchInputProps {
 }
 
 export const SearchInput: React.FC<SearchInputProps> = ({
-  placeholder = '找找看... (例如: 吹风机)',
+  placeholder,
   value,
   onChangeText,
 }) => {
+  const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
   const theme = useTheme();
+
+  // Use translated placeholder if none provided
+  const translatedPlaceholder = placeholder || t('search.placeholder');
 
   return (
     <Container isFocused={isFocused}>
@@ -51,7 +56,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
       <Input
         value={value}
         onChangeText={onChangeText}
-        placeholder={placeholder}
+        placeholder={translatedPlaceholder}
         placeholderTextColor={theme.colors.textLight}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}

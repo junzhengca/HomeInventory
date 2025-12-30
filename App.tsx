@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { I18nextProvider } from 'react-i18next';
 import { SettingsProvider } from './src/contexts/SettingsContext';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { InventoryProvider } from './src/contexts/InventoryContext';
@@ -13,6 +14,7 @@ import { TodoProvider } from './src/contexts/TodoContext';
 import { SelectedCategoryProvider } from './src/contexts/SelectedCategoryContext';
 import { RootStack } from './src/navigation/RootStack';
 import { initializeDataFiles } from './src/services/DataInitializationService';
+import i18n from './src/i18n/i18n';
 
 export default function App() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -45,24 +47,26 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <SettingsProvider>
-          <InventoryProvider>
-            <CategoryProvider>
-              <TodoProvider>
-                <SelectedCategoryProvider>
-                  <ThemeProvider>
-                    <BottomSheetModalProvider>
-                      <NavigationContainer>
-                        <RootStack />
-                        <StatusBar style="auto" />
-                      </NavigationContainer>
-                    </BottomSheetModalProvider>
-                  </ThemeProvider>
-                </SelectedCategoryProvider>
-              </TodoProvider>
-            </CategoryProvider>
-          </InventoryProvider>
-        </SettingsProvider>
+        <I18nextProvider i18n={i18n}>
+          <SettingsProvider>
+            <InventoryProvider>
+              <CategoryProvider>
+                <TodoProvider>
+                  <SelectedCategoryProvider>
+                    <ThemeProvider>
+                      <BottomSheetModalProvider>
+                        <NavigationContainer>
+                          <RootStack />
+                          <StatusBar style="auto" />
+                        </NavigationContainer>
+                      </BottomSheetModalProvider>
+                    </ThemeProvider>
+                  </SelectedCategoryProvider>
+                </TodoProvider>
+              </CategoryProvider>
+            </InventoryProvider>
+          </SettingsProvider>
+        </I18nextProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

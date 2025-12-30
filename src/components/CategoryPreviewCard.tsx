@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Category } from '../types/inventory';
 import { getLightColor } from '../utils/colors';
 import type { StyledProps } from '../utils/styledComponents';
@@ -55,6 +56,9 @@ export const CategoryPreviewCard: React.FC<CategoryPreviewCardProps> = ({
   onDelete,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
+
+  const displayLabel = category.isCustom ? category.label : t(`categories.${category.name}`);
 
   return (
     <BaseCard compact>
@@ -65,11 +69,11 @@ export const CategoryPreviewCard: React.FC<CategoryPreviewCardProps> = ({
           color={category.iconColor || theme.colors.primary}
         />
       </IconContainer>
-      
+
       <ContentContainer>
-        <CategoryName>{category.label}</CategoryName>
+        <CategoryName>{displayLabel}</CategoryName>
       </ContentContainer>
-      
+
       {(onEdit || onDelete) && (
         <ActionsContainer>
           {onEdit && (

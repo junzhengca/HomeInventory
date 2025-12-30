@@ -15,13 +15,14 @@ export interface ActionButton {
 interface BottomActionBarProps {
   actions: ActionButton[];
   safeArea?: boolean;
+  inBottomSheet?: boolean;
 }
 
-const BottomBarContainer = styled(View)<{ bottomInset: number; showSafeArea: boolean }>`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+const BottomBarContainer = styled(View)<{ bottomInset: number; showSafeArea: boolean; inBottomSheet: boolean }>`
+  ${({ inBottomSheet }: { inBottomSheet: boolean }) => !inBottomSheet ? 'position: absolute;' : ''}
+  ${({ inBottomSheet }: { inBottomSheet: boolean }) => !inBottomSheet ? 'bottom: 0;' : ''}
+  ${({ inBottomSheet }: { inBottomSheet: boolean }) => !inBottomSheet ? 'left: 0;' : ''}
+  ${({ inBottomSheet }: { inBottomSheet: boolean }) => !inBottomSheet ? 'right: 0;' : ''}
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.lg}px;
   padding-vertical: ${({ theme }: StyledProps) => theme.spacing.md}px;
@@ -84,11 +85,12 @@ const ButtonText = styled(Text)<{ variant: 'outlined' | 'filled' | 'danger' }>`
 export const BottomActionBar: React.FC<BottomActionBarProps> = ({
   actions,
   safeArea = true,
+  inBottomSheet = false,
 }) => {
   const insets = useSafeAreaInsets();
 
   return (
-    <BottomBarContainer bottomInset={insets.bottom} showSafeArea={safeArea}>
+    <BottomBarContainer bottomInset={insets.bottom} showSafeArea={safeArea} inBottomSheet={inBottomSheet}>
       <ActionsContainer>
         {actions.map((action, index) => (
           <StyledTouchableOpacity

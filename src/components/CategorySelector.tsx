@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, TouchableOpacity, View, Text } from 'react-native';
 import styled from 'styled-components/native';
+import { useTranslation } from 'react-i18next';
 import { Category } from '../types/inventory';
 import { getAllCategories } from '../services/CategoryService';
 import { useCategory } from '../contexts/CategoryContext';
@@ -53,6 +54,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   selectedCategory: parentSelectedCategory,
   onCategoryChange,
 }) => {
+  const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<string>(parentSelectedCategory || 'all');
   const [categories, setCategories] = useState<Category[]>([]);
   const { registerRefreshCallback } = useCategory();
@@ -69,7 +71,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       const allCategory: Category = {
         id: 'all',
         name: 'all',
-        label: '全部',
+        label: t('categories.all'),
         isCustom: false,
       };
       setCategories([allCategory, ...allCategories]);
@@ -80,12 +82,12 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       const allCategory: Category = {
         id: 'all',
         name: 'all',
-        label: '全部',
+        label: t('categories.all'),
         isCustom: false,
       };
       setCategories([allCategory]);
     }
-  }, [providedCategories]);
+  }, [providedCategories, t]);
 
   useEffect(() => {
     loadCategories();
@@ -114,10 +116,10 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
   return (
     <Container>
-      <ScrollContainer 
-        horizontal 
+      <ScrollContainer
+        horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ 
+        contentContainerStyle={{
           paddingVertical: 8,
           paddingRight: 16 // Extra space at the end of scroll
         }}
@@ -130,7 +132,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             activeOpacity={0.8}
           >
             <CategoryText isSelected={selectedCategory === category.id}>
-              {category.label}
+              {category.isCustom ? category.label : t(`categories.${category.name}`)}
             </CategoryText>
           </CategoryButton>
         ))}

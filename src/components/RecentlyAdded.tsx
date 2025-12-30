@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { TouchableOpacity, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { InventoryItem } from '../types/inventory';
 import { ItemCard } from './ItemCard';
 import type { StyledProps } from '../utils/styledComponents';
@@ -62,6 +63,7 @@ export const RecentlyAdded: React.FC<RecentlyAddedProps> = ({
   onViewAll,
   onItemPress,
 }) => {
+  const { t } = useTranslation();
   // Sort items by purchaseDate in descending order (most recent first)
   // Items without purchaseDate go to the end, using item ID as fallback
   const sortedItems = useMemo(() => {
@@ -106,7 +108,7 @@ export const RecentlyAdded: React.FC<RecentlyAddedProps> = ({
   return (
     <Container>
       <Header>
-        <Title>最近添加</Title>
+        <Title>{t('recentlyAdded.title')}</Title>
       </Header>
       <ItemsContainer>
         {displayedItems.map((item) => (
@@ -119,7 +121,7 @@ export const RecentlyAdded: React.FC<RecentlyAddedProps> = ({
       </ItemsContainer>
       {totalCount > maxItems && (
         <ViewAllButton onPress={handleViewAll} activeOpacity={0.7}>
-          <ViewAllText>查看全部 ({totalCount})</ViewAllText>
+          <ViewAllText>{t('recentlyAdded.viewAll')} ({totalCount})</ViewAllText>
           <ViewAllIcon name="arrow-forward" size={24} />
         </ViewAllButton>
       )}

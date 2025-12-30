@@ -4,6 +4,7 @@ import styled from 'styled-components/native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { Category } from '../types/inventory';
@@ -15,6 +16,7 @@ import { useCategory } from '../contexts/CategoryContext';
 import { useSelectedCategory } from '../contexts/SelectedCategoryContext';
 import { filterItemCategories } from '../utils/categoryUtils';
 import { CategoryManagerBottomSheet } from './CategoryManagerBottomSheet';
+import { BottomActionBar } from './BottomActionBar';
 import { TabParamList } from '../navigation/types';
 
 const Backdrop = styled(BottomSheetBackdrop)`
@@ -105,16 +107,14 @@ const ManageCategoriesText = styled(Text)`
 const CategoryGrid = styled(View)`
   flex-direction: row;
   flex-wrap: wrap;
-  margin-top: -${({ theme }: StyledProps) => theme.spacing.xs}px;
-  margin-left: -${({ theme }: StyledProps) => theme.spacing.xs}px;
-  margin-right: -${({ theme }: StyledProps) => theme.spacing.xs}px;
-  margin-bottom: -70px;
+  align-items: flex-start;
 `;
 
 const CategoryButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
   width: 30%;
   aspect-ratio: 1;
-  margin: 1.5%;
+  margin-right: 3.33%;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   background-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primaryLightest : theme.colors.surface};
   border-width: 1.5px;
@@ -190,6 +190,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { refreshItems } = useInventory();
   const { registerRefreshCallback } = useCategory();
   const { homeCategory, inventoryCategory } = useSelectedCategory();
@@ -329,15 +330,15 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const handleSubmit = useCallback(async () => {
     // Validation
     if (!name.trim()) {
-      Alert.alert('错误', '请输入物品名称');
+      Alert.alert(t('createItem.errors.title'), t('createItem.errors.enterName'));
       return;
     }
     if (!selectedCategory) {
-      Alert.alert('错误', '请选择分类');
+      Alert.alert(t('createItem.errors.title'), t('createItem.errors.selectCategory'));
       return;
     }
     if (!selectedLocation) {
-      Alert.alert('错误', '请选择位置');
+      Alert.alert(t('createItem.errors.title'), t('createItem.errors.selectLocation'));
       return;
     }
 
@@ -364,15 +365,15 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
           onItemCreated();
         }
       } else {
-        Alert.alert('错误', '创建物品失败，请重试');
+        Alert.alert(t('createItem.errors.title'), t('createItem.errors.createFailed'));
       }
     } catch (error) {
       console.error('Error creating item:', error);
-      Alert.alert('错误', '创建物品失败，请重试');
+      Alert.alert(t('createItem.errors.title'), t('createItem.errors.createFailed'));
     } finally {
       setIsLoading(false);
     }
-  }, [name, selectedCategory, selectedLocation, price, detailedLocation, categories, theme, handleClose, onItemCreated, refreshItems]);
+  }, [name, selectedCategory, selectedLocation, price, detailedLocation, categories, theme, handleClose, onItemCreated, refreshItems, t]);
 
   const renderBackdrop = useCallback(
     (props: Parameters<typeof BottomSheetBackdrop>[0]) => <Backdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
@@ -421,42 +422,21 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
   const renderFooter = useCallback(
     () => (
-      <View style={{ 
-        backgroundColor: theme.colors.surface,
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-        paddingBottom: isKeyboardVisible ? theme.spacing.md : insets.bottom + theme.spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: theme.colors.borderLight,
-      }}>
-        <TouchableOpacity
-          onPress={handleSubmit}
-          disabled={isLoading}
-          activeOpacity={0.7}
-          style={{
-            backgroundColor: theme.colors.primary,
-            borderRadius: theme.borderRadius.md,
-            padding: theme.spacing.sm + 2,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'row',
-            minHeight: 44,
-            opacity: isLoading ? 0.5 : 1,
-          }}
-        >
-          <Ionicons name="add" size={18} color={theme.colors.surface} />
-          <Text style={{
-            fontSize: theme.typography.fontSize.sm,
-            fontWeight: theme.typography.fontWeight.medium,
-            color: theme.colors.surface,
-            marginLeft: theme.spacing.xs,
-          }}>
-            放入小家
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <BottomActionBar
+        actions={[
+          {
+            label: t('createItem.submit'),
+            onPress: handleSubmit,
+            variant: 'filled',
+            icon: <Ionicons name="add" size={18} color={theme.colors.surface} />,
+            disabled: isLoading,
+          },
+        ]}
+        safeArea={!isKeyboardVisible}
+        inBottomSheet={true}
+      />
     ),
-    [handleSubmit, isLoading, theme, insets.bottom, isKeyboardVisible]
+    [handleSubmit, isLoading, theme, t, isKeyboardVisible]
   );
 
   return (
@@ -488,8 +468,8 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
         >
             <Header>
               <HeaderLeft>
-                <Title>入库新物品</Title>
-                <Subtitle>记下来就不会忘啦</Subtitle>
+                <Title>{t('createItem.title')}</Title>
+                <Subtitle>{t('createItem.subtitle')}</Subtitle>
               </HeaderLeft>
               <CloseButton onPress={handleClose}>
                 <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
@@ -498,10 +478,10 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
             <FormContainer>
               <FormSection>
-                <Label>名字</Label>
+                <Label>{t('createItem.fields.name')}</Label>
                 <Input
                   ref={nameInputRef}
-                  placeholder="例如:可爱的小杯子"
+                  placeholder={t('createItem.placeholders.name')}
                   value={name}
                   onChangeText={setName}
                   placeholderTextColor={theme.colors.textLight}
@@ -511,44 +491,60 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
               <FormSection>
                 <CategorySection>
                   <CategoryHeader>
-                    <Label>分类</Label>
+                    <Label>{t('createItem.fields.category')}</Label>
                     <ManageCategoriesButton onPress={() => categoryManagerRef.current?.present()} activeOpacity={0.7}>
                       <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
-                      <ManageCategoriesText>管理分类</ManageCategoriesText>
+                      <ManageCategoriesText>{t('createItem.manageCategories')}</ManageCategoriesText>
                     </ManageCategoriesButton>
                   </CategoryHeader>
                   <CategoryGrid>
-                    {itemTypeCategories.map((category) => (
-                      <CategoryButton
-                        key={category.id}
-                        isSelected={selectedCategory === category.id}
-                        onPress={() => setSelectedCategory(category.id)}
-                        activeOpacity={0.7}
-                      >
-                        {category.icon && (
-                          <CategoryIcon color={category.iconColor}>
-                            <Ionicons
-                              name={category.icon}
-                              size={24}
-                              color={category.iconColor || theme.colors.primary}
-                            />
-                          </CategoryIcon>
-                        )}
-                        <CategoryLabel isSelected={selectedCategory === category.id}>
-                          {category.label}
-                        </CategoryLabel>
-                      </CategoryButton>
-                    ))}
-                    <AddCategoryButton onPress={() => categoryManagerRef.current?.present()} activeOpacity={0.7}>
+                    {itemTypeCategories.map((category, index) => {
+                      const totalItems = itemTypeCategories.length + 1;
+                      const itemsInLastRow = totalItems % 3 || 3;
+                      const lastRowStartIndex = totalItems - itemsInLastRow;
+                      const isLastRow = index >= lastRowStartIndex;
+                      // Remove margin-right from last item in each row (every 3rd item)
+                      const isLastInRow = (index + 1) % 3 === 0;
+                      return (
+                        <CategoryButton
+                          key={category.id}
+                          isSelected={selectedCategory === category.id}
+                          onPress={() => setSelectedCategory(category.id)}
+                          activeOpacity={0.7}
+                          style={{
+                            ...(isLastInRow ? { marginRight: 0 } : {}),
+                            ...(isLastRow ? { marginBottom: 0 } : {}),
+                          }}
+                        >
+                          {category.icon && (
+                            <CategoryIcon color={category.iconColor}>
+                              <Ionicons
+                                name={category.icon}
+                                size={24}
+                                color={category.iconColor || theme.colors.primary}
+                              />
+                            </CategoryIcon>
+                          )}
+                          <CategoryLabel isSelected={selectedCategory === category.id}>
+                            {category.isCustom ? category.label : t(`categories.${category.name}`)}
+                          </CategoryLabel>
+                        </CategoryButton>
+                      );
+                    })}
+                    <AddCategoryButton 
+                      onPress={() => categoryManagerRef.current?.present()} 
+                      activeOpacity={0.7}
+                      style={{ marginBottom: 0, marginRight: 0 }}
+                    >
                       <Ionicons name="add" size={32} color={theme.colors.textLight} />
-                      <CategoryLabel isSelected={false}>添加</CategoryLabel>
+                      <CategoryLabel isSelected={false}>{t('createItem.add')}</CategoryLabel>
                     </AddCategoryButton>
                   </CategoryGrid>
                 </CategorySection>
               </FormSection>
 
               <FormSection>
-                <Label>位置</Label>
+                <Label>{t('createItem.fields.location')}</Label>
                 <LocationScrollView 
                   horizontal 
                   showsHorizontalScrollIndicator={false}
@@ -562,7 +558,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
                       activeOpacity={0.7}
                     >
                       <LocationText isSelected={selectedLocation === location.id}>
-                        {location.name}
+                        {t(`locations.${location.id}`)}
                       </LocationText>
                     </LocationButton>
                   ))}
@@ -572,9 +568,9 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
               <FormSection>
                 <Row>
                   <View style={{ flex: 1 }}>
-                    <Label>价格</Label>
+                    <Label>{t('createItem.fields.price')}</Label>
                     <HalfInput
-                      placeholder="0"
+                      placeholder={t('createItem.placeholders.price')}
                       value={price}
                       onChangeText={setPrice}
                       keyboardType="numeric"
@@ -582,9 +578,9 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Label>具体位置</Label>
+                    <Label>{t('createItem.fields.detailedLocation')}</Label>
                     <HalfInput
-                      placeholder="比如:门口鞋柜"
+                      placeholder={t('createItem.placeholders.detailedLocation')}
                       value={detailedLocation}
                       onChangeText={setDetailedLocation}
                       placeholderTextColor={theme.colors.textLight}

@@ -5,6 +5,7 @@ import {
   createTodo,
   toggleTodo,
   deleteTodo,
+  updateTodo,
 } from '../services/TodoService';
 
 interface TodoContextType {
@@ -16,6 +17,7 @@ interface TodoContextType {
   addTodo: (text: string) => Promise<void>;
   toggleTodoCompletion: (id: string) => Promise<void>;
   removeTodo: (id: string) => Promise<void>;
+  updateTodo: (id: string, text: string) => Promise<void>;
 }
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
@@ -101,6 +103,29 @@ export const TodoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [refreshTodos]);
 
+  const updateTodoText = useCallback(async (id: string, text: string) => {
+    try {
+      // Optimistically update the state
+      setTodos((prevTodos) =>
+        prevTodos.map((todo) =>
+          todo.id === id ? { ...todo, text } : todo
+        )
+      );
+      
+      // Then update in storage
+      await updateTodo(id, { text });
+      
+      // Refresh to ensure sync (but don't set loading)
+      const allTodos = await getAllTodos();
+      allTodos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setTodos(allTodos);
+    } catch (error) {
+      console.error('Error updating todo:', error);
+      // Revert on error by refreshing
+      await refreshTodos();
+    }
+  }, [refreshTodos]);
+
   const pendingTodos = useMemo(
     () => todos.filter((todo) => !todo.completed),
     [todos]
@@ -121,6 +146,7 @@ export const TodoProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addTodo,
         toggleTodoCompletion,
         removeTodo,
+        updateTodo: updateTodoText,
       }}
     >
       {children}

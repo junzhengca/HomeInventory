@@ -1,0 +1,246 @@
+{
+  "home": {
+    "title": "家里有什么",
+    "subtitle": "家庭资产管理",
+    "empty": {
+      "title": "还没有物品",
+      "description": "开始添加您的第一个物品来管理您的家庭资产吧！"
+    }
+  },
+  "search": {
+    "placeholder": "找找看... (例如: 吹风机)"
+  },
+  "summary": {
+    "assetValue": "资产估值",
+    "itemCount": "物品数量",
+    "expiring": "即将过期"
+  },
+  "recentlyAdded": {
+    "title": "最近添加",
+    "viewAll": "查看全部"
+  },
+  "language": {
+    "title": "语言设置"
+  },
+  "categories": {
+    "all": "全部",
+    "appliances": "电器",
+    "kitchenware": "厨具",
+    "digital": "数码",
+    "beauty": "美妆",
+    "entertainment": "娱乐",
+    "apparel": "服饰",
+    "home": "家居",
+    "other": "其他"
+  },
+  "locations": {
+    "living-room": "客厅",
+    "kitchen": "厨房",
+    "bedroom": "卧室",
+    "study": "书房",
+    "storage": "储物"
+  },
+  "inventory": {
+    "title": "所有物品",
+    "loading": "加载中...",
+    "itemsCount": "{{count}}个宝贝",
+    "empty": {
+      "title": "没有找到物品",
+      "description": "开始添加您的第一个物品来管理您的家庭资产吧！",
+      "filtered": "尝试调整搜索条件或选择其他分类"
+    }
+  },
+  "notes": {
+    "title": "待办事项",
+    "subtitle": "您的任务清单",
+    "addTodo": "添加新的待办事项...",
+    "pending": "待处理",
+    "completed": "已完成",
+    "deleteTodo": {
+      "title": "删除待办",
+      "message": "您确定要删除这个待办事项吗？",
+      "cancel": "取消",
+      "confirm": "删除"
+    },
+    "editTodo": {
+      "title": "编辑待办",
+      "subtitle": "更新您的待办事项",
+      "submit": "保存修改",
+      "placeholders": {
+        "text": "输入待办内容..."
+      },
+      "errors": {
+        "title": "错误",
+        "enterText": "请输入待办内容",
+        "updateFailed": "更新待办事项失败，请重试"
+      }
+    },
+    "empty": {
+      "title": "还没有待办事项",
+      "description": "在上方添加您的第一个待办事项来开始管理任务吧！"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "subtitle": "让您的家更舒适",
+    "preferences": "偏好设置",
+    "dataAndSecurity": "数据与安全",
+    "theme": "主题颜色",
+    "currency": "货币单位",
+    "themeNames": {
+      "warm-sun": "暖阳",
+      "ocean": "海洋",
+      "forest": "森林",
+      "lilac": "丁香"
+    },
+    "version": "当前版本 v2.2.0"
+  },
+  "createItem": {
+    "title": "入库新物品",
+    "subtitle": "记下来就不会忘啦",
+    "fields": {
+      "name": "名字",
+      "category": "分类",
+      "location": "位置",
+      "price": "价格",
+      "detailedLocation": "具体位置",
+      "amount": "数量",
+      "tags": "标签",
+      "purchaseDate": "购买时间",
+      "expiryDate": "过期时间"
+    },
+    "placeholders": {
+      "name": "例如:可爱的小杯子",
+      "detailedLocation": "比如:门口鞋柜",
+      "price": "0",
+      "amount": "1",
+      "addTag": "添加标签"
+    },
+    "manageCategories": "管理分类",
+    "add": "添加",
+    "submit": "放入小家",
+    "errors": {
+      "title": "错误",
+      "enterName": "请输入物品名称",
+      "selectCategory": "请选择分类",
+      "selectLocation": "请选择位置",
+      "createFailed": "创建物品失败，请重试",
+      "updateFailed": "更新物品失败，请重试"
+    }
+  },
+  "editItem": {
+    "title": "修改物品",
+    "subtitle": "更新物品信息",
+    "fields": {
+      "name": "名字",
+      "category": "分类",
+      "location": "位置",
+      "price": "价格",
+      "detailedLocation": "具体位置",
+      "amount": "数量",
+      "tags": "标签",
+      "purchaseDate": "购买时间",
+      "expiryDate": "过期时间"
+    },
+    "placeholders": {
+      "name": "例如:可爱的小杯子",
+      "detailedLocation": "比如:门口鞋柜",
+      "price": "0",
+      "amount": "1",
+      "addTag": "添加标签"
+    },
+    "manageCategories": "管理分类",
+    "add": "添加",
+    "submit": "保存修改",
+    "errors": {
+      "title": "错误",
+      "enterName": "请输入物品名称",
+      "selectCategory": "请选择分类",
+      "selectLocation": "请选择位置",
+      "createFailed": "创建物品失败，请重试",
+      "updateFailed": "更新物品失败，请重试"
+    }
+  },
+  "datePicker": {
+    "selectDate": "选择日期",
+    "confirm": "确定",
+    "cancel": "取消",
+    "clear": "清除",
+    "placeholder": "未设置"
+  },
+  "itemDetails": {
+    "title": "物品详情",
+    "loading": "加载中...",
+    "itemNotFound": "物品不存在",
+    "error": {
+      "title": "错误",
+      "itemNotFound": "物品不存在",
+      "loadFailed": "加载物品信息失败",
+      "deleteFailed": "删除失败，请重试"
+    },
+    "delete": {
+      "title": "确认删除",
+      "message": "确定要删除这个物品吗？此操作无法撤销。",
+      "cancel": "取消",
+      "confirm": "删除"
+    },
+    "sections": {
+      "value": "价值信息",
+      "location": "位置信息",
+      "quantity": "数量信息",
+      "expiry": "过期信息",
+      "tags": "标签"
+    },
+    "fields": {
+      "valuation": "估值",
+      "purchaseDate": "购买时间",
+      "location": "所在位置",
+      "detailedLocation": "详细位置",
+      "quantity": "数量",
+      "expiryDate": "过期日期"
+    },
+    "notSet": "未设置",
+    "actions": {
+      "delete": "删除",
+      "modify": "修改"
+    }
+  },
+  "categoryManager": {
+    "title": "管理分类",
+    "subtitle": "创建和编辑自定义分类",
+    "editTitle": "编辑分类",
+    "createTitle": "新建分类",
+    "formSubtitle": "设置分类名称、图标和颜色",
+    "customCategories": "自定义分类",
+    "emptyState": "还没有自定义分类",
+    "nameEn": "分类名称（英文）",
+    "nameZh": "分类名称（中文）",
+    "placeholderEn": "例如: electronics",
+    "placeholderZh": "例如: 电子产品",
+    "buttons": {
+      "create": "新建分类",
+      "save": "保存",
+      "cancel": "取消",
+      "delete": "删除"
+    },
+    "errors": {
+      "title": "错误",
+      "enterName": "请输入分类名称",
+      "createFailed": "创建分类失败，请重试",
+      "updateFailed": "更新分类失败，请重试",
+      "deleteFailed": "删除分类失败，请重试",
+      "deleteInUse": "无法删除正在使用的分类"
+    },
+    "delete": {
+      "title": "确认删除",
+      "message": "确定要删除这个分类吗？"
+    }
+  },
+  "iconSelector": {
+    "label": "选择图标"
+  },
+  "colorPalette": {
+    "label": "选择颜色"
+  }
+}
+

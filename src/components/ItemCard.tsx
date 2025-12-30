@@ -2,10 +2,11 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { InventoryItem } from '../types/inventory';
 import { useSettings } from '../contexts/SettingsContext';
 import { getCurrencySymbol } from './CurrencySelector';
-import { formatPrice } from '../utils/formatters';
+import { formatPrice, formatLocation } from '../utils/formatters';
 import { getLightColor } from '../utils/colors';
 import type { StyledProps } from '../utils/styledComponents';
 import { BaseCard } from './BaseCard';
@@ -30,6 +31,14 @@ const ItemName = styled(Text)`
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   color: ${({ theme }: StyledProps) => theme.colors.text};
   margin-bottom: 2px;
+`;
+
+const CategoryText = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.xs}px;
+  color: ${({ theme }: StyledProps) => theme.colors.primary};
+  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  text-transform: capitalize;
 `;
 
 const LocationText = styled(Text)`
@@ -66,6 +75,7 @@ interface ItemCardProps {
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
+  const { t } = useTranslation();
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
 
@@ -75,6 +85,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
     }
   };
 
+  // Get translated category name
+  const categoryName = t(`categories.${item.category}`);
+
+  // Get formatted location text
+  const locationText = formatLocation(item.location, item.detailedLocation, t);
+
   return (
     <BaseCard onPress={handlePress} activeOpacity={0.8}>
       <IconContainer backgroundColor={getLightColor(item.iconColor)}>
@@ -83,10 +99,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
       
       <ContentContainer>
         <ItemName>{item.name}</ItemName>
-        <LocationText>
-          {item.location} • {item.detailedLocation}
-        </LocationText>
-        <PriceText>{formatPrice(item.price, currencySymbol)}</PriceText>
+        <CategoryText>{categoryName}</CategoryText>
+        <LocationText>{locationText}</LocationText>
+        {item.price > 0 && (
+          <PriceText>{formatPrice(item.price, currencySymbol)}</PriceText>
+        )}
       </ContentContainer>
       
       {item.amount && item.amount > 0 && (

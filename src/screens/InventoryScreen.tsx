@@ -4,6 +4,7 @@ import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../utils/styledComponents';
 
 import { PageHeader } from '../components/PageHeader';
@@ -47,6 +48,7 @@ export const InventoryScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation();
   const { registerRefreshCallback } = useInventory();
   const { inventoryCategory, setInventoryCategory } = useSelectedCategory();
 
@@ -137,8 +139,8 @@ export const InventoryScreen: React.FC = () => {
       <Container>
         <PageHeader
           icon="list"
-          title="所有物品"
-          subtitle="加载中..."
+          title={t('inventory.title')}
+          subtitle={t('inventory.loading')}
           onSettingsPress={handleSettingsPress}
         />
         <LoadingContainer>
@@ -152,27 +154,27 @@ export const InventoryScreen: React.FC = () => {
     <Container>
       <PageHeader
         icon="list"
-        title="所有物品"
-        subtitle={`${filteredItems.length}个宝贝`}
+        title={t('inventory.title')}
+        subtitle={t('inventory.itemsCount', { count: filteredItems.length })}
         onSettingsPress={handleSettingsPress}
       />
       <Content>
-        <SearchInput 
+        <SearchInput
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <CategorySelector 
+        <CategorySelector
           selectedCategory={selectedCategory}
-          onCategoryChange={handleCategoryChange} 
+          onCategoryChange={handleCategoryChange}
         />
         <ListContainer>
           {filteredItems.length === 0 ? (
             <EmptyState
               icon="list-outline"
-              title="没有找到物品"
-              description={searchQuery.trim() || selectedCategory !== 'all' 
-                ? "尝试调整搜索条件或选择其他分类" 
-                : "开始添加您的第一个物品来管理您的家庭资产吧！"}
+              title={t('inventory.empty.title')}
+              description={searchQuery.trim() || selectedCategory !== 'all'
+                ? t('inventory.empty.filtered')
+                : t('inventory.empty.description')}
             />
           ) : (
             <FlatList

@@ -3,6 +3,7 @@ import { ScrollView, ActivityIndicator, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { StyledProps } from '../utils/styledComponents';
@@ -39,6 +40,7 @@ const LoadingContainer = styled(View)`
 `;
 
 export const HomeScreen: React.FC = () => {
+  const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -135,8 +137,8 @@ export const HomeScreen: React.FC = () => {
       <Container>
         <PageHeader
           icon="home"
-          title="家里有什么"
-          subtitle="家庭资产管理"
+          title={t('home.title')}
+          subtitle={t('home.subtitle')}
           avatarUrl="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
           onSettingsPress={handleSettingsPress}
         />
@@ -151,28 +153,28 @@ export const HomeScreen: React.FC = () => {
     <Container>
       <PageHeader
         icon="home"
-        title="家里有什么"
-        subtitle="家庭资产管理"
+        title={t('home.title')}
+        subtitle={t('home.subtitle')}
         avatarUrl="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
         onSettingsPress={handleSettingsPress}
       />
-      <Content 
+      <Content
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding, flexGrow: 1 }}
       >
-        <SearchInput 
+        <SearchInput
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <CategorySelector 
+        <CategorySelector
           selectedCategory={selectedCategory}
-          onCategoryChange={handleCategoryChange} 
+          onCategoryChange={handleCategoryChange}
         />
         {filteredItems.length === 0 ? (
           <EmptyState
             icon="cube-outline"
-            title="还没有物品"
-            description="开始添加您的第一个物品来管理您的家庭资产吧！"
+            title={t('home.empty.title')}
+            description={t('home.empty.description')}
           />
         ) : (
           <>

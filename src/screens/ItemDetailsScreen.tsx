@@ -6,11 +6,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import { useSettings } from '../contexts/SettingsContext';
 import { useInventory } from '../contexts/InventoryContext';
 import { RootStackParamList } from '../navigation/types';
-import { InventoryItem } from '../types/inventory';
+import { InventoryItem, Category } from '../types/inventory';
 import { getItemById, deleteItem } from '../services/InventoryService';
 import { getCategoryById } from '../services/CategoryService';
 import { locations } from '../data/locations';
@@ -176,14 +177,19 @@ export const ItemDetailsScreen: React.FC = () => {
   const route = useRoute<RouteProp>();
   const { itemId } = route.params;
   const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation();
 
   const [item, setItem] = useState<InventoryItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [locationName, setLocationName] = useState<string>('');
-  const [categoryName, setCategoryName] = useState<string>('');
+  const [category, setCategory] = useState<Category | null>(null);
   const editBottomSheetRef = useRef<BottomSheetModal | null>(null);
 
   const currencySymbol = getCurrencySymbol(settings.currency);
+
+  const getLocale = useCallback(() => {
+    return i18n.language === 'zh' ? 'zh-CN' : 'en-US';
+  }, [i18n.language]);
 
   const loadItem = useCallback(async () => {
     setIsLoading(true);
@@ -192,52 +198,57 @@ export const ItemDetailsScreen: React.FC = () => {
       if (itemData) {
         setItem(itemData);
         const location = locations.find((loc) => loc.id === itemData.location);
-        setLocationName(location?.name || itemData.location);
-        
-        // Load category name
-        const category = await getCategoryById(itemData.category);
-        setCategoryName(category?.name || '未分类');
+        // Use i18n translation for location name
+        setLocationName(location ? t(`locations.${location.id}`) : itemData.location);
+
+        // Load category
+        const categoryData = await getCategoryById(itemData.category);
+        setCategory(categoryData);
       } else {
-        Alert.alert('错误', '物品不存在');
+        Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.itemNotFound'));
         navigation.goBack();
       }
     } catch (error) {
       console.error('Error loading item:', error);
-      Alert.alert('错误', '加载物品信息失败');
+      Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.loadFailed'));
     } finally {
       setIsLoading(false);
     }
-  }, [itemId, navigation]);
+  }, [itemId, navigation, t]);
 
   useEffect(() => {
     loadItem();
   }, [loadItem]);
 
   const handleDelete = () => {
-    Alert.alert('确认删除', '确定要删除这个物品吗？此操作无法撤销。', [
-      {
-        text: '取消',
-        style: 'cancel',
-      },
-      {
-        text: '删除',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const success = await deleteItem(itemId);
-            if (success) {
-              refreshItems();
-              navigation.goBack();
-            } else {
-              Alert.alert('错误', '删除失败，请重试');
-            }
-          } catch (error) {
-            console.error('Error deleting item:', error);
-            Alert.alert('错误', '删除失败，请重试');
-          }
+    Alert.alert(
+      t('itemDetails.delete.title'),
+      t('itemDetails.delete.message'),
+      [
+        {
+          text: t('itemDetails.delete.cancel'),
+          style: 'cancel',
         },
-      },
-    ]);
+        {
+          text: t('itemDetails.delete.confirm'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await deleteItem(itemId);
+              if (success) {
+                refreshItems();
+                navigation.goBack();
+              } else {
+                Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.deleteFailed'));
+              }
+            } catch (error) {
+              console.error('Error deleting item:', error);
+              Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.deleteFailed'));
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleModify = () => {
@@ -261,8 +272,8 @@ export const ItemDetailsScreen: React.FC = () => {
       <Container>
         <PageHeader
           icon="cube"
-          title="物品详情"
-          subtitle="加载中..."
+          title={t('itemDetails.title')}
+          subtitle={t('itemDetails.loading')}
           showBackButton={true}
           onBackPress={handleClose}
           showRightButtons={false}
@@ -279,14 +290,14 @@ export const ItemDetailsScreen: React.FC = () => {
       <Container>
         <PageHeader
           icon="cube"
-          title="物品详情"
-          subtitle="物品不存在"
+          title={t('itemDetails.title')}
+          subtitle={t('itemDetails.itemNotFound')}
           showBackButton={true}
           onBackPress={handleClose}
           showRightButtons={false}
         />
         <ErrorContainer>
-          <ErrorText>物品不存在</ErrorText>
+          <ErrorText>{t('itemDetails.itemNotFound')}</ErrorText>
         </ErrorContainer>
       </Container>
     );
@@ -309,18 +320,20 @@ export const ItemDetailsScreen: React.FC = () => {
           <IconContainer backgroundColor={getLightColor(item.iconColor)}>
             <Ionicons name={item.icon} size={48} color={item.iconColor} />
           </IconContainer>
-          <CategoryText>{categoryName}</CategoryText>
+          <CategoryText>
+            {category ? (category.isCustom ? category.label : t(`categories.${category.name}`)) : t('categories.other')}
+          </CategoryText>
         </HeaderSection>
 
         {/* Value Information Section */}
         <Section>
-          <SectionTitle>价值信息</SectionTitle>
+          <SectionTitle>{t('itemDetails.sections.value')}</SectionTitle>
           <PropertyRow>
             <PropertyIcon>
               <Ionicons name="pricetag" size={18} color={theme.colors.textSecondary} />
             </PropertyIcon>
             <PropertyContent>
-              <PropertyLabel>估值</PropertyLabel>
+              <PropertyLabel>{t('itemDetails.fields.valuation')}</PropertyLabel>
               <PropertyValue>{formatPrice(item.price, currencySymbol)}</PropertyValue>
             </PropertyContent>
           </PropertyRow>
@@ -329,21 +342,21 @@ export const ItemDetailsScreen: React.FC = () => {
               <Ionicons name="calendar" size={18} color={theme.colors.textSecondary} />
             </PropertyIcon>
             <PropertyContent>
-              <PropertyLabel>购买时间</PropertyLabel>
-              <PropertyValue>{formatDate(item.purchaseDate)}</PropertyValue>
+              <PropertyLabel>{t('itemDetails.fields.purchaseDate')}</PropertyLabel>
+              <PropertyValue>{formatDate(item.purchaseDate, getLocale(), t)}</PropertyValue>
             </PropertyContent>
           </PropertyRowLast>
         </Section>
 
         {/* Location Information Section */}
         <Section>
-          <SectionTitle>位置信息</SectionTitle>
+          <SectionTitle>{t('itemDetails.sections.location')}</SectionTitle>
           <PropertyRow>
             <PropertyIcon>
               <Ionicons name="home" size={18} color={theme.colors.textSecondary} />
             </PropertyIcon>
             <PropertyContent>
-              <PropertyLabel>所在位置</PropertyLabel>
+              <PropertyLabel>{t('itemDetails.fields.location')}</PropertyLabel>
               <PropertyValue>{locationName}</PropertyValue>
             </PropertyContent>
           </PropertyRow>
@@ -352,21 +365,21 @@ export const ItemDetailsScreen: React.FC = () => {
               <Ionicons name="location" size={18} color={theme.colors.textSecondary} />
             </PropertyIcon>
             <PropertyContent>
-              <PropertyLabel>详细位置</PropertyLabel>
-              <PropertyValue>{item.detailedLocation || '未设置'}</PropertyValue>
+              <PropertyLabel>{t('itemDetails.fields.detailedLocation')}</PropertyLabel>
+              <PropertyValue>{item.detailedLocation || t('itemDetails.notSet')}</PropertyValue>
             </PropertyContent>
           </PropertyRowLast>
         </Section>
 
         {/* Quantity Information Section */}
         <Section>
-          <SectionTitle>数量信息</SectionTitle>
+          <SectionTitle>{t('itemDetails.sections.quantity')}</SectionTitle>
           <PropertyRowLast>
             <PropertyIcon>
               <Ionicons name="cube" size={18} color={theme.colors.textSecondary} />
             </PropertyIcon>
             <PropertyContent>
-              <PropertyLabel>数量</PropertyLabel>
+              <PropertyLabel>{t('itemDetails.fields.quantity')}</PropertyLabel>
               <PropertyValue>{item.amount || 1}</PropertyValue>
             </PropertyContent>
           </PropertyRowLast>
@@ -375,14 +388,14 @@ export const ItemDetailsScreen: React.FC = () => {
         {/* Expiry Date Section */}
         {item.expiryDate && (
           <Section>
-            <SectionTitle>过期信息</SectionTitle>
+            <SectionTitle>{t('itemDetails.sections.expiry')}</SectionTitle>
             <PropertyRowLast>
               <PropertyIcon>
                 <Ionicons name="hourglass" size={18} color={theme.colors.textSecondary} />
               </PropertyIcon>
               <PropertyContent>
-                <PropertyLabel>过期日期</PropertyLabel>
-                <PropertyValue>{formatDate(item.expiryDate)}</PropertyValue>
+                <PropertyLabel>{t('itemDetails.fields.expiryDate')}</PropertyLabel>
+                <PropertyValue>{formatDate(item.expiryDate, getLocale(), t)}</PropertyValue>
               </PropertyContent>
             </PropertyRowLast>
           </Section>
@@ -391,7 +404,7 @@ export const ItemDetailsScreen: React.FC = () => {
         {/* Tags Section */}
         {item.tags && item.tags.length > 0 && (
           <Section>
-            <SectionTitle>标签</SectionTitle>
+            <SectionTitle>{t('itemDetails.sections.tags')}</SectionTitle>
             <TagsContainer>
               {item.tags.map((tag, index) => (
                 <Tag key={index}>
@@ -408,13 +421,13 @@ export const ItemDetailsScreen: React.FC = () => {
       <BottomActionBar
         actions={[
           {
-            label: '删除',
+            label: t('itemDetails.actions.delete'),
             onPress: handleDelete,
             variant: 'danger',
             icon: <Ionicons name="trash-outline" size={18} color={theme.colors.error} />,
           },
           {
-            label: '修改',
+            label: t('itemDetails.actions.modify'),
             onPress: handleModify,
             variant: 'filled',
             icon: <Ionicons name="create-outline" size={18} color={theme.colors.surface} />,

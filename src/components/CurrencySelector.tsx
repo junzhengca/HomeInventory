@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import styled from 'styled-components/native';
+import { useTranslation } from 'react-i18next';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 export type CurrencyOption = {
@@ -101,13 +102,15 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
   selectedCurrencyId = 'cny',
   onCurrencySelect,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Container>
       <Header>
         <IconContainer>
           <Icon>$</Icon>
         </IconContainer>
-        <Title>货币单位</Title>
+        <Title>{t('settings.currency')}</Title>
       </Header>
       <OptionsScroll>
         <OptionsContainer>

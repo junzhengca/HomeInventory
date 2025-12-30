@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { TouchableOpacity, Alert, Platform, ScrollView, View, Text } from 'react-native';
+import { TouchableOpacity, Alert, ScrollView, View, Text, Keyboard } from 'react-native';
 import styled from 'styled-components/native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { Category, InventoryItem } from '../types/inventory';
@@ -13,9 +13,10 @@ import { getAllCategories } from '../services/CategoryService';
 import { getItemById, updateItem } from '../services/InventoryService';
 import { useInventory } from '../contexts/InventoryContext';
 import { useCategory } from '../contexts/CategoryContext';
-import { formatDate } from '../utils/formatters';
 import { filterItemCategories } from '../utils/categoryUtils';
 import { CategoryManagerBottomSheet } from './CategoryManagerBottomSheet';
+import { BottomActionBar } from './BottomActionBar';
+import { DatePicker } from './DatePicker';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -105,16 +106,14 @@ const ManageCategoriesText = styled(Text)`
 const CategoryGrid = styled(View)`
   flex-direction: row;
   flex-wrap: wrap;
-  margin-top: -${({ theme }: StyledProps) => theme.spacing.xs}px;
-  margin-left: -${({ theme }: StyledProps) => theme.spacing.xs}px;
-  margin-right: -${({ theme }: StyledProps) => theme.spacing.xs}px;
-  margin-bottom: -70px;
+  align-items: flex-start;
 `;
 
 const CategoryButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
   width: 30%;
   aspect-ratio: 1;
-  margin: 1.5%;
+  margin-right: 3.33%;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   background-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primaryLightest : theme.colors.surface};
   border-width: 1.5px;
@@ -180,27 +179,6 @@ const HalfInput = styled(Input)`
   flex: 1;
 `;
 
-const DatePickerContainer = styled(View)`
-  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-width: 1px;
-  border-color: ${({ theme }: StyledProps) => theme.colors.border};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const DateText = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-  flex: 1;
-`;
-
-const DatePickerButton = styled(TouchableOpacity)`
-  padding: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-`;
-
 const TagsContainer = styled(View)`
   flex-direction: row;
   flex-wrap: wrap;
@@ -260,6 +238,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
 }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { refreshItems } = useInventory();
   const { refreshCategories, registerRefreshCallback } = useCategory();
   const [item, setItem] = useState<InventoryItem | null>(null);
@@ -273,10 +252,9 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
   const [newTag, setNewTag] = useState('');
   const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
-  const [showPurchaseDatePicker, setShowPurchaseDatePicker] = useState(false);
-  const [showExpiryDatePicker, setShowExpiryDatePicker] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const scrollViewRef = React.useRef<ScrollView>(null);
   const categoryManagerRef = React.useRef<BottomSheetModal>(null);
 
@@ -334,6 +312,32 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     loadCategoriesCallback();
   }, [loadCategoriesCallback]);
 
+  // Track keyboard visibility to adjust footer padding
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', () => {
+      setIsKeyboardVisible(true);
+    });
+
+    const keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
   useEffect(() => {
     const unregister = registerRefreshCallback(loadCategoriesCallback);
     return unregister;
@@ -360,42 +364,18 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     setTags(tags.filter((tag) => tag !== tagToRemove));
   }, [tags]);
 
-  const handlePurchaseDateChange = useCallback((_event: unknown, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowPurchaseDatePicker(false);
-    }
-    if (selectedDate) {
-      setPurchaseDate(selectedDate);
-    }
-    if (Platform.OS === 'ios') {
-      setShowPurchaseDatePicker(false);
-    }
-  }, []);
-
-  const handleExpiryDateChange = useCallback((_event: unknown, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowExpiryDatePicker(false);
-    }
-    if (selectedDate) {
-      setExpiryDate(selectedDate);
-    }
-    if (Platform.OS === 'ios') {
-      setShowExpiryDatePicker(false);
-    }
-  }, []);
-
   const handleSubmit = useCallback(async () => {
     // Validation
     if (!name.trim()) {
-      Alert.alert('错误', '请输入物品名称');
+      Alert.alert(t('editItem.errors.title'), t('editItem.errors.enterName'));
       return;
     }
     if (!selectedCategory) {
-      Alert.alert('错误', '请选择分类');
+      Alert.alert(t('editItem.errors.title'), t('editItem.errors.selectCategory'));
       return;
     }
     if (!selectedLocation) {
-      Alert.alert('错误', '请选择位置');
+      Alert.alert(t('editItem.errors.title'), t('editItem.errors.selectLocation'));
       return;
     }
 
@@ -432,11 +412,11 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
           onItemUpdated();
         }
       } else {
-        Alert.alert('错误', '更新物品失败，请重试');
+        Alert.alert(t('editItem.errors.title'), t('editItem.errors.updateFailed'));
       }
     } catch (error) {
       console.error('Error updating item:', error);
-      Alert.alert('错误', '更新物品失败，请重试');
+      Alert.alert(t('editItem.errors.title'), t('editItem.errors.updateFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -458,6 +438,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     onItemUpdated,
     refreshItems,
     refreshCategories,
+    t,
   ]);
 
   const renderBackdrop = useCallback(
@@ -467,42 +448,21 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
 
   const renderFooter = useCallback(
     () => (
-      <View style={{ 
-        backgroundColor: theme.colors.surface,
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-        paddingBottom: insets.bottom + theme.spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: theme.colors.borderLight,
-      }}>
-        <TouchableOpacity
-          onPress={handleSubmit}
-          disabled={isLoading}
-          activeOpacity={0.7}
-          style={{
-            backgroundColor: theme.colors.primary,
-            borderRadius: theme.borderRadius.md,
-            padding: theme.spacing.sm + 2,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'row',
-            minHeight: 44,
-            opacity: isLoading ? 0.5 : 1,
-          }}
-        >
-          <Ionicons name="checkmark" size={18} color={theme.colors.surface} />
-          <Text style={{
-            fontSize: theme.typography.fontSize.sm,
-            fontWeight: theme.typography.fontWeight.medium,
-            color: theme.colors.surface,
-            marginLeft: theme.spacing.xs,
-          }}>
-            保存修改
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <BottomActionBar
+        actions={[
+          {
+            label: t('editItem.submit'),
+            onPress: handleSubmit,
+            variant: 'filled',
+            icon: <Ionicons name="checkmark" size={18} color={theme.colors.surface} />,
+            disabled: isLoading,
+          },
+        ]}
+        safeArea={!isKeyboardVisible}
+        inBottomSheet={true}
+      />
     ),
-    [handleSubmit, isLoading, theme, insets.bottom]
+    [handleSubmit, isLoading, theme, t, isKeyboardVisible]
   );
 
   return (
@@ -532,8 +492,8 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
         >
           <Header>
             <HeaderLeft>
-              <Title>修改物品</Title>
-              <Subtitle>更新物品信息</Subtitle>
+              <Title>{t('editItem.title')}</Title>
+              <Subtitle>{t('editItem.subtitle')}</Subtitle>
             </HeaderLeft>
             <CloseButton onPress={handleClose}>
               <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
@@ -542,9 +502,9 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
 
           <FormContainer>
           <FormSection>
-            <Label>名字</Label>
+            <Label>{t('editItem.fields.name')}</Label>
             <Input
-              placeholder="例如:可爱的小杯子"
+              placeholder={t('editItem.placeholders.name')}
               value={name}
               onChangeText={setName}
               placeholderTextColor={theme.colors.textLight}
@@ -554,44 +514,60 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
           <FormSection>
             <CategorySection>
               <CategoryHeader>
-                <Label>分类</Label>
+                <Label>{t('editItem.fields.category')}</Label>
                 <ManageCategoriesButton onPress={() => categoryManagerRef.current?.present()} activeOpacity={0.7}>
                   <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
-                  <ManageCategoriesText>管理分类</ManageCategoriesText>
+                  <ManageCategoriesText>{t('editItem.manageCategories')}</ManageCategoriesText>
                 </ManageCategoriesButton>
               </CategoryHeader>
               <CategoryGrid>
-                {itemTypeCategories.map((category) => (
-                  <CategoryButton
-                    key={category.id}
-                    isSelected={selectedCategory === category.id}
-                    onPress={() => setSelectedCategory(category.id)}
-                    activeOpacity={0.7}
-                  >
-                    {category.icon && (
-                      <CategoryIcon color={category.iconColor}>
-                        <Ionicons
-                          name={category.icon}
-                          size={24}
-                          color={category.iconColor || theme.colors.primary}
-                        />
-                      </CategoryIcon>
-                    )}
-                    <CategoryLabel isSelected={selectedCategory === category.id}>
-                      {category.label}
-                    </CategoryLabel>
-                  </CategoryButton>
-                ))}
-                <AddCategoryButton onPress={() => categoryManagerRef.current?.present()} activeOpacity={0.7}>
+                {itemTypeCategories.map((category, index) => {
+                  const totalItems = itemTypeCategories.length + 1;
+                  const itemsInLastRow = totalItems % 3 || 3;
+                  const lastRowStartIndex = totalItems - itemsInLastRow;
+                  const isLastRow = index >= lastRowStartIndex;
+                  // Remove margin-right from last item in each row (every 3rd item)
+                  const isLastInRow = (index + 1) % 3 === 0;
+                  return (
+                    <CategoryButton
+                      key={category.id}
+                      isSelected={selectedCategory === category.id}
+                      onPress={() => setSelectedCategory(category.id)}
+                      activeOpacity={0.7}
+                      style={{
+                        ...(isLastInRow ? { marginRight: 0 } : {}),
+                        ...(isLastRow ? { marginBottom: 0 } : {}),
+                      }}
+                    >
+                      {category.icon && (
+                        <CategoryIcon color={category.iconColor}>
+                          <Ionicons
+                            name={category.icon}
+                            size={24}
+                            color={category.iconColor || theme.colors.primary}
+                          />
+                        </CategoryIcon>
+                      )}
+                      <CategoryLabel isSelected={selectedCategory === category.id}>
+                        {category.isCustom ? category.label : t(`categories.${category.name}`)}
+                      </CategoryLabel>
+                    </CategoryButton>
+                  );
+                })}
+                <AddCategoryButton 
+                  onPress={() => categoryManagerRef.current?.present()} 
+                  activeOpacity={0.7}
+                  style={{ marginBottom: 0, marginRight: 0 }}
+                >
                   <Ionicons name="add" size={32} color={theme.colors.textLight} />
-                  <CategoryLabel isSelected={false}>添加</CategoryLabel>
+                  <CategoryLabel isSelected={false}>{t('editItem.add')}</CategoryLabel>
                 </AddCategoryButton>
               </CategoryGrid>
             </CategorySection>
           </FormSection>
 
           <FormSection>
-            <Label>位置</Label>
+            <Label>{t('editItem.fields.location')}</Label>
             <LocationScrollView 
               horizontal 
               showsHorizontalScrollIndicator={false}
@@ -605,7 +581,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
                   activeOpacity={0.7}
                 >
                   <LocationText isSelected={selectedLocation === location.id}>
-                    {location.name}
+                    {t(`locations.${location.id}`)}
                   </LocationText>
                 </LocationButton>
               ))}
@@ -615,9 +591,9 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
           <FormSection>
             <Row>
               <HalfContainer>
-                <Label>价格</Label>
+                <Label>{t('editItem.fields.price')}</Label>
                 <HalfInput
-                  placeholder="0"
+                  placeholder={t('editItem.placeholders.price')}
                   value={price}
                   onChangeText={setPrice}
                   keyboardType="numeric"
@@ -625,9 +601,9 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
                 />
               </HalfContainer>
               <HalfContainer>
-                <Label>具体位置</Label>
+                <Label>{t('editItem.fields.detailedLocation')}</Label>
                 <HalfInput
-                  placeholder="比如:门口鞋柜"
+                  placeholder={t('editItem.placeholders.detailedLocation')}
                   value={detailedLocation}
                   onChangeText={setDetailedLocation}
                   placeholderTextColor={theme.colors.textLight}
@@ -637,9 +613,9 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
           </FormSection>
 
           <FormSection>
-            <Label>数量</Label>
+            <Label>{t('editItem.fields.amount')}</Label>
             <Input
-              placeholder="1"
+              placeholder={t('editItem.placeholders.amount')}
               value={amount}
               onChangeText={setAmount}
               keyboardType="numeric"
@@ -648,7 +624,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
           </FormSection>
 
           <FormSection>
-            <Label>标签</Label>
+            <Label>{t('editItem.fields.tags')}</Label>
             {tags.length > 0 && (
               <TagsContainer>
                 {tags.map((tag, index) => (
@@ -663,7 +639,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
             )}
             <TagInputContainer>
               <TagInput
-                placeholder="添加标签"
+                placeholder={t('editItem.placeholders.addTag')}
                 value={newTag}
                 onChangeText={setNewTag}
                 placeholderTextColor={theme.colors.textLight}
@@ -676,41 +652,21 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
           </FormSection>
 
           <FormSection>
-            <Label>购买时间</Label>
-            <DatePickerContainer>
-              <DateText>{formatDate(purchaseDate)}</DateText>
-              <DatePickerButton onPress={() => setShowPurchaseDatePicker(true)}>
-                <Ionicons name="calendar-outline" size={20} color={theme.colors.primary} />
-              </DatePickerButton>
-            </DatePickerContainer>
-            {showPurchaseDatePicker && (
-              <DateTimePicker
-                value={purchaseDate || new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handlePurchaseDateChange}
-                maximumDate={new Date()}
-              />
-            )}
+            <Label>{t('editItem.fields.purchaseDate')}</Label>
+            <DatePicker
+              value={purchaseDate}
+              onChange={setPurchaseDate}
+              maximumDate={new Date()}
+            />
           </FormSection>
 
           <FormSection>
-            <Label>过期时间</Label>
-            <DatePickerContainer>
-              <DateText>{formatDate(expiryDate)}</DateText>
-              <DatePickerButton onPress={() => setShowExpiryDatePicker(true)}>
-                <Ionicons name="calendar-outline" size={20} color={theme.colors.primary} />
-              </DatePickerButton>
-            </DatePickerContainer>
-            {showExpiryDatePicker && (
-              <DateTimePicker
-                value={expiryDate || new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleExpiryDateChange}
-                minimumDate={new Date()}
-              />
-            )}
+            <Label>{t('editItem.fields.expiryDate')}</Label>
+            <DatePicker
+              value={expiryDate}
+              onChange={setExpiryDate}
+              minimumDate={new Date()}
+            />
           </FormSection>
         </FormContainer>
         </BottomSheetScrollView>

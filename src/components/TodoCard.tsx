@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { TodoItem } from '../types/inventory';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { BaseCard } from './BaseCard';
-import { useTheme } from '../theme/ThemeProvider';
 
 const ContentContainer = styled(View)`
   flex: 1;
@@ -38,14 +37,10 @@ const TodoText = styled(Text)<{ completed: boolean }>`
     (completed ? 'line-through' : 'none')};
 `;
 
-const DeleteButton = styled(TouchableOpacity)`
-  padding: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-`;
-
 interface TodoCardProps {
   todo: TodoItem;
   onToggle?: (id: string) => void;
-  onDelete?: (id: string) => void;
+  style?: any;
 }
 
 /**
@@ -55,12 +50,10 @@ interface TodoCardProps {
 export const TodoCard: React.FC<TodoCardProps> = ({
   todo,
   onToggle,
-  onDelete,
+  style,
 }) => {
-  const theme = useTheme();
-
   return (
-    <BaseCard compact>
+    <BaseCard compact style={style}>
       <ContentContainer>
         <Checkbox
           checked={todo.completed}
@@ -71,11 +64,6 @@ export const TodoCard: React.FC<TodoCardProps> = ({
         </Checkbox>
         <TodoText completed={todo.completed}>{todo.text}</TodoText>
       </ContentContainer>
-      {onDelete && (
-        <DeleteButton onPress={() => onDelete(todo.id)} activeOpacity={0.7}>
-          <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
-        </DeleteButton>
-      )}
     </BaseCard>
   );
 };

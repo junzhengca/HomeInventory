@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, ActivityIndicator, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../utils/styledComponents';
 
 import { PageHeader } from '../components/PageHeader';
@@ -52,6 +53,7 @@ const LoadingContainer = styled(View)`
 
 export const SettingsScreen: React.FC = () => {
   const { settings, updateSettings, isLoading } = useSettings();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const handleThemeChange = async (themeId: string) => {
@@ -83,8 +85,8 @@ export const SettingsScreen: React.FC = () => {
       <Container>
         <PageHeader
           icon="settings"
-          title="Settings"
-          subtitle="Make your home more comfortable"
+          title={t('settings.title')}
+          subtitle={t('settings.subtitle')}
           showBackButton={true}
           showRightButtons={false}
         />
@@ -99,12 +101,12 @@ export const SettingsScreen: React.FC = () => {
     <Container>
       <PageHeader
         icon="settings"
-        title="Settings"
-        subtitle="Make your home more comfortable"
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
         showBackButton={true}
         showRightButtons={false}
       />
-      <Content 
+      <Content
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
@@ -113,7 +115,7 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Preferences Section */}
         <SettingsSection>
-          <SectionTitle>Preferences</SectionTitle>
+          <SectionTitle>{t('settings.preferences')}</SectionTitle>
           <ThemeChooser
             selectedThemeId={settings.theme}
             onThemeSelect={handleThemeChange}
@@ -130,13 +132,13 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Data & Security Section */}
         <SettingsSection>
-          <SectionTitle>Data & Security</SectionTitle>
+          <SectionTitle>{t('settings.dataAndSecurity')}</SectionTitle>
           <ExportDataButton />
           <LogoutButton />
         </SettingsSection>
 
         {/* Version Info */}
-        <VersionText>Current version v2.2.0</VersionText>
+        <VersionText>{t('settings.version')}</VersionText>
       </Content>
     </Container>
   );

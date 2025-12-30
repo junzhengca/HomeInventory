@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 export type ThemeOption = {
@@ -90,23 +91,25 @@ const OptionLabel = styled(Text)<{ isSelected: boolean }>`
 `;
 
 const defaultThemes: ThemeOption[] = [
-  { id: 'warm-sun', name: '暖阳', color: '#FF701E' },
-  { id: 'ocean', name: '海洋', color: '#2463EB' },
-  { id: 'forest', name: '森林', color: '#00A67D' },
-  { id: 'lilac', name: '丁香', color: '#8B46FF' },
+  { id: 'warm-sun', name: 'Warm Sun', color: '#FF701E' },
+  { id: 'ocean', name: 'Ocean', color: '#2463EB' },
+  { id: 'forest', name: 'Forest', color: '#00A67D' },
+  { id: 'lilac', name: 'Lilac', color: '#8B46FF' },
 ];
 
 export const ThemeChooser: React.FC<ThemeChooserProps> = ({
   selectedThemeId = 'forest',
   onThemeSelect,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Container>
       <Header>
         <IconContainer>
           <Icon name="color-palette" size={20} />
         </IconContainer>
-        <Title>主题颜色</Title>
+        <Title>{t('settings.theme')}</Title>
       </Header>
       <OptionsScroll>
         <OptionsContainer>
@@ -125,7 +128,7 @@ export const ThemeChooser: React.FC<ThemeChooserProps> = ({
                     <Checkmark name="checkmark" size={24} />
                   )}
                 </ColorCircle>
-                <OptionLabel isSelected={isSelected}>{themeOption.name}</OptionLabel>
+                <OptionLabel isSelected={isSelected}>{t(`settings.themeNames.${themeOption.id}`)}</OptionLabel>
               </OptionContainer>
             );
           })}

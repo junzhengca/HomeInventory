@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Settings, defaultSettings } from '../types/settings';
 import { getSettings, updateSettings as updateSettingsService } from '../services/SettingsService';
+import i18n from '../i18n/i18n';
 
 interface SettingsContextType {
   settings: Settings;
@@ -23,6 +24,8 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       try {
         const loadedSettings = await getSettings();
         setSettings(loadedSettings);
+        // Update i18n language when settings are loaded
+        i18n.changeLanguage(loadedSettings.language);
       } catch (error) {
         console.error('Error loading settings:', error);
         // Use defaults if loading fails
@@ -40,6 +43,10 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       const updated = await updateSettingsService(updates);
       if (updated) {
         setSettings(updated);
+        // Update i18n language when language setting changes
+        if (updates.language) {
+          i18n.changeLanguage(updates.language);
+        }
         return true;
       }
       return false;

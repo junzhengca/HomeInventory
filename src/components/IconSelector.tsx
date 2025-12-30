@@ -2,12 +2,13 @@ import React from 'react';
 import { TouchableOpacity, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import { categoryIcons } from '../data/categoryIcons';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 const Container = styled(View)`
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  /* No margin-bottom - parent FormSection handles spacing */
 `;
 
 const Label = styled(Text)`
@@ -20,13 +21,14 @@ const Label = styled(Text)`
 const IconGrid = styled(View)`
   flex-direction: row;
   flex-wrap: wrap;
-  margin: -${({ theme }: StyledProps) => theme.spacing.xs}px;
+  align-items: flex-start;
 `;
 
 const IconButton = styled(TouchableOpacity)<{ isSelected: boolean; iconColor?: string }>`
-  width: 15%;
+  width: 18%;
   aspect-ratio: 1;
-  margin: 1.5%;
+  margin-right: 2.5%;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
   background-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean; iconColor?: string }>) =>
     isSelected ? theme.colors.primaryLightest : theme.colors.surface};
   border-width: 1.5px;
@@ -44,19 +46,30 @@ interface IconSelectorProps {
   onIconSelect: (icon: keyof typeof Ionicons.glyphMap) => void;
 }
 
+const NUM_COLUMNS = 5;
+
 export const IconSelector: React.FC<IconSelectorProps> = ({
   selectedIcon,
   iconColor,
   onIconSelect,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Container>
-      <Label>选择图标</Label>
+      <Label>{t('iconSelector.label')}</Label>
       <IconGrid>
-        {categoryIcons.map((icon) => {
+        {categoryIcons.map((icon, index) => {
           const isSelected = selectedIcon === icon;
+          // Remove margin-right from last item in each row (every 5th item)
+          const isLastInRow = (index + 1) % NUM_COLUMNS === 0;
+          // Remove margin-bottom from items in the last row
+          const totalItems = categoryIcons.length;
+          const itemsInLastRow = totalItems % NUM_COLUMNS || NUM_COLUMNS;
+          const lastRowStartIndex = totalItems - itemsInLastRow;
+          const isLastRow = index >= lastRowStartIndex;
+          
           return (
             <IconButton
               key={icon}
@@ -64,6 +77,10 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
               iconColor={iconColor}
               onPress={() => onIconSelect(icon)}
               activeOpacity={0.7}
+              style={{
+                ...(isLastInRow ? { marginRight: 0 } : {}),
+                ...(isLastRow ? { marginBottom: 0 } : {}),
+              }}
             >
               <Ionicons
                 name={icon}

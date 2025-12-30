@@ -2,11 +2,12 @@ import React from 'react';
 import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { categoryColors } from '../data/categoryColors';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 const Container = styled(View)`
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  /* No margin-bottom - parent FormSection handles spacing */
 `;
 
 const Label = styled(Text)`
@@ -20,14 +21,13 @@ const ColorScroll = styled(ScrollView).attrs(() => ({
   horizontal: true,
   showsHorizontalScrollIndicator: false,
   contentContainerStyle: {
-    paddingHorizontal: 4,
+    paddingRight: 16,
   },
 }))``;
 
 const ColorContainer = styled(View)`
   flex-direction: row;
-  flex-wrap: wrap;
-  gap: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  align-items: center;
 `;
 
 const ColorButton = styled(TouchableOpacity)<{ isSelected: boolean; color: string }>`
@@ -52,10 +52,11 @@ export const ColorPalette: React.FC<ColorPaletteProps> = ({
   selectedColor,
   onColorSelect,
 }) => {
+  const { t } = useTranslation();
 
   return (
     <Container>
-      <Label>选择颜色</Label>
+      <Label>{t('colorPalette.label')}</Label>
       <ColorScroll>
         <ColorContainer>
           {categoryColors.map((color) => {

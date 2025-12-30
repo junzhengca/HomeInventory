@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, View, Text } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { InventoryItem } from '../types/inventory';
 import { Theme } from '../theme/types';
 import { useSettings } from '../contexts/SettingsContext';
@@ -82,6 +83,7 @@ interface SummaryCardsProps {
 }
 
 export const SummaryCards: React.FC<SummaryCardsProps> = ({ items }) => {
+  const { t, i18n } = useTranslation();
   const theme = useTheme() as Theme;
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
@@ -116,14 +118,14 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ items }) => {
             </IconContainer>
           </CardHeader>
           <CardContent>
-            <Label isPrimary>资产估值</Label>
-            <Value 
+            <Label isPrimary>{t('summary.assetValue')}</Label>
+            <Value
               isPrimary
               numberOfLines={1}
               adjustsFontSizeToFit={true}
               minimumFontScale={0.6}
             >
-              {formatCurrency(totalValue, currencySymbol, true)}
+              {formatCurrency(totalValue, currencySymbol, true, i18n.language)}
             </Value>
           </CardContent>
         </Card>
@@ -136,7 +138,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ items }) => {
             </IconContainer>
           </CardHeader>
           <CardContent>
-            <Label>物品数量</Label>
+            <Label>{t('summary.itemCount')}</Label>
             <Value>{totalCount}</Value>
           </CardContent>
         </Card>
@@ -150,7 +152,7 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ items }) => {
             {expiringCount > 0 && <NotificationDot />}
           </CardHeader>
           <CardContent>
-            <Label>即将过期</Label>
+            <Label>{t('summary.expiring')}</Label>
             <Value>{expiringCount}</Value>
           </CardContent>
         </Card>

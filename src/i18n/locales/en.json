@@ -1,0 +1,246 @@
+{
+  "home": {
+    "title": "What's at Home",
+    "subtitle": "Home Asset Management",
+    "empty": {
+      "title": "No Items Yet",
+      "description": "Start by adding your first item to manage your home assets!"
+    }
+  },
+  "search": {
+    "placeholder": "Search... (e.g., Hair Dryer)"
+  },
+  "summary": {
+    "assetValue": "Asset Value",
+    "itemCount": "Item Count",
+    "expiring": "Expiring Soon"
+  },
+  "recentlyAdded": {
+    "title": "Recently Added",
+    "viewAll": "View All"
+  },
+  "language": {
+    "title": "Language Settings"
+  },
+  "categories": {
+    "all": "All",
+    "appliances": "Appliances",
+    "kitchenware": "Kitchenware",
+    "digital": "Digital",
+    "beauty": "Beauty",
+    "entertainment": "Entertainment",
+    "apparel": "Apparel",
+    "home": "Home",
+    "other": "Other"
+  },
+  "locations": {
+    "living-room": "Living Room",
+    "kitchen": "Kitchen",
+    "bedroom": "Bedroom",
+    "study": "Study",
+    "storage": "Storage"
+  },
+  "inventory": {
+    "title": "All Items",
+    "loading": "Loading...",
+    "itemsCount": "{{count}} item(s)",
+    "empty": {
+      "title": "No Items Found",
+      "description": "Start by adding your first item to manage your home assets!",
+      "filtered": "Try adjusting search or selecting another category"
+    }
+  },
+  "notes": {
+    "title": "Notes",
+    "subtitle": "Your todos",
+    "addTodo": "Add a new todo...",
+    "pending": "Pending",
+    "completed": "Completed",
+    "deleteTodo": {
+      "title": "Delete Todo",
+      "message": "Are you sure you want to delete this todo?",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "editTodo": {
+      "title": "Edit Todo",
+      "subtitle": "Update your todo",
+      "submit": "Save Changes",
+      "placeholders": {
+        "text": "Enter todo text..."
+      },
+      "errors": {
+        "title": "Error",
+        "enterText": "Please enter todo text",
+        "updateFailed": "Failed to update todo, please try again"
+      }
+    },
+    "empty": {
+      "title": "No Todos Yet",
+      "description": "Add your first todo above to start managing tasks!"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Make your home more comfortable",
+    "preferences": "Preferences",
+    "dataAndSecurity": "Data & Security",
+    "theme": "Theme Color",
+    "currency": "Currency",
+    "themeNames": {
+      "warm-sun": "Warm Sun",
+      "ocean": "Ocean",
+      "forest": "Forest",
+      "lilac": "Lilac"
+    },
+    "version": "Current version v2.2.0"
+  },
+  "createItem": {
+    "title": "Add New Item",
+    "subtitle": "Remember it, so you won't forget",
+    "fields": {
+      "name": "Name",
+      "category": "Category",
+      "location": "Location",
+      "price": "Price",
+      "detailedLocation": "Detailed Location",
+      "amount": "Quantity",
+      "tags": "Tags",
+      "purchaseDate": "Purchase Date",
+      "expiryDate": "Expiry Date"
+    },
+    "placeholders": {
+      "name": "e.g., Cute Cup",
+      "detailedLocation": "e.g., Shoe Cabinet by Entrance",
+      "price": "0",
+      "amount": "1",
+      "addTag": "Add Tag"
+    },
+    "manageCategories": "Manage Categories",
+    "add": "Add",
+    "submit": "Add to Home",
+    "errors": {
+      "title": "Error",
+      "enterName": "Please enter an item name",
+      "selectCategory": "Please select a category",
+      "selectLocation": "Please select a location",
+      "createFailed": "Failed to create item, please try again",
+      "updateFailed": "Failed to update item, please try again"
+    }
+  },
+  "editItem": {
+    "title": "Edit Item",
+    "subtitle": "Update item information",
+    "fields": {
+      "name": "Name",
+      "category": "Category",
+      "location": "Location",
+      "price": "Price",
+      "detailedLocation": "Detailed Location",
+      "amount": "Quantity",
+      "tags": "Tags",
+      "purchaseDate": "Purchase Date",
+      "expiryDate": "Expiry Date"
+    },
+    "placeholders": {
+      "name": "e.g., Cute Cup",
+      "detailedLocation": "e.g., Shoe Cabinet by Entrance",
+      "price": "0",
+      "amount": "1",
+      "addTag": "Add Tag"
+    },
+    "manageCategories": "Manage Categories",
+    "add": "Add",
+    "submit": "Save Changes",
+    "errors": {
+      "title": "Error",
+      "enterName": "Please enter an item name",
+      "selectCategory": "Please select a category",
+      "selectLocation": "Please select a location",
+      "createFailed": "Failed to create item, please try again",
+      "updateFailed": "Failed to update item, please try again"
+    }
+  },
+  "datePicker": {
+    "selectDate": "Select Date",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "clear": "Clear",
+    "placeholder": "Not set"
+  },
+  "itemDetails": {
+    "title": "Item Details",
+    "loading": "Loading...",
+    "itemNotFound": "Item not found",
+    "error": {
+      "title": "Error",
+      "itemNotFound": "Item does not exist",
+      "loadFailed": "Failed to load item information",
+      "deleteFailed": "Failed to delete, please try again"
+    },
+    "delete": {
+      "title": "Confirm Delete",
+      "message": "Are you sure you want to delete this item? This action cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "sections": {
+      "value": "Value Information",
+      "location": "Location Information",
+      "quantity": "Quantity Information",
+      "expiry": "Expiry Information",
+      "tags": "Tags"
+    },
+    "fields": {
+      "valuation": "Valuation",
+      "purchaseDate": "Purchase Date",
+      "location": "Location",
+      "detailedLocation": "Detailed Location",
+      "quantity": "Quantity",
+      "expiryDate": "Expiry Date"
+    },
+    "notSet": "Not set",
+    "actions": {
+      "delete": "Delete",
+      "modify": "Modify"
+    }
+  },
+  "categoryManager": {
+    "title": "Manage Categories",
+    "subtitle": "Create and edit custom categories",
+    "editTitle": "Edit Category",
+    "createTitle": "Create Category",
+    "formSubtitle": "Set category name, icon and color",
+    "customCategories": "Custom Categories",
+    "emptyState": "No custom categories yet",
+    "nameEn": "Category Name (English)",
+    "nameZh": "Category Name (Chinese)",
+    "placeholderEn": "e.g., electronics",
+    "placeholderZh": "e.g., 电子产品",
+    "buttons": {
+      "create": "Create Category",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "errors": {
+      "title": "Error",
+      "enterName": "Please enter category name",
+      "createFailed": "Failed to create category, please try again",
+      "updateFailed": "Failed to update category, please try again",
+      "deleteFailed": "Failed to delete category, please try again",
+      "deleteInUse": "Cannot delete category in use"
+    },
+    "delete": {
+      "title": "Confirm Delete",
+      "message": "Are you sure you want to delete this category?"
+    }
+  },
+  "iconSelector": {
+    "label": "Select Icon"
+  },
+  "colorPalette": {
+    "label": "Select Color"
+  }
+}
+
