@@ -2,13 +2,16 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { TouchableOpacity, Alert, View, ScrollView, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { Category } from '../types/inventory';
 import { locations } from '../data/locations';
 import { getAllCategories } from '../services/CategoryService';
 import { createItem } from '../services/InventoryService';
+import { useInventory } from '../contexts/InventoryContext';
+import { useCategory } from '../contexts/CategoryContext';
 import { filterItemCategories } from '../utils/categoryUtils';
 import { CategoryManagerBottomSheet } from './CategoryManagerBottomSheet';
 
@@ -48,9 +51,17 @@ const CloseButton = styled(TouchableOpacity)`
   justify-content: center;
 `;
 
-const FormSection = styled(View)`
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+const ContentContainer = styled(View)`
+  flex: 1;
+  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
 `;
+
+const FormContainer = styled(View)`
+  flex-direction: column;
+  gap: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+`;
+
+const FormSection = styled(View)``;
 
 const Label = styled(Text)`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
@@ -92,17 +103,20 @@ const ManageCategoriesText = styled(Text)`
 const CategoryGrid = styled(View)`
   flex-direction: row;
   flex-wrap: wrap;
-  margin: -${({ theme }: StyledProps) => theme.spacing.xs}px;
+  margin-top: -${({ theme }: StyledProps) => theme.spacing.xs}px;
+  margin-left: -${({ theme }: StyledProps) => theme.spacing.xs}px;
+  margin-right: -${({ theme }: StyledProps) => theme.spacing.xs}px;
+  margin-bottom: -70px;
 `;
 
 const CategoryButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
   width: 30%;
   aspect-ratio: 1;
   margin: 1.5%;
-  background-color: ${({ theme, isSelected }) =>
+  background-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primaryLightest : theme.colors.surface};
   border-width: 1.5px;
-  border-color: ${({ theme, isSelected }) =>
+  border-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.border};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
   align-items: center;
@@ -116,7 +130,7 @@ const CategoryIcon = styled(View)<{ color?: string }>`
 
 const CategoryLabel = styled(Text)<{ isSelected: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  color: ${({ theme, isSelected }) =>
+  color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.text};
   text-align: center;
 `;
@@ -129,23 +143,25 @@ const AddCategoryButton = styled(CategoryButton)`
 
 const LocationScrollView = styled(ScrollView)`
   flex-direction: row;
+  margin: 0;
+  padding: 0;
 `;
 
 const LocationButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
   padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
-  background-color: ${({ theme, isSelected }) =>
+  background-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.surface};
   border-width: 1px;
-  border-color: ${({ theme, isSelected }) =>
+  border-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.border};
   margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 const LocationText = styled(Text)<{ isSelected: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  color: ${({ theme, isSelected }) =>
+  color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.surface : theme.colors.text};
 `;
 
@@ -158,22 +174,6 @@ const HalfInput = styled(Input)`
   flex: 1;
 `;
 
-const SubmitButton = styled(TouchableOpacity)`
-  background-color: ${({ theme }: StyledProps) => theme.colors.primary};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  align-items: center;
-  justify-content: center;
-  flex-direction: row;
-  margin-top: ${({ theme }: StyledProps) => theme.spacing.lg}px;
-`;
-
-const SubmitButtonText = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme }: StyledProps) => theme.colors.surface};
-  margin-left: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
 
 interface CreateItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal>;
@@ -185,6 +185,9 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   onItemCreated,
 }) => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const { refreshItems } = useInventory();
+  const { registerRefreshCallback } = useCategory();
   const [name, setName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
@@ -214,15 +217,21 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     loadCategories();
   }, [loadCategories]);
 
+  useEffect(() => {
+    const unregister = registerRefreshCallback(loadCategories);
+    return unregister;
+  }, [registerRefreshCallback, loadCategories]);
+
   const handleCategoriesChanged = useCallback(() => {
     loadCategories();
   }, [loadCategories]);
 
-  const snapPoints = useMemo(() => ['90%'], []);
+  const snapPoints = useMemo(() => ['100%'], []);
 
   // Handle keyboard behavior - use 'interactive' for better keyboard handling
   const keyboardBehavior = useMemo(() => 'interactive', []);
   const keyboardBlurBehavior = useMemo(() => 'restore', []);
+
 
   const handleClose = useCallback(() => {
     bottomSheetRef.current?.dismiss();
@@ -267,6 +276,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
       if (newItem) {
         handleClose();
+        refreshItems();
         if (onItemCreated) {
           onItemCreated();
         }
@@ -279,11 +289,51 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [name, selectedCategory, selectedLocation, price, detailedLocation, categories, theme, handleClose, onItemCreated]);
+  }, [name, selectedCategory, selectedLocation, price, detailedLocation, categories, theme, handleClose, onItemCreated, refreshItems]);
 
   const renderBackdrop = useCallback(
     (props: Parameters<typeof BottomSheetBackdrop>[0]) => <Backdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
     []
+  );
+
+  const renderFooter = useCallback(
+    () => (
+      <View style={{ 
+        backgroundColor: theme.colors.surface,
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+        paddingBottom: insets.bottom + theme.spacing.md,
+        borderTopWidth: 1,
+        borderTopColor: theme.colors.borderLight,
+      }}>
+        <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={isLoading}
+          activeOpacity={0.7}
+          style={{
+            backgroundColor: theme.colors.primary,
+            borderRadius: theme.borderRadius.md,
+            padding: theme.spacing.sm + 2,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'row',
+            minHeight: 44,
+            opacity: isLoading ? 0.5 : 1,
+          }}
+        >
+          <Ionicons name="add" size={18} color={theme.colors.surface} />
+          <Text style={{
+            fontSize: theme.typography.fontSize.sm,
+            fontWeight: theme.typography.fontWeight.medium,
+            color: theme.colors.surface,
+            marginLeft: theme.spacing.xs,
+          }}>
+            放入小家
+          </Text>
+        </TouchableOpacity>
+      </View>
+    ),
+    [handleSubmit, isLoading, theme, insets.bottom]
   );
 
   return (
@@ -291,128 +341,135 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
       ref={bottomSheetRef}
       snapPoints={snapPoints}
       backdropComponent={renderBackdrop}
-      enablePanDownToClose
-      enableContentPanningGesture
+      enablePanDownToClose={true}
+      enableContentPanningGesture={false}
       keyboardBehavior={keyboardBehavior}
       keyboardBlurBehavior={keyboardBlurBehavior}
       android_keyboardInputMode="adjustResize"
       enableHandlePanningGesture={false}
+      topInset={insets.top}
       index={0}
+      footerComponent={renderFooter}
+      enableDynamicSizing={false}
     >
-      <BottomSheetScrollView
-        ref={scrollViewRef}
-        style={{ flex: 1, backgroundColor: theme.colors.surface }}
-        contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: theme.spacing.xxl }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        enableOnPanDownToDismiss={false}
-      >
-          <Header>
-            <HeaderLeft>
-              <Title>入库新物品</Title>
-              <Subtitle>记下来就不会忘啦</Subtitle>
-            </HeaderLeft>
-            <CloseButton onPress={handleClose}>
-              <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
-            </CloseButton>
-          </Header>
+      <ContentContainer>
+        <BottomSheetScrollView
+          ref={scrollViewRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: theme.spacing.lg }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          enableOnPanDownToDismiss={false}
+        >
+            <Header>
+              <HeaderLeft>
+                <Title>入库新物品</Title>
+                <Subtitle>记下来就不会忘啦</Subtitle>
+              </HeaderLeft>
+              <CloseButton onPress={handleClose}>
+                <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
+              </CloseButton>
+            </Header>
 
-          <FormSection>
-            <Label>名字</Label>
-            <Input
-              placeholder="例如:可爱的小杯子"
-              value={name}
-              onChangeText={setName}
-              placeholderTextColor={theme.colors.textLight}
-            />
-          </FormSection>
+            <FormContainer>
+              <FormSection>
+                <Label>名字</Label>
+                <Input
+                  placeholder="例如:可爱的小杯子"
+                  value={name}
+                  onChangeText={setName}
+                  placeholderTextColor={theme.colors.textLight}
+                />
+              </FormSection>
 
-          <FormSection>
-            <CategorySection>
-              <CategoryHeader>
-                <Label>分类</Label>
-                <ManageCategoriesButton onPress={() => categoryManagerRef.current?.present()} activeOpacity={0.7}>
-                  <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
-                  <ManageCategoriesText>管理分类</ManageCategoriesText>
-                </ManageCategoriesButton>
-              </CategoryHeader>
-              <CategoryGrid>
-                {itemTypeCategories.map((category) => (
-                  <CategoryButton
-                    key={category.id}
-                    isSelected={selectedCategory === category.id}
-                    onPress={() => setSelectedCategory(category.id)}
-                    activeOpacity={0.7}
-                  >
-                    {category.icon && (
-                      <CategoryIcon color={category.iconColor}>
-                        <Ionicons
-                          name={category.icon}
-                          size={24}
-                          color={category.iconColor || theme.colors.primary}
-                        />
-                      </CategoryIcon>
-                    )}
-                    <CategoryLabel isSelected={selectedCategory === category.id}>
-                      {category.label}
-                    </CategoryLabel>
-                  </CategoryButton>
-                ))}
-                <AddCategoryButton onPress={() => categoryManagerRef.current?.present()} activeOpacity={0.7}>
-                  <Ionicons name="add" size={32} color={theme.colors.textLight} />
-                  <CategoryLabel isSelected={false}>添加</CategoryLabel>
-                </AddCategoryButton>
-              </CategoryGrid>
-            </CategorySection>
-          </FormSection>
+              <FormSection>
+                <CategorySection>
+                  <CategoryHeader>
+                    <Label>分类</Label>
+                    <ManageCategoriesButton onPress={() => categoryManagerRef.current?.present()} activeOpacity={0.7}>
+                      <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
+                      <ManageCategoriesText>管理分类</ManageCategoriesText>
+                    </ManageCategoriesButton>
+                  </CategoryHeader>
+                  <CategoryGrid>
+                    {itemTypeCategories.map((category) => (
+                      <CategoryButton
+                        key={category.id}
+                        isSelected={selectedCategory === category.id}
+                        onPress={() => setSelectedCategory(category.id)}
+                        activeOpacity={0.7}
+                      >
+                        {category.icon && (
+                          <CategoryIcon color={category.iconColor}>
+                            <Ionicons
+                              name={category.icon}
+                              size={24}
+                              color={category.iconColor || theme.colors.primary}
+                            />
+                          </CategoryIcon>
+                        )}
+                        <CategoryLabel isSelected={selectedCategory === category.id}>
+                          {category.label}
+                        </CategoryLabel>
+                      </CategoryButton>
+                    ))}
+                    <AddCategoryButton onPress={() => categoryManagerRef.current?.present()} activeOpacity={0.7}>
+                      <Ionicons name="add" size={32} color={theme.colors.textLight} />
+                      <CategoryLabel isSelected={false}>添加</CategoryLabel>
+                    </AddCategoryButton>
+                  </CategoryGrid>
+                </CategorySection>
+              </FormSection>
 
-          <FormSection>
-            <Label>位置</Label>
-            <LocationScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {locations.map((location) => (
-                <LocationButton
-                  key={location.id}
-                  isSelected={selectedLocation === location.id}
-                  onPress={() => setSelectedLocation(location.id)}
-                  activeOpacity={0.7}
+              <FormSection>
+                <Label>位置</Label>
+                <LocationScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingVertical: 0 }}
                 >
-                  <LocationText isSelected={selectedLocation === location.id}>
-                    {location.name}
-                  </LocationText>
-                </LocationButton>
-              ))}
-            </LocationScrollView>
-          </FormSection>
-
-          <FormSection>
-            <Row>
-              <FormSection style={{ flex: 1, marginBottom: 0 }}>
-                <Label>价格</Label>
-                <HalfInput
-                  placeholder="0"
-                  value={price}
-                  onChangeText={setPrice}
-                  keyboardType="numeric"
-                  placeholderTextColor={theme.colors.textLight}
-                />
+                  {locations.map((location) => (
+                    <LocationButton
+                      key={location.id}
+                      isSelected={selectedLocation === location.id}
+                      onPress={() => setSelectedLocation(location.id)}
+                      activeOpacity={0.7}
+                    >
+                      <LocationText isSelected={selectedLocation === location.id}>
+                        {location.name}
+                      </LocationText>
+                    </LocationButton>
+                  ))}
+                </LocationScrollView>
               </FormSection>
-              <FormSection style={{ flex: 1, marginBottom: 0 }}>
-                <Label>具体位置</Label>
-                <HalfInput
-                  placeholder="比如:门口鞋柜"
-                  value={detailedLocation}
-                  onChangeText={setDetailedLocation}
-                  placeholderTextColor={theme.colors.textLight}
-                />
-              </FormSection>
-            </Row>
-          </FormSection>
 
-          <SubmitButton onPress={handleSubmit} disabled={isLoading} activeOpacity={0.8}>
-            <Ionicons name="add" size={24} color={theme.colors.surface} />
-            <SubmitButtonText>放入小家</SubmitButtonText>
-          </SubmitButton>
-      </BottomSheetScrollView>
+              <FormSection>
+                <Row>
+                  <View style={{ flex: 1 }}>
+                    <Label>价格</Label>
+                    <HalfInput
+                      placeholder="0"
+                      value={price}
+                      onChangeText={setPrice}
+                      keyboardType="numeric"
+                      placeholderTextColor={theme.colors.textLight}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Label>具体位置</Label>
+                    <HalfInput
+                      placeholder="比如:门口鞋柜"
+                      value={detailedLocation}
+                      onChangeText={setDetailedLocation}
+                      placeholderTextColor={theme.colors.textLight}
+                    />
+                  </View>
+                </Row>
+            </FormSection>
+          </FormContainer>
+        </BottomSheetScrollView>
+      </ContentContainer>
+
       <CategoryManagerBottomSheet
         bottomSheetRef={categoryManagerRef}
         onCategoriesChanged={handleCategoriesChanged}

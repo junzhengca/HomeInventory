@@ -3,7 +3,7 @@ import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { categoryColors } from '../data/categoryColors';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 const Container = styled(View)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
@@ -34,9 +34,9 @@ const ColorButton = styled(TouchableOpacity)<{ isSelected: boolean; color: strin
   width: 44px;
   height: 44px;
   border-radius: 22px;
-  background-color: ${({ color }) => color};
+  background-color: ${({ color }: { color: string }) => color};
   border-width: 3px;
-  border-color: ${({ theme, isSelected, color }) =>
+  border-color: ${({ theme, isSelected, color }: StyledPropsWith<{ isSelected: boolean; color: string }>) =>
     isSelected ? color : theme.colors.borderLight};
   align-items: center;
   justify-content: center;

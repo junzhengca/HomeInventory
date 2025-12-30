@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useCallback, useRef } from 'react';
 
-interface InventoryContextType {
-  refreshItems: () => void;
+interface CategoryContextType {
+  refreshCategories: () => void;
   registerRefreshCallback: (callback: () => void) => () => void;
 }
 
-const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
+const CategoryContext = createContext<CategoryContextType | undefined>(undefined);
 
-export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CategoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const callbacksRef = useRef<Set<() => void>>(new Set());
 
   const registerRefreshCallback = useCallback((callback: () => void) => {
@@ -18,7 +18,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, []);
 
-  const refreshItems = useCallback(() => {
+  const refreshCategories = useCallback(() => {
     callbacksRef.current.forEach((callback) => {
       try {
         callback();
@@ -29,16 +29,16 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   return (
-    <InventoryContext.Provider value={{ refreshItems, registerRefreshCallback }}>
+    <CategoryContext.Provider value={{ refreshCategories, registerRefreshCallback }}>
       {children}
-    </InventoryContext.Provider>
+    </CategoryContext.Provider>
   );
 };
 
-export const useInventory = () => {
-  const context = useContext(InventoryContext);
+export const useCategory = () => {
+  const context = useContext(CategoryContext);
   if (!context) {
-    throw new Error('useInventory must be used within InventoryProvider');
+    throw new Error('useCategory must be used within CategoryProvider');
   }
   return context;
 };

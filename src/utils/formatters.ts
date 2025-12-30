@@ -54,9 +54,32 @@ export const formatCurrency = (
   currencySymbol: string,
   useWanFormat: boolean = false
 ): string => {
-  if (useWanFormat && value >= 10000) {
-    const wan = value / 10000;
-    return `${currencySymbol} ${wan.toFixed(1)}w`;
+  if (useWanFormat) {
+    // Use more aggressive shortening for better fit in small cards
+    if (value >= 100000000) {
+      // 100 million or more: use "亿" (yi) format
+      const yi = value / 100000000;
+      return `${currencySymbol}${yi.toFixed(1)}亿`;
+    } else if (value >= 10000) {
+      // 10,000 or more: use "w" (wan) format
+      const wan = value / 10000;
+      // Use fewer decimal places for larger numbers to save space
+      if (wan >= 100) {
+        return `${currencySymbol}${wan.toFixed(0)}w`;
+      } else if (wan >= 10) {
+        return `${currencySymbol}${wan.toFixed(1)}w`;
+      } else {
+        return `${currencySymbol}${wan.toFixed(1)}w`;
+      }
+    } else if (value >= 1000) {
+      // 1,000 or more: use "k" format for compactness
+      const k = value / 1000;
+      return `${currencySymbol}${k.toFixed(1)}k`;
+    }
+  }
+  // For smaller numbers, use regular formatting but limit decimal places
+  if (value >= 1000) {
+    return `${currencySymbol} ${Math.round(value).toLocaleString()}`;
   }
   return `${currencySymbol} ${value.toLocaleString()}`;
 };

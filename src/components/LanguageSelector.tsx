@@ -2,7 +2,7 @@ import React from 'react';
 import { TouchableOpacity, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 export type LanguageOption = {
   id: string;
@@ -57,7 +57,7 @@ const LanguageButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
   background-color: #ffffff;
   border-width: 2px;
-  border-color: ${({ theme, isSelected }) =>
+  border-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.borderLight};
   flex-direction: row;
   align-items: center;
@@ -79,7 +79,7 @@ const FlagText = styled(Text)`
 const LanguageButtonText = styled(Text)<{ isSelected: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme, isSelected }) =>
+  color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.textLight};
 `;
 

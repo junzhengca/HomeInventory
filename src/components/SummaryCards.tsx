@@ -8,7 +8,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { getCurrencySymbol } from './CurrencySelector';
 import { countExpiringItems } from '../utils/dateUtils';
 import { formatCurrency } from '../utils/formatters';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 const StyledScrollView = styled(ScrollView)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
@@ -23,7 +23,7 @@ const Container = styled(View)`
 const Card = styled(View)<{ isPrimary?: boolean }>`
   width: 140px;
   height: 160px;
-  background-color: ${({ theme, isPrimary }) =>
+  background-color: ${({ theme, isPrimary }: StyledPropsWith<{ isPrimary?: boolean }>) =>
     isPrimary ? theme.colors.primary : theme.colors.surface};
   border-radius: 24px;
   padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
@@ -41,7 +41,7 @@ const IconContainer = styled(View)<{ bgColor?: string }>`
   border-radius: 14px;
   align-items: center;
   justify-content: center;
-  background-color: ${({ bgColor }) => bgColor || 'transparent'};
+  background-color: ${({ bgColor }: { bgColor?: string }) => bgColor || 'transparent'};
 `;
 
 const CardHeader = styled(View)`
@@ -64,7 +64,7 @@ const CardContent = styled(View)``;
 const Label = styled(Text)<{ isPrimary?: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme, isPrimary }) =>
+  color: ${({ theme, isPrimary }: StyledPropsWith<{ isPrimary?: boolean }>) =>
     isPrimary ? 'rgba(255, 255, 255, 0.9)' : theme.colors.textSecondary};
   margin-bottom: 6px;
 `;
@@ -72,8 +72,9 @@ const Label = styled(Text)<{ isPrimary?: boolean }>`
 const Value = styled(Text)<{ isPrimary?: boolean }>`
   font-size: 28px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme, isPrimary }) =>
+  color: ${({ theme, isPrimary }: StyledPropsWith<{ isPrimary?: boolean }>) =>
     isPrimary ? theme.colors.surface : theme.colors.text};
+  max-width: 100%;
 `;
 
 interface SummaryCardsProps {
@@ -116,7 +117,14 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ items }) => {
           </CardHeader>
           <CardContent>
             <Label isPrimary>资产估值</Label>
-            <Value isPrimary>{formatCurrency(totalValue, currencySymbol, true)}</Value>
+            <Value 
+              isPrimary
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.6}
+            >
+              {formatCurrency(totalValue, currencySymbol, true)}
+            </Value>
           </CardContent>
         </Card>
 

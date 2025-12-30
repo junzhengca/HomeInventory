@@ -2,7 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 export interface ActionButton {
   label: string;
@@ -25,7 +25,7 @@ const BottomBarContainer = styled(View)<{ bottomInset: number; showSafeArea: boo
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.lg}px;
   padding-vertical: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  padding-bottom: ${({ bottomInset, showSafeArea }) => showSafeArea ? bottomInset + 12 : 12}px;
+  padding-bottom: ${({ bottomInset, showSafeArea }: { bottomInset: number; showSafeArea: boolean }) => showSafeArea ? bottomInset + 12 : 12}px;
   border-top-width: 1px;
   border-top-color: ${({ theme }: StyledProps) => theme.colors.borderLight};
   shadow-color: #000;
@@ -47,33 +47,33 @@ const StyledTouchableOpacity = styled(TouchableOpacity)<{ variant: 'outlined' | 
   align-items: center;
   justify-content: center;
   flex-direction: row;
-  background-color: ${({ theme, variant }) => {
+  background-color: ${({ theme, variant }: StyledPropsWith<{ variant: 'outlined' | 'filled' | 'danger' }>) => {
     if (variant === 'filled') return theme.colors.primary;
     if (variant === 'danger') return theme.colors.surface;
     return theme.colors.surface;
   }};
-  border-width: ${({ variant }) => (variant === 'outlined' || variant === 'danger' ? 1.5 : 0)}px;
-  border-color: ${({ theme, variant }) => {
+  border-width: ${({ variant }: { variant: 'outlined' | 'filled' | 'danger' }) => (variant === 'outlined' || variant === 'danger' ? 1.5 : 0)}px;
+  border-color: ${({ theme, variant }: StyledPropsWith<{ variant: 'outlined' | 'filled' | 'danger' }>) => {
     if (variant === 'danger') return theme.colors.error;
     if (variant === 'outlined') return theme.colors.border;
     return 'transparent';
   }};
   min-height: 44px;
-  opacity: ${({ disabled }) => (disabled ? 0.5 : 1)};
-  shadow-color: ${({ theme, variant }) => {
+  opacity: ${({ disabled }: { disabled?: boolean }) => (disabled ? 0.5 : 1)};
+  shadow-color: ${({ theme, variant }: StyledPropsWith<{ variant: 'outlined' | 'filled' | 'danger' }>) => {
     if (variant === 'filled') return theme.colors.primary;
     return '#000';
   }};
   shadow-offset: 0px 2px;
-  shadow-opacity: ${({ variant }) => (variant === 'filled' ? 0.2 : 0.05)};
-  shadow-radius: ${({ variant }) => (variant === 'filled' ? 8 : 4)}px;
-  elevation: ${({ variant }) => (variant === 'filled' ? 4 : 2)};
+  shadow-opacity: ${({ variant }: { variant: 'outlined' | 'filled' | 'danger' }) => (variant === 'filled' ? 0.2 : 0.05)};
+  shadow-radius: ${({ variant }: { variant: 'outlined' | 'filled' | 'danger' }) => (variant === 'filled' ? 8 : 4)}px;
+  elevation: ${({ variant }: { variant: 'outlined' | 'filled' | 'danger' }) => (variant === 'filled' ? 4 : 2)};
 `;
 
 const ButtonText = styled(Text)<{ variant: 'outlined' | 'filled' | 'danger' }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
-  color: ${({ theme, variant }) => {
+  color: ${({ theme, variant }: StyledPropsWith<{ variant: 'outlined' | 'filled' | 'danger' }>) => {
     if (variant === 'filled') return theme.colors.surface;
     if (variant === 'danger') return theme.colors.error;
     return theme.colors.text;

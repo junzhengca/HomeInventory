@@ -2,7 +2,7 @@ import React from 'react';
 import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 export type ThemeOption = {
   id: string;
@@ -63,7 +63,7 @@ const OptionContainer = styled(TouchableOpacity)<{ isSelected: boolean; color: s
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
   border-width: 2px;
-  border-color: ${({ theme, isSelected, color }) => (isSelected ? color : theme.colors.borderLight)};
+  border-color: ${({ theme, isSelected, color }: StyledPropsWith<{ isSelected: boolean; color: string }>) => (isSelected ? color : theme.colors.borderLight)};
   background-color: #ffffff;
   min-width: 90px;
 `;
@@ -72,7 +72,7 @@ const ColorCircle = styled(View)<{ color: string }>`
   width: 52px;
   height: 52px;
   border-radius: 26px;
-  background-color: ${({ color }) => color};
+  background-color: ${({ color }: { color: string }) => color};
   align-items: center;
   justify-content: center;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
@@ -84,8 +84,8 @@ const Checkmark = styled(Ionicons)`
 
 const OptionLabel = styled(Text)<{ isSelected: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  font-weight: ${({ theme, isSelected }) => (isSelected ? theme.typography.fontWeight.bold : theme.typography.fontWeight.medium)};
-  color: ${({ theme, isSelected }) => (isSelected ? theme.colors.text : theme.colors.textSecondary)};
+  font-weight: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) => (isSelected ? theme.typography.fontWeight.bold : theme.typography.fontWeight.medium)};
+  color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) => (isSelected ? theme.colors.text : theme.colors.textSecondary)};
   text-align: center;
 `;
 

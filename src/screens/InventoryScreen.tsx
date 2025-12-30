@@ -45,7 +45,7 @@ export const InventoryScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { setRefreshCallback } = useInventory();
+  const { registerRefreshCallback } = useInventory();
 
   const loadItems = async () => {
     setIsLoading(true);
@@ -64,8 +64,9 @@ export const InventoryScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setRefreshCallback(loadItems);
-  }, [setRefreshCallback]);
+    const unregister = registerRefreshCallback(loadItems);
+    return unregister;
+  }, [registerRefreshCallback]);
 
   // Filter items based on selected category and search query
   const filteredItems = useMemo(() => {

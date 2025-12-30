@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import styled from 'styled-components/native';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 export type CurrencyOption = {
   id: string;
@@ -65,7 +65,7 @@ const CurrencyButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
   background-color: #ffffff;
   border-width: 2px;
-  border-color: ${({ theme, isSelected }) =>
+  border-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.borderLight};
   align-items: center;
   justify-content: center;
@@ -74,9 +74,9 @@ const CurrencyButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
 
 const CurrencyButtonText = styled(Text)<{ isSelected: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  font-weight: ${({ theme, isSelected }) =>
+  font-weight: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.typography.fontWeight.bold : theme.typography.fontWeight.bold};
-  color: ${({ theme, isSelected }) =>
+  color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.textLight};
 `;
 

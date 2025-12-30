@@ -3,7 +3,7 @@ import { TextInput, View } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 const Container = styled(View)<{ isFocused: boolean }>`
   flex-direction: row;
@@ -14,7 +14,7 @@ const Container = styled(View)<{ isFocused: boolean }>`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   height: 48px;
   border-width: 1.5px;
-  border-color: ${({ theme, isFocused }) =>
+  border-color: ${({ theme, isFocused }: StyledPropsWith<{ isFocused: boolean }>) =>
     isFocused ? theme.colors.inputFocus : theme.colors.borderLight};
 `;
 

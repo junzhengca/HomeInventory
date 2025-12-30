@@ -54,14 +54,17 @@ module.exports = {
     }],
     
     // Prevent accidental use of undefined
-    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-explicit-any': 'error',
     
     // Prevent implicit any types (catches untyped parameters in styled components)
-    // Note: These rules require type information, so they only work on .ts/.tsx files
-    '@typescript-eslint/no-unsafe-assignment': 'off', // Requires project config
-    '@typescript-eslint/no-unsafe-member-access': 'off', // Requires project config
-    '@typescript-eslint/no-unsafe-call': 'off', // Requires project config
-    // Instead, rely on TypeScript's noImplicitAny (enabled via strict: true in tsconfig.json)
+    // Note: TypeScript's noImplicitAny (enabled via strict: true) will catch these at compile time
+    // For styled-components template literals, always use StyledProps or StyledPropsWith<T>
+    // Example: ${({ theme }: StyledProps) => ...} or ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) => ...}
+    '@typescript-eslint/no-unsafe-assignment': 'off', // Too strict for styled-components, TypeScript compiler catches implicit any
+    '@typescript-eslint/no-unsafe-member-access': 'off', // Too strict for styled-components
+    '@typescript-eslint/no-unsafe-call': 'off', // Too strict for styled-components
+    '@typescript-eslint/no-unsafe-argument': 'off', // Too strict for styled-components
+    '@typescript-eslint/no-unsafe-return': 'off', // Too strict for styled-components
     
     // Ensure React is in scope when using JSX
     'react/react-in-jsx-scope': 'off', // Not needed in React 17+
@@ -69,6 +72,17 @@ module.exports = {
     
     // Prevent duplicate imports from the same module
     'no-duplicate-imports': 'error',
+    
+    // Prevent implicit any in styled-components template literals
+    // This catches patterns like ${({ theme, isSelected }) => ...} without type annotations
+    // Only matches ObjectPattern parameters that don't have a type annotation
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: 'TemplateLiteral[expressions.length>0] > ArrowFunctionExpression > ObjectPattern:not([typeAnnotation])',
+        message: 'Destructured parameters in template literals must have explicit types. Use StyledProps or StyledPropsWith<T>. Example: ({ theme }: StyledProps) => or ({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>',
+      },
+    ],
   },
   settings: {
     react: {

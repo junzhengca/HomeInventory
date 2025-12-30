@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollView, TouchableOpacity, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Category } from '../types/inventory';
 import { getAllCategories } from '../services/CategoryService';
-import type { StyledProps } from '../utils/styledComponents';
+import { useCategory } from '../contexts/CategoryContext';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 const Container = styled(View)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
@@ -17,27 +18,27 @@ const CategoryButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
   padding-horizontal: 16px;
   padding-vertical: 6px;
   border-radius: 18px;
-  background-color: ${({ theme, isSelected }) =>
+  background-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.surface};
   border-width: 1.5px;
-  border-color: ${({ theme, isSelected }) =>
+  border-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.border};
   margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
   
   /* Elevation for Android */
-  elevation: ${({ isSelected }) => (isSelected ? 4 : 0)};
+  elevation: ${({ isSelected }: { isSelected: boolean }) => (isSelected ? 4 : 0)};
   
   /* Shadow for iOS */
   shadow-color: #000;
   shadow-offset: 0px 2px;
-  shadow-opacity: ${({ isSelected }) => (isSelected ? 0.1 : 0)};
+  shadow-opacity: ${({ isSelected }: { isSelected: boolean }) => (isSelected ? 0.1 : 0)};
   shadow-radius: 2px;
 `;
 
 const CategoryText = styled(Text)<{ isSelected: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme, isSelected }) =>
+  color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.surface : theme.colors.textSecondary};
 `;
 
@@ -54,40 +55,48 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>(parentSelectedCategory || 'all');
   const [categories, setCategories] = useState<Category[]>([]);
+  const { registerRefreshCallback } = useCategory();
+
+  const loadCategories = useCallback(async () => {
+    if (providedCategories) {
+      setCategories(providedCategories);
+      return;
+    }
+
+    try {
+      const allCategories = await getAllCategories();
+      // Add "all" category at the beginning
+      const allCategory: Category = {
+        id: 'all',
+        name: 'all',
+        label: '全部',
+        isCustom: false,
+      };
+      setCategories([allCategory, ...allCategories]);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      // Categories will remain empty array if loading fails
+      // Only show "all" category as fallback
+      const allCategory: Category = {
+        id: 'all',
+        name: 'all',
+        label: '全部',
+        isCustom: false,
+      };
+      setCategories([allCategory]);
+    }
+  }, [providedCategories]);
 
   useEffect(() => {
-    const loadCategories = async () => {
-      if (providedCategories) {
-        setCategories(providedCategories);
-        return;
-      }
-
-      try {
-        const allCategories = await getAllCategories();
-        // Add "all" category at the beginning
-        const allCategory: Category = {
-          id: 'all',
-          name: 'all',
-          label: '全部',
-          isCustom: false,
-        };
-        setCategories([allCategory, ...allCategories]);
-      } catch (error) {
-        console.error('Error loading categories:', error);
-        // Categories will remain empty array if loading fails
-        // Only show "all" category as fallback
-        const allCategory: Category = {
-          id: 'all',
-          name: 'all',
-          label: '全部',
-          isCustom: false,
-        };
-        setCategories([allCategory]);
-      }
-    };
-
     loadCategories();
-  }, [providedCategories]);
+  }, [loadCategories]);
+
+  useEffect(() => {
+    if (!providedCategories) {
+      const unregister = registerRefreshCallback(loadCategories);
+      return unregister;
+    }
+  }, [providedCategories, registerRefreshCallback, loadCategories]);
 
   // Sync internal state with parent's selectedCategory prop
   useEffect(() => {

@@ -8,6 +8,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { SettingsProvider } from './src/contexts/SettingsContext';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { InventoryProvider } from './src/contexts/InventoryContext';
+import { CategoryProvider } from './src/contexts/CategoryContext';
 import { TodoProvider } from './src/contexts/TodoContext';
 import { RootStack } from './src/navigation/RootStack';
 import { initializeDataFiles } from './src/services/DataInitializationService';
@@ -45,16 +46,18 @@ export default function App() {
       <SafeAreaProvider>
         <SettingsProvider>
           <InventoryProvider>
-            <TodoProvider>
-              <ThemeProvider>
-                <BottomSheetModalProvider>
-                  <NavigationContainer>
-                    <RootStack />
-                    <StatusBar style="auto" />
-                  </NavigationContainer>
-                </BottomSheetModalProvider>
-              </ThemeProvider>
-            </TodoProvider>
+            <CategoryProvider>
+              <TodoProvider>
+                <ThemeProvider>
+                  <BottomSheetModalProvider>
+                    <NavigationContainer>
+                      <RootStack />
+                      <StatusBar style="auto" />
+                    </NavigationContainer>
+                  </BottomSheetModalProvider>
+                </ThemeProvider>
+              </TodoProvider>
+            </CategoryProvider>
           </InventoryProvider>
         </SettingsProvider>
       </SafeAreaProvider>

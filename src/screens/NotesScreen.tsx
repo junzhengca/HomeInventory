@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 import { PageHeader } from '../components/PageHeader';
 import { RootStackParamList } from '../navigation/types';
@@ -42,7 +42,7 @@ const AddTodoContainer = styled(View)<{ isFocused: boolean }>`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   height: 48px;
   border-width: 1.5px;
-  border-color: ${({ theme, isFocused }) =>
+  border-color: ${({ theme, isFocused }: StyledPropsWith<{ isFocused: boolean }>) =>
     isFocused ? theme.colors.inputFocus : theme.colors.borderLight};
 `;
 
@@ -103,9 +103,9 @@ const TodoItemContainer = styled(View)`
 const TodoText = styled(Text)<{ completed: boolean }>`
   flex: 1;
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme, completed }) => (completed ? theme.typography.fontWeight.regular : theme.typography.fontWeight.bold)};
-  color: ${({ theme, completed }) => (completed ? theme.colors.textSecondary : theme.colors.text)};
-  text-decoration-line: ${({ completed }) => (completed ? 'line-through' : 'none')};
+  font-weight: ${({ theme, completed }: StyledPropsWith<{ completed: boolean }>) => (completed ? theme.typography.fontWeight.regular : theme.typography.fontWeight.bold)};
+  color: ${({ theme, completed }: StyledPropsWith<{ completed: boolean }>) => (completed ? theme.colors.textSecondary : theme.colors.text)};
+  text-decoration-line: ${({ completed }: { completed: boolean }) => (completed ? 'line-through' : 'none')};
 `;
 
 const Checkbox = styled(TouchableOpacity)`
@@ -113,8 +113,8 @@ const Checkbox = styled(TouchableOpacity)`
   height: 24px;
   border-radius: 12px;
   border-width: 2px;
-  border-color: ${({ theme, checked }) => (checked ? theme.colors.primary : theme.colors.border)};
-  background-color: ${({ theme, checked }) => (checked ? theme.colors.primary : 'transparent')};
+  border-color: ${({ theme, checked }: StyledPropsWith<{ checked: boolean }>) => (checked ? theme.colors.primary : theme.colors.border)};
+  background-color: ${({ theme, checked }: StyledPropsWith<{ checked: boolean }>) => (checked ? theme.colors.primary : 'transparent')};
   align-items: center;
   justify-content: center;
   margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;

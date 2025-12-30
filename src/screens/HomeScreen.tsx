@@ -14,6 +14,7 @@ import { RecentlyAdded } from '../components/RecentlyAdded';
 import { InventoryItem } from '../types/inventory';
 import { RootStackParamList } from '../navigation/types';
 import { getAllItems } from '../services/InventoryService';
+import { useInventory } from '../contexts/InventoryContext';
 import { calculateBottomPadding } from '../utils/layout';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -41,22 +42,28 @@ export const HomeScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
+  const { registerRefreshCallback } = useInventory();
+
+  const loadItems = async () => {
+    setIsLoading(true);
+    try {
+      const allItems = await getAllItems();
+      setItems(allItems);
+    } catch (error) {
+      console.error('Error loading items:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadItems = async () => {
-      setIsLoading(true);
-      try {
-        const allItems = await getAllItems();
-        setItems(allItems);
-      } catch (error) {
-        console.error('Error loading items:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadItems();
   }, []);
+
+  useEffect(() => {
+    const unregister = registerRefreshCallback(loadItems);
+    return unregister;
+  }, [registerRefreshCallback]);
 
   // Filter items based on selected category and search query
   const filteredItems = useMemo(() => {

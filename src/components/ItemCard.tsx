@@ -30,7 +30,7 @@ const IconContainer = styled(View)<{ backgroundColor: string }>`
   width: 72px;
   height: 72px;
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.lg}px;
-  background-color: ${({ backgroundColor }) => backgroundColor};
+  background-color: ${({ backgroundColor }: { backgroundColor: string }) => backgroundColor};
   align-items: center;
   justify-content: center;
   margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;

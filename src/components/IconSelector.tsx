@@ -4,7 +4,7 @@ import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { categoryIcons } from '../data/categoryIcons';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 const Container = styled(View)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
@@ -27,10 +27,10 @@ const IconButton = styled(TouchableOpacity)<{ isSelected: boolean; iconColor?: s
   width: 15%;
   aspect-ratio: 1;
   margin: 1.5%;
-  background-color: ${({ theme, isSelected }) =>
+  background-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean; iconColor?: string }>) =>
     isSelected ? theme.colors.primaryLightest : theme.colors.surface};
   border-width: 1.5px;
-  border-color: ${({ theme, isSelected, iconColor }) =>
+  border-color: ${({ theme, isSelected, iconColor }: StyledPropsWith<{ isSelected: boolean; iconColor?: string }>) =>
     isSelected ? (iconColor || theme.colors.primary) : theme.colors.border};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
   align-items: center;

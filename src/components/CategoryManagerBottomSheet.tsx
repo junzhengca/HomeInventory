@@ -3,11 +3,13 @@ import { TouchableOpacity, Alert, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 // Note: View and Text are imported above and will be used in styled components
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
 import { Category } from '../types/inventory';
 import { getAllCategories, createCategory, updateCategory, deleteCategory, isCategoryInUse } from '../services/CategoryService';
+import { useCategory } from '../contexts/CategoryContext';
 import { IconSelector } from './IconSelector';
 import { ColorPalette } from './ColorPalette';
 import { categoryIcons } from '../data/categoryIcons';
@@ -47,6 +49,12 @@ const CloseButton = styled(TouchableOpacity)`
   background-color: ${({ theme }: StyledProps) => theme.colors.borderLight};
   align-items: center;
   justify-content: center;
+`;
+
+const ContentContainer = styled(View)`
+  flex: 1;
+  position: relative;
+  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
 `;
 
 const FormSection = styled(View)`
@@ -108,32 +116,6 @@ const ActionButton = styled(TouchableOpacity)`
   padding: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
-const ButtonRow = styled(View)`
-  flex-direction: row;
-  gap: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  margin-top: ${({ theme }: StyledProps) => theme.spacing.lg}px;
-`;
-
-const Button = styled(TouchableOpacity)<{ variant?: 'primary' | 'secondary' }>`
-  flex: 1;
-  background-color: ${({ theme, variant }) =>
-    variant === 'primary' ? theme.colors.primary : theme.colors.surface};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  align-items: center;
-  justify-content: center;
-  flex-direction: row;
-  border-width: ${({ variant }) => (variant === 'secondary' ? '1px' : '0px')};
-  border-color: ${({ theme }: StyledProps) => theme.colors.border};
-`;
-
-const ButtonText = styled(Text)<{ variant?: 'primary' | 'secondary' }>`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme, variant }) =>
-    variant === 'primary' ? theme.colors.surface : theme.colors.text};
-  margin-left: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
 
 const EmptyState = styled(View)`
   align-items: center;
@@ -156,6 +138,8 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
   onCategoriesChanged,
 }) => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const { refreshCategories } = useCategory();
   const [_categories, setCategories] = useState<Category[]>([]);
   const [customCategories, setCustomCategories] = useState<Category[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -265,6 +249,9 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
         setSelectedIcon(categoryIcons[0]);
         setSelectedColor(categoryColors[0]);
 
+        // Refresh categories globally
+        refreshCategories();
+
         // Notify parent
         if (onCategoriesChanged) {
           onCategoriesChanged();
@@ -279,7 +266,7 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
     } finally {
       setIsLoading(false);
     }
-  }, [categoryName, categoryLabel, selectedIcon, selectedColor, editingCategoryId, onCategoriesChanged]);
+  }, [categoryName, categoryLabel, selectedIcon, selectedColor, editingCategoryId, onCategoriesChanged, refreshCategories]);
 
   const handleDelete = useCallback(async (categoryId: string) => {
     Alert.alert(
@@ -306,6 +293,9 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
                 const custom = allCategories.filter((cat) => cat.isCustom);
                 setCustomCategories(custom);
 
+                // Refresh categories globally
+                refreshCategories();
+
                 // Notify parent
                 if (onCategoriesChanged) {
                   onCategoriesChanged();
@@ -322,7 +312,7 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
         },
       ]
     );
-  }, [onCategoriesChanged]);
+  }, [onCategoriesChanged, refreshCategories]);
 
   const renderBackdrop = useCallback(
     (props: Parameters<typeof BottomSheetBackdrop>[0]) => <Backdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
@@ -331,47 +321,150 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
 
   const showForm = isCreating || editingCategoryId !== null;
 
+  const renderFooter = useCallback(
+    () => {
+      if (showForm) {
+        return (
+          <View style={{ 
+            backgroundColor: theme.colors.surface,
+            paddingHorizontal: theme.spacing.lg,
+            paddingVertical: theme.spacing.md,
+            paddingBottom: insets.bottom + theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: theme.colors.borderLight,
+            flexDirection: 'row',
+            gap: theme.spacing.md,
+          }}>
+            <TouchableOpacity
+              onPress={handleCancel}
+              activeOpacity={0.7}
+              style={{
+                flex: 1,
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.borderRadius.md,
+                padding: theme.spacing.sm + 2,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1.5,
+                borderColor: theme.colors.border,
+                minHeight: 44,
+              }}
+            >
+              <Text style={{
+                fontSize: theme.typography.fontSize.sm,
+                fontWeight: theme.typography.fontWeight.medium,
+                color: theme.colors.text,
+              }}>
+                取消
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSave}
+              disabled={isLoading}
+              activeOpacity={0.7}
+              style={{
+                flex: 1,
+                backgroundColor: theme.colors.primary,
+                borderRadius: theme.borderRadius.md,
+                padding: theme.spacing.sm + 2,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+                minHeight: 44,
+                opacity: isLoading ? 0.5 : 1,
+              }}
+            >
+              <Ionicons name="checkmark" size={18} color={theme.colors.surface} />
+              <Text style={{
+                fontSize: theme.typography.fontSize.sm,
+                fontWeight: theme.typography.fontWeight.medium,
+                color: theme.colors.surface,
+                marginLeft: theme.spacing.xs,
+              }}>
+                保存
+              </Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
+      return (
+        <View style={{ 
+          backgroundColor: theme.colors.surface,
+          paddingHorizontal: theme.spacing.lg,
+          paddingVertical: theme.spacing.md,
+          paddingBottom: insets.bottom + theme.spacing.md,
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.borderLight,
+        }}>
+          <TouchableOpacity
+            onPress={handleStartCreate}
+            activeOpacity={0.7}
+            style={{
+              backgroundColor: theme.colors.primary,
+              borderRadius: theme.borderRadius.md,
+              padding: theme.spacing.sm + 2,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'row',
+              minHeight: 44,
+            }}
+          >
+            <Ionicons name="add" size={18} color={theme.colors.surface} />
+            <Text style={{
+              fontSize: theme.typography.fontSize.sm,
+              fontWeight: theme.typography.fontWeight.medium,
+              color: theme.colors.surface,
+              marginLeft: theme.spacing.xs,
+            }}>
+              新建分类
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    },
+    [showForm, handleCancel, handleSave, handleStartCreate, isLoading, theme, insets.bottom]
+  );
+
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
       snapPoints={snapPoints}
       backdropComponent={renderBackdrop}
-      enablePanDownToClose
-      enableContentPanningGesture
+      enablePanDownToClose={true}
+      enableContentPanningGesture={false}
       keyboardBehavior={keyboardBehavior}
       keyboardBlurBehavior={keyboardBlurBehavior}
       android_keyboardInputMode="adjustResize"
       enableHandlePanningGesture={false}
+      topInset={insets.top}
       index={0}
+      footerComponent={renderFooter}
+      enableDynamicSizing={false}
     >
-      <BottomSheetScrollView
-        style={{ flex: 1, backgroundColor: theme.colors.surface }}
-        contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: theme.spacing.xxl }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        enableOnPanDownToDismiss={false}
-      >
-        <Header>
-          <HeaderLeft>
-            <Title>{showForm ? (editingCategoryId ? '编辑分类' : '新建分类') : '管理分类'}</Title>
-            <Subtitle>
-              {showForm
-                ? '设置分类名称、图标和颜色'
-                : '创建和编辑自定义分类'}
-            </Subtitle>
-          </HeaderLeft>
-          <CloseButton onPress={handleClose}>
-            <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
-          </CloseButton>
-        </Header>
+      <ContentContainer>
+        <BottomSheetScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: theme.spacing.lg }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          enableOnPanDownToDismiss={false}
+        >
+          <Header>
+            <HeaderLeft>
+              <Title>{showForm ? (editingCategoryId ? '编辑分类' : '新建分类') : '管理分类'}</Title>
+              <Subtitle>
+                {showForm
+                  ? '设置分类名称、图标和颜色'
+                  : '创建和编辑自定义分类'}
+              </Subtitle>
+            </HeaderLeft>
+            <CloseButton onPress={handleClose}>
+              <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
+            </CloseButton>
+          </Header>
 
         {!showForm ? (
           <>
-            <Button onPress={handleStartCreate} variant="primary" activeOpacity={0.8}>
-              <Ionicons name="add" size={20} color={theme.colors.surface} />
-              <ButtonText variant="primary">新建分类</ButtonText>
-            </Button>
-
             <FormSection>
               <Label>自定义分类</Label>
               {customCategories.length === 0 ? (
@@ -442,19 +535,10 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
                 onColorSelect={setSelectedColor}
               />
             </FormSection>
-
-            <ButtonRow>
-              <Button onPress={handleCancel} variant="secondary" activeOpacity={0.8}>
-                <ButtonText variant="secondary">取消</ButtonText>
-              </Button>
-              <Button onPress={handleSave} variant="primary" disabled={isLoading} activeOpacity={0.8}>
-                <Ionicons name="checkmark" size={20} color={theme.colors.surface} />
-                <ButtonText variant="primary">保存</ButtonText>
-              </Button>
-            </ButtonRow>
           </>
         )}
-      </BottomSheetScrollView>
+        </BottomSheetScrollView>
+      </ContentContainer>
     </BottomSheetModal>
   );
 };

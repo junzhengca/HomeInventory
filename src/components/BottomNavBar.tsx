@@ -17,7 +17,7 @@ const NavBarContainer = styled(View)<{ bottomInset: number }>`
   left: 0;
   right: 0;
   background-color: transparent;
-  padding-bottom: ${({ bottomInset }) => bottomInset + 16}px;
+  padding-bottom: ${({ bottomInset }: { bottomInset: number }) => bottomInset + 16}px;
   align-items: center;
   justify-content: center;
   pointer-events: box-none;
