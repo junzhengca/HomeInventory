@@ -30,11 +30,13 @@ export const getTodoById = async (id: string): Promise<TodoItem | null> => {
 export const createTodo = async (text: string): Promise<TodoItem | null> => {
   try {
     const todos = await getAllTodos();
+    const now = new Date().toISOString();
     const newTodo: TodoItem = {
       id: generateTodoId(),
       text: text.trim(),
       completed: false,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
 
     todos.push(newTodo);
@@ -62,7 +64,7 @@ export const updateTodo = async (
       return null;
     }
 
-    todos[index] = { ...todos[index], ...updates };
+    todos[index] = { ...todos[index], ...updates, updatedAt: new Date().toISOString() };
     const success = await writeFile<TodosData>(TODOS_FILE, { todos });
 
     return success ? todos[index] : null;
@@ -104,6 +106,7 @@ export const toggleTodo = async (id: string): Promise<TodoItem | null> => {
     }
 
     todos[index].completed = !todos[index].completed;
+    todos[index].updatedAt = new Date().toISOString();
     const success = await writeFile<TodosData>(TODOS_FILE, { todos });
 
     return success ? todos[index] : null;

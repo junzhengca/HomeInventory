@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { InventoryItem } from '../types/inventory';
+import { InventoryItem, Category } from '../types/inventory';
 import { useSettings } from '../contexts/SettingsContext';
 import { getCurrencySymbol } from './CurrencySelector';
 import { formatPrice, formatLocation } from '../utils/formatters';
 import { getLightColor } from '../utils/colors';
 import type { StyledProps } from '../utils/styledComponents';
 import { BaseCard } from './BaseCard';
+import { getCategoryById } from '../services/CategoryService';
 
 const IconContainer = styled(View)<{ backgroundColor: string }>`
   width: 72px;
@@ -78,6 +79,20 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const currencySymbol = getCurrencySymbol(settings.currency);
+  const [category, setCategory] = useState<Category | null>(null);
+
+  const loadCategory = useCallback(async () => {
+    try {
+      const categoryData = await getCategoryById(item.category);
+      setCategory(categoryData);
+    } catch (error) {
+      console.error('Error loading category:', error);
+    }
+  }, [item.category]);
+
+  useEffect(() => {
+    loadCategory();
+  }, [loadCategory]);
 
   const handlePress = () => {
     if (onPress) {
@@ -85,8 +100,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
     }
   };
 
-  // Get translated category name
-  const categoryName = t(`categories.${item.category}`);
+  // Get category display name - use custom label if available, otherwise translate
+  const categoryName = category
+    ? category.isCustom
+      ? category.label
+      : t(`categories.${category.name}`)
+    : t(`categories.${item.category}`);
 
   // Get formatted location text
   const locationText = formatLocation(item.location, item.detailedLocation, t);

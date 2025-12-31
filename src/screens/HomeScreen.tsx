@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ScrollView, ActivityIndicator, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { StyledProps } from '../utils/styledComponents';
@@ -14,11 +15,14 @@ import { CategorySelector } from '../components/CategorySelector';
 import { SummaryCards } from '../components/SummaryCards';
 import { RecentlyAdded } from '../components/RecentlyAdded';
 import { EmptyState } from '../components/EmptyState';
+import { LoginBottomSheet } from '../components/LoginBottomSheet';
+import { SignupBottomSheet } from '../components/SignupBottomSheet';
 import { InventoryItem } from '../types/inventory';
 import { RootStackParamList, TabParamList } from '../navigation/types';
 import { getAllItems } from '../services/InventoryService';
 import { useInventory } from '../contexts/InventoryContext';
 import { useSelectedCategory } from '../contexts/SelectedCategoryContext';
+import { useAuth } from '../contexts/AuthContext';
 import { calculateBottomPadding } from '../utils/layout';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -49,6 +53,9 @@ export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { registerRefreshCallback } = useInventory();
   const { setHomeCategory, setInventoryCategory } = useSelectedCategory();
+  const { user, isAuthenticated } = useAuth();
+  const loginBottomSheetRef = useRef<BottomSheetModal>(null);
+  const signupBottomSheetRef = useRef<BottomSheetModal>(null);
 
   const loadItems = async () => {
     setIsLoading(true);
@@ -129,6 +136,30 @@ export const HomeScreen: React.FC = () => {
     navigation.navigate('Settings');
   };
 
+  const handleAvatarPress = () => {
+    console.log('Avatar pressed, isAuthenticated:', isAuthenticated);
+    if (isAuthenticated) {
+      // Navigate to Profile - need to use parent navigator (RootStack)
+      const rootNavigation = navigation.getParent();
+      if (rootNavigation) {
+        rootNavigation.navigate('Profile');
+      }
+    } else {
+      console.log('Presenting login bottom sheet, ref:', loginBottomSheetRef.current);
+      loginBottomSheetRef.current?.present();
+    }
+  };
+
+  const handleSignupPress = () => {
+    loginBottomSheetRef.current?.dismiss();
+    signupBottomSheetRef.current?.present();
+  };
+
+  const handleLoginPress = () => {
+    signupBottomSheetRef.current?.dismiss();
+    loginBottomSheetRef.current?.present();
+  };
+
   // Calculate bottom padding for scrollable content
   const bottomPadding = calculateBottomPadding(insets.bottom);
 
@@ -139,12 +170,21 @@ export const HomeScreen: React.FC = () => {
           icon="home"
           title={t('home.title')}
           subtitle={t('home.subtitle')}
-          avatarUrl="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+          avatarUrl={user?.avatarUrl}
           onSettingsPress={handleSettingsPress}
+          onAvatarPress={handleAvatarPress}
         />
         <LoadingContainer>
           <ActivityIndicator size="large" />
         </LoadingContainer>
+        <LoginBottomSheet
+          bottomSheetRef={loginBottomSheetRef}
+          onSignupPress={handleSignupPress}
+        />
+        <SignupBottomSheet
+          bottomSheetRef={signupBottomSheetRef}
+          onLoginPress={handleLoginPress}
+        />
       </Container>
     );
   }
@@ -155,8 +195,9 @@ export const HomeScreen: React.FC = () => {
         icon="home"
         title={t('home.title')}
         subtitle={t('home.subtitle')}
-        avatarUrl="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+        avatarUrl={user?.avatarUrl}
         onSettingsPress={handleSettingsPress}
+        onAvatarPress={handleAvatarPress}
       />
       <Content
         showsVerticalScrollIndicator={false}
@@ -188,6 +229,14 @@ export const HomeScreen: React.FC = () => {
           </>
         )}
       </Content>
+      <LoginBottomSheet
+        bottomSheetRef={loginBottomSheetRef}
+        onSignupPress={handleSignupPress}
+      />
+      <SignupBottomSheet
+        bottomSheetRef={signupBottomSheetRef}
+        onLoginPress={handleLoginPress}
+      />
     </Container>
   );
 };

@@ -5,7 +5,8 @@ export interface Category {
   name: string;
   label: string; // Chinese label
   isCustom: boolean; // Flag to distinguish system vs user-created categories
-  createdAt?: string; // ISO date string for custom categories
+  createdAt?: string; // ISO date string
+  updatedAt?: string; // ISO date string
   icon?: keyof typeof Ionicons.glyphMap;
   iconColor?: string;
 }
@@ -13,6 +14,8 @@ export interface Category {
 export interface Location {
   id: string;
   name: string; // Chinese label (will be i18n'd in future)
+  createdAt?: string; // ISO date string
+  updatedAt?: string; // ISO date string
 }
 
 export interface InventoryItem {
@@ -28,6 +31,8 @@ export interface InventoryItem {
   tags: string[]; // Array of tag strings
   expiryDate?: string; // ISO date string (optional)
   purchaseDate?: string; // ISO date string (optional)
+  createdAt?: string; // ISO date string
+  updatedAt?: string; // ISO date string
 }
 
 export interface TodoItem {
@@ -35,5 +40,6 @@ export interface TodoItem {
   text: string;
   completed: boolean;
   createdAt: string; // ISO date string
+  updatedAt?: string; // ISO date string
 }
 

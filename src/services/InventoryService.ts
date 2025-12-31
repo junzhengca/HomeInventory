@@ -31,15 +31,18 @@ export const getItemById = async (id: string): Promise<InventoryItem | null> => 
 export const createItem = async (item: Omit<InventoryItem, 'id'>): Promise<InventoryItem | null> => {
   try {
     const items = await getAllItems();
+    const now = new Date().toISOString();
     const newItem: InventoryItem = {
       ...item,
       id: generateItemId(),
       tags: item.tags || [],
+      createdAt: now,
+      updatedAt: now,
     };
-    
+
     items.push(newItem);
     const success = await writeFile<ItemsData>(ITEMS_FILE, { items });
-    
+
     return success ? newItem : null;
   } catch (error) {
     console.error('Error creating item:', error);
@@ -57,14 +60,14 @@ export const updateItem = async (
   try {
     const items = await getAllItems();
     const index = items.findIndex((item) => item.id === id);
-    
+
     if (index === -1) {
       return null;
     }
-    
-    items[index] = { ...items[index], ...updates };
+
+    items[index] = { ...items[index], ...updates, updatedAt: new Date().toISOString() };
     const success = await writeFile<ItemsData>(ITEMS_FILE, { items });
-    
+
     return success ? items[index] : null;
   } catch (error) {
     console.error('Error updating item:', error);

@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Image, View, Text } from 'react-native';
+import { TouchableOpacity, View, Text } from 'react-native';
+import { Image } from 'expo-image';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { StyledProps } from '../utils/styledComponents';
@@ -89,7 +90,7 @@ export const AccountDetailsSection: React.FC<AccountDetailsSectionProps> = ({
     <Container>
       <AvatarContainer>
         {avatarUrl ? (
-          <AvatarImage source={{ uri: avatarUrl }} />
+          <AvatarImage source={{ uri: avatarUrl }} contentFit="cover" cachePolicy="memory-disk" />
         ) : (
           <AvatarPlaceholder>
             <Ionicons name="person" size={30} color="white" />

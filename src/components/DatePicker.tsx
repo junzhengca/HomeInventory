@@ -5,7 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { formatDate } from '../utils/formatters';
 
 const DatePickerContainer = styled(View)`
@@ -92,7 +92,7 @@ const Button = styled(TouchableOpacity)`
   align-items: center;
   justify-content: center;
   min-height: 44;
-  border-width: ${({ theme, variant }: StyledPropsWith<{ variant?: 'primary' | 'secondary' }>) =>
+  border-width: ${({ variant }: StyledPropsWith<{ variant?: 'primary' | 'secondary' }>) =>
     variant === 'secondary' ? 1 : 0}px;
   border-color: ${({ theme, variant }: StyledPropsWith<{ variant?: 'primary' | 'secondary' }>) =>
     variant === 'secondary' ? theme.colors.border : 'transparent'};

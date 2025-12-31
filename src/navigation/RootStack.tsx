@@ -6,6 +6,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { ItemDetailsScreen } from '../screens/ItemDetailsScreen';
 import { ExportDataScreen } from '../screens/ExportDataScreen';
 import { ExportDataDetailScreen } from '../screens/ExportDataDetailScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -21,6 +22,7 @@ export const RootStack: React.FC = () => {
       <Stack.Screen name="ItemDetails" component={ItemDetailsScreen} />
       <Stack.Screen name="ExportData" component={ExportDataScreen} />
       <Stack.Screen name="ExportDataDetail" component={ExportDataDetailScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
     </Stack.Navigator>
   );
 };

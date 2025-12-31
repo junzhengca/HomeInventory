@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Image, View, Text } from 'react-native';
+import { TouchableOpacity, View, Text } from 'react-native';
+import { Image } from 'expo-image';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -192,7 +193,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           </ActionButton>
           <AvatarButton onPress={handleAvatarPress}>
             {avatarUrl ? (
-              <AvatarImage source={{ uri: avatarUrl }} />
+              <AvatarImage source={{ uri: avatarUrl }} contentFit="cover" cachePolicy="memory-disk" />
             ) : (
               <AvatarPlaceholder>
                 <Ionicons name="person" size={20} color="white" />

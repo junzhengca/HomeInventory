@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ViewStyle } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { TodoItem } from '../types/inventory';
@@ -40,7 +40,7 @@ const TodoText = styled(Text)<{ completed: boolean }>`
 interface TodoCardProps {
   todo: TodoItem;
   onToggle?: (id: string) => void;
-  style?: any;
+  style?: ViewStyle;
 }
 
 /**

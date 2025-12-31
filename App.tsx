@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { I18nextProvider } from 'react-i18next';
 import { SettingsProvider } from './src/contexts/SettingsContext';
+import { AuthProvider } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { InventoryProvider } from './src/contexts/InventoryContext';
 import { CategoryProvider } from './src/contexts/CategoryContext';
@@ -15,6 +16,9 @@ import { SelectedCategoryProvider } from './src/contexts/SelectedCategoryContext
 import { RootStack } from './src/navigation/RootStack';
 import { initializeDataFiles } from './src/services/DataInitializationService';
 import i18n from './src/i18n/i18n';
+
+// TODO: Configure your API base URL here or use environment variables
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://your-api-url.com';
 
 export default function App() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -49,22 +53,24 @@ export default function App() {
       <SafeAreaProvider>
         <I18nextProvider i18n={i18n}>
           <SettingsProvider>
-            <InventoryProvider>
-              <CategoryProvider>
-                <TodoProvider>
-                  <SelectedCategoryProvider>
-                    <ThemeProvider>
-                      <BottomSheetModalProvider>
-                        <NavigationContainer>
-                          <RootStack />
-                          <StatusBar style="auto" />
-                        </NavigationContainer>
-                      </BottomSheetModalProvider>
-                    </ThemeProvider>
-                  </SelectedCategoryProvider>
-                </TodoProvider>
-              </CategoryProvider>
-            </InventoryProvider>
+            <AuthProvider apiBaseUrl={API_BASE_URL}>
+              <InventoryProvider>
+                <CategoryProvider>
+                  <TodoProvider>
+                    <SelectedCategoryProvider>
+                      <ThemeProvider>
+                        <BottomSheetModalProvider>
+                          <NavigationContainer>
+                            <RootStack />
+                            <StatusBar style="auto" />
+                          </NavigationContainer>
+                        </BottomSheetModalProvider>
+                      </ThemeProvider>
+                    </SelectedCategoryProvider>
+                  </TodoProvider>
+                </CategoryProvider>
+              </InventoryProvider>
+            </AuthProvider>
           </SettingsProvider>
         </I18nextProvider>
       </SafeAreaProvider>

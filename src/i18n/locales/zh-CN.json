@@ -78,6 +78,23 @@
     "empty": {
       "title": "还没有待办事项",
       "description": "在上方添加您的第一个待办事项来开始管理任务吧！"
+    },
+    "share": {
+      "copy": "复制",
+      "invite": "邀请",
+      "familySharing": "家庭共享",
+      "copied": {
+        "title": "已复制！",
+        "message": "已复制 {{count}} 个待处理待办事项到剪贴板"
+      },
+      "noTodos": {
+        "title": "没有待办事项",
+        "message": "没有待处理的待办事项可复制"
+      },
+      "error": {
+        "title": "错误",
+        "message": "复制到剪贴板失败"
+      }
     }
   },
   "settings": {
@@ -93,7 +110,30 @@
       "forest": "森林",
       "lilac": "丁香"
     },
-    "version": "当前版本 v2.2.0"
+    "version": "当前版本 v2.2.0",
+    "clearData": {
+      "button": "清除所有数据",
+      "confirm": {
+        "title": "确认清除所有数据",
+        "message": "您确定要清除所有数据吗？这将删除您的所有物品、分类和待办事项。此操作无法撤销。",
+        "cancel": "取消",
+        "confirm": "清除所有数据"
+      },
+      "success": {
+        "title": "成功",
+        "message": "所有数据已清除并重置为默认值。"
+      },
+      "error": {
+        "title": "错误",
+        "message": "清除数据失败，请重试。"
+      }
+    },
+    "logout": {
+      "title": "确认登出",
+      "message": "您确定要登出吗？",
+      "cancel": "取消",
+      "confirm": "登出"
+    }
   },
   "createItem": {
     "title": "入库新物品",
@@ -241,6 +281,81 @@
   },
   "colorPalette": {
     "label": "选择颜色"
+  },
+  "profile": {
+    "title": "个人资料",
+    "subtitle": "您的账户信息",
+    "noUserData": "没有可用的用户数据",
+    "userId": "用户ID",
+    "email": "邮箱",
+    "memberSince": "注册时间",
+    "lastUpdated": "最后更新",
+    "avatar": {
+      "uploadSuccess": {
+        "title": "成功",
+        "message": "头像更新成功"
+      },
+      "uploadError": {
+        "title": "错误",
+        "message": "上传头像失败，请重试。",
+        "permissionDenied": "访问照片的权限被拒绝。请在设置中启用。",
+        "uploadFailed": "上传图片失败，请重试。",
+        "updateFailed": "更新头像失败，请重试。"
+      },
+      "pickerCancelled": "已取消选择图片"
+    }
+  },
+  "login": {
+    "title": "登录",
+    "subtitle": "输入您的凭据以继续",
+    "fields": {
+      "email": "邮箱",
+      "password": "密码"
+    },
+    "placeholders": {
+      "email": "请输入您的邮箱",
+      "password": "请输入您的密码"
+    },
+    "benefits": {
+      "sync": "跨设备同步数据 - 永不丢失您的库存",
+      "premium": "解锁AI驱动的高级功能计划",
+      "share": "与家人和朋友分享您的库存"
+    },
+    "submit": "登录",
+    "submitting": "登录中...",
+    "link": "还没有账户？注册",
+    "errors": {
+      "emptyFields": "请输入邮箱和密码",
+      "failed": "登录失败，请重试。"
+    }
+  },
+  "signup": {
+    "title": "注册",
+    "subtitle": "创建新账户",
+    "fields": {
+      "email": "邮箱",
+      "password": "密码",
+      "confirmPassword": "确认密码"
+    },
+    "placeholders": {
+      "email": "请输入您的邮箱",
+      "password": "请输入您的密码",
+      "confirmPassword": "请确认您的密码"
+    },
+    "benefits": {
+      "sync": "跨设备同步数据 - 永不丢失您的库存",
+      "premium": "解锁AI驱动的高级功能计划",
+      "share": "与家人和朋友分享您的库存"
+    },
+    "submit": "注册",
+    "submitting": "注册中...",
+    "link": "已有账户？登录",
+    "errors": {
+      "emptyFields": "请填写所有字段",
+      "passwordMismatch": "密码不匹配",
+      "passwordTooShort": "密码至少需要6个字符",
+      "failed": "注册失败，请重试。"
+    }
   }
 }
 

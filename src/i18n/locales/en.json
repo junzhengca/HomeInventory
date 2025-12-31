@@ -78,6 +78,23 @@
     "empty": {
       "title": "No Todos Yet",
       "description": "Add your first todo above to start managing tasks!"
+    },
+    "share": {
+      "copy": "Copy",
+      "invite": "Invite",
+      "familySharing": "Family Sharing",
+      "copied": {
+        "title": "Copied!",
+        "message": "{{count}} pending todo(s) copied to clipboard"
+      },
+      "noTodos": {
+        "title": "No Todos",
+        "message": "There are no pending todos to copy"
+      },
+      "error": {
+        "title": "Error",
+        "message": "Failed to copy to clipboard"
+      }
     }
   },
   "settings": {
@@ -93,7 +110,30 @@
       "forest": "Forest",
       "lilac": "Lilac"
     },
-    "version": "Current version v2.2.0"
+    "version": "Current version v2.2.0",
+    "clearData": {
+      "button": "Clear All Data",
+      "confirm": {
+        "title": "Confirm Clear All Data",
+        "message": "Are you sure you want to clear all data? This will delete all your items, categories, and todos. This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Clear All Data"
+      },
+      "success": {
+        "title": "Success",
+        "message": "All data has been cleared and reset to defaults."
+      },
+      "error": {
+        "title": "Error",
+        "message": "Failed to clear data. Please try again."
+      }
+    },
+    "logout": {
+      "title": "Confirm Logout",
+      "message": "Are you sure you want to log out?",
+      "cancel": "Cancel",
+      "confirm": "Log Out"
+    }
   },
   "createItem": {
     "title": "Add New Item",
@@ -241,6 +281,81 @@
   },
   "colorPalette": {
     "label": "Select Color"
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Your account information",
+    "noUserData": "No user data available",
+    "userId": "ID",
+    "email": "Email",
+    "memberSince": "Member since",
+    "lastUpdated": "Last updated",
+    "avatar": {
+      "uploadSuccess": {
+        "title": "Success",
+        "message": "Avatar updated successfully"
+      },
+      "uploadError": {
+        "title": "Error",
+        "message": "Failed to upload avatar. Please try again.",
+        "permissionDenied": "Permission to access photos was denied. Please enable it in settings.",
+        "uploadFailed": "Failed to upload image. Please try again.",
+        "updateFailed": "Failed to update avatar. Please try again."
+      },
+      "pickerCancelled": "Image selection cancelled"
+    }
+  },
+  "login": {
+    "title": "Log In",
+    "subtitle": "Enter your credentials to continue",
+    "fields": {
+      "email": "Email",
+      "password": "Password"
+    },
+    "placeholders": {
+      "email": "Enter your email",
+      "password": "Enter your password"
+    },
+    "benefits": {
+      "sync": "Sync your data across devices - never lose your inventory",
+      "premium": "Unlock premium plans with AI-powered features",
+      "share": "Share your inventory with family and friends"
+    },
+    "submit": "Log In",
+    "submitting": "Logging in...",
+    "link": "Don't have an account? Sign up",
+    "errors": {
+      "emptyFields": "Please enter both email and password",
+      "failed": "Login failed. Please try again."
+    }
+  },
+  "signup": {
+    "title": "Sign Up",
+    "subtitle": "Create a new account",
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password"
+    },
+    "placeholders": {
+      "email": "Enter your email",
+      "password": "Enter your password",
+      "confirmPassword": "Confirm your password"
+    },
+    "benefits": {
+      "sync": "Sync your data across devices - never lose your inventory",
+      "premium": "Unlock premium plans with AI-powered features",
+      "share": "Share your inventory with family and friends"
+    },
+    "submit": "Sign Up",
+    "submitting": "Signing up...",
+    "link": "Already have an account? Log in",
+    "errors": {
+      "emptyFields": "Please fill in all fields",
+      "passwordMismatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "failed": "Signup failed. Please try again."
+    }
   }
 }
 

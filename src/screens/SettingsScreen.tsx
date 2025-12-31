@@ -6,12 +6,11 @@ import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../utils/styledComponents';
 
 import { PageHeader } from '../components/PageHeader';
-import { AccountDetailsSection } from '../components/AccountDetailsSection';
 import { ThemeChooser } from '../components/ThemeChooser';
 import { CurrencySelector } from '../components/CurrencySelector';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { ExportDataButton } from '../components/ExportDataButton';
-import { LogoutButton } from '../components/LogoutButton';
+import { ClearDataButton } from '../components/ClearDataButton';
 import { useSettings } from '../contexts/SettingsContext';
 import { calculateBottomPadding } from '../utils/layout';
 
@@ -110,9 +109,6 @@ export const SettingsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
-        {/* Account Details Section */}
-        <AccountDetailsSection />
-
         {/* Preferences Section */}
         <SettingsSection>
           <SectionTitle>{t('settings.preferences')}</SectionTitle>
@@ -134,7 +130,7 @@ export const SettingsScreen: React.FC = () => {
         <SettingsSection>
           <SectionTitle>{t('settings.dataAndSecurity')}</SectionTitle>
           <ExportDataButton />
-          <LogoutButton />
+          <ClearDataButton />
         </SettingsSection>
 
         {/* Version Info */}

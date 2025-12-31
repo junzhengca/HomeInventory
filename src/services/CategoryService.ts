@@ -37,30 +37,32 @@ export const isCategoryInUse = async (categoryId: string): Promise<boolean> => {
  * Create a new custom category
  */
 export const createCategory = async (
-  category: Omit<Category, 'id' | 'isCustom' | 'createdAt'>
+  category: Omit<Category, 'id' | 'isCustom' | 'createdAt' | 'updatedAt'>
 ): Promise<Category | null> => {
   try {
     const categories = await getAllCategories();
-    
+
     // Check if category name already exists
     const existingCategory = categories.find(
       (cat) => cat.name === category.name || cat.label === category.label
     );
-    
+
     if (existingCategory) {
       throw new Error('Category with this name already exists');
     }
-    
+
+    const now = new Date().toISOString();
     const newCategory: Category = {
       ...category,
       id: generateCategoryId(),
       isCustom: true,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
-    
+
     categories.push(newCategory);
     const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories });
-    
+
     return success ? newCategory : null;
   } catch (error) {
     console.error('Error creating category:', error);
@@ -73,21 +75,21 @@ export const createCategory = async (
  */
 export const updateCategory = async (
   id: string,
-  updates: Partial<Omit<Category, 'id' | 'isCustom' | 'createdAt'>>
+  updates: Partial<Omit<Category, 'id' | 'isCustom' | 'createdAt' | 'updatedAt'>>
 ): Promise<Category | null> => {
   try {
     const categories = await getAllCategories();
     const index = categories.findIndex((category) => category.id === id);
-    
+
     if (index === -1) {
       return null;
     }
-    
+
     // Prevent updating system categories
     if (!categories[index].isCustom) {
       throw new Error('Cannot update system categories');
     }
-    
+
     // Check for duplicate names
     if (updates.name || updates.label) {
       const duplicate = categories.find(
@@ -96,15 +98,15 @@ export const updateCategory = async (
           (cat.name === (updates.name || categories[index].name) ||
             cat.label === (updates.label || categories[index].label))
       );
-      
+
       if (duplicate) {
         throw new Error('Category with this name already exists');
       }
     }
-    
-    categories[index] = { ...categories[index], ...updates };
+
+    categories[index] = { ...categories[index], ...updates, updatedAt: new Date().toISOString() };
     const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories });
-    
+
     return success ? categories[index] : null;
   } catch (error) {
     console.error('Error updating category:', error);

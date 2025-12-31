@@ -24,6 +24,7 @@ export type RootStackParamList = {
   ItemDetails: { itemId: string };
   ExportData: undefined;
   ExportDataDetail: { filename: string };
+  Profile: undefined;
 };
 
 declare global {

@@ -21,9 +21,13 @@ import { PageHeader } from '../components/PageHeader';
 import { TodoCard } from '../components/TodoCard';
 import { EmptyState } from '../components/EmptyState';
 import { EditTodoBottomSheet } from '../components/EditTodoBottomSheet';
+import { LoginBottomSheet } from '../components/LoginBottomSheet';
+import { SignupBottomSheet } from '../components/SignupBottomSheet';
+import { SharePanel } from '../components/SharePanel';
 import { RootStackParamList } from '../navigation/types';
 import { useTodos } from '../contexts/TodoContext';
 import { useTheme } from '../theme/ThemeProvider';
+import { useAuth } from '../contexts/AuthContext';
 import { TodoItem } from '../types/inventory';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -89,6 +93,7 @@ const SwipeActionsContainer = styled(View)`
   border-top-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
   border-bottom-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
   overflow: hidden;
+  margin-left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
 `;
 
 const ActionButton = styled(TouchableOpacity)`
@@ -129,16 +134,19 @@ const DeleteAction = styled(ActionButton)`
 export const NotesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { pendingTodos, completedTodos, loading, refreshTodos, addTodo, toggleTodoCompletion, removeTodo, updateTodo } =
+  const { pendingTodos, completedTodos, loading, refreshTodos, addTodo, toggleTodoCompletion, removeTodo } =
     useTodos();
   const theme = useTheme();
   const { t } = useTranslation();
+  const { user, isAuthenticated } = useAuth();
 
   const [newTodoText, setNewTodoText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [editingTodo, setEditingTodo] = useState<{ id: string; text: string } | null>(null);
   
   const editBottomSheetRef = useRef<BottomSheetModal>(null);
+  const loginBottomSheetRef = useRef<BottomSheetModal>(null);
+  const signupBottomSheetRef = useRef<BottomSheetModal>(null);
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
 
   useEffect(() => {
@@ -146,7 +154,33 @@ export const NotesScreen: React.FC = () => {
   }, [refreshTodos]);
 
   const handleSettingsPress = () => {
-    navigation.navigate('Settings');
+    // Navigate to Settings - need to use parent navigator (RootStack)
+    const rootNavigation = navigation.getParent();
+    if (rootNavigation) {
+      rootNavigation.navigate('Settings');
+    }
+  };
+
+  const handleAvatarPress = () => {
+    if (isAuthenticated) {
+      // Navigate to Profile - need to use parent navigator (RootStack)
+      const rootNavigation = navigation.getParent();
+      if (rootNavigation) {
+        rootNavigation.navigate('Profile');
+      }
+    } else {
+      loginBottomSheetRef.current?.present();
+    }
+  };
+
+  const handleSignupPress = () => {
+    loginBottomSheetRef.current?.dismiss();
+    signupBottomSheetRef.current?.present();
+  };
+
+  const handleLoginPress = () => {
+    signupBottomSheetRef.current?.dismiss();
+    loginBottomSheetRef.current?.present();
   };
 
   const handleAddTodo = async () => {
@@ -260,7 +294,17 @@ export const NotesScreen: React.FC = () => {
           icon="document-text"
           title={t('notes.title')}
           subtitle={t('notes.subtitle')}
+          avatarUrl={user?.avatarUrl}
           onSettingsPress={handleSettingsPress}
+          onAvatarPress={handleAvatarPress}
+        />
+        <LoginBottomSheet
+          bottomSheetRef={loginBottomSheetRef}
+          onSignupPress={handleSignupPress}
+        />
+        <SignupBottomSheet
+          bottomSheetRef={signupBottomSheetRef}
+          onLoginPress={handleLoginPress}
         />
       </Container>
     );
@@ -273,12 +317,23 @@ export const NotesScreen: React.FC = () => {
           icon="document-text"
           title={t('notes.title')}
           subtitle={t('notes.subtitle')}
+          avatarUrl={user?.avatarUrl}
           onSettingsPress={handleSettingsPress}
+          onAvatarPress={handleAvatarPress}
         />
         <Content
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomPadding }}
         >
+          <SharePanel
+            userAvatarUrl={user?.avatarUrl}
+            pendingTodos={pendingTodos}
+            isAuthenticated={isAuthenticated}
+            onInvitePress={() => {
+              // TODO: Implement invite functionality
+              console.log('Invite pressed');
+            }}
+          />
           <AddTodoContainer isFocused={isFocused}>
             <TodoInput
               placeholder={t('notes.addTodo')}
@@ -329,6 +384,14 @@ export const NotesScreen: React.FC = () => {
           todoId={editingTodo?.id || ''}
           initialText={editingTodo?.text || ''}
           onTodoUpdated={handleTodoUpdated}
+        />
+        <LoginBottomSheet
+          bottomSheetRef={loginBottomSheetRef}
+          onSignupPress={handleSignupPress}
+        />
+        <SignupBottomSheet
+          bottomSheetRef={signupBottomSheetRef}
+          onLoginPress={handleLoginPress}
         />
       </Container>
     </GestureHandlerRootView>

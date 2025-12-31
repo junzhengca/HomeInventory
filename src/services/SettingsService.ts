@@ -8,7 +8,7 @@ const SETTINGS_FILE = 'settings.json';
  */
 export const getSettings = async (): Promise<Settings> => {
   const settings = await readFile<Settings>(SETTINGS_FILE);
-  return settings || defaultSettings;
+  return settings || defaultSettings as Settings;
 };
 
 /**
@@ -17,11 +17,14 @@ export const getSettings = async (): Promise<Settings> => {
 export const updateSettings = async (updates: Partial<Settings>): Promise<Settings | null> => {
   try {
     const currentSettings = await getSettings();
+    const now = new Date().toISOString();
     const newSettings: Settings = {
       ...currentSettings,
       ...updates,
+      updatedAt: now,
+      createdAt: currentSettings.createdAt || now,
     };
-    
+
     const success = await writeFile<Settings>(SETTINGS_FILE, newSettings);
     return success ? newSettings : null;
   } catch (error) {
@@ -35,8 +38,14 @@ export const updateSettings = async (updates: Partial<Settings>): Promise<Settin
  */
 export const resetToDefaults = async (): Promise<Settings | null> => {
   try {
-    const success = await writeFile<Settings>(SETTINGS_FILE, defaultSettings);
-    return success ? defaultSettings : null;
+    const now = new Date().toISOString();
+    const resetSettings: Settings = {
+      ...defaultSettings,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const success = await writeFile<Settings>(SETTINGS_FILE, resetSettings);
+    return success ? resetSettings : null;
   } catch (error) {
     console.error('Error resetting settings:', error);
     return null;

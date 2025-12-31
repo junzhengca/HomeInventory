@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -16,7 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.homeinventory.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to upload avatar images.",
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos for your avatar."
       }
     },
     "android": {
@@ -36,7 +38,15 @@
       }
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you upload avatar images.",
+          "cameraPermission": "The app accesses your camera to let you take photos for your avatar."
+        }
+      ]
     ]
   }
 }

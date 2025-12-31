@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { FlatList, ActivityIndicator, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../utils/styledComponents';
@@ -12,11 +13,14 @@ import { SearchInput } from '../components/SearchInput';
 import { CategorySelector } from '../components/CategorySelector';
 import { ItemCard } from '../components/ItemCard';
 import { EmptyState } from '../components/EmptyState';
+import { LoginBottomSheet } from '../components/LoginBottomSheet';
+import { SignupBottomSheet } from '../components/SignupBottomSheet';
 import { InventoryItem } from '../types/inventory';
 import { RootStackParamList } from '../navigation/types';
 import { getAllItems } from '../services/InventoryService';
 import { useInventory } from '../contexts/InventoryContext';
 import { useSelectedCategory } from '../contexts/SelectedCategoryContext';
+import { useAuth } from '../contexts/AuthContext';
 import { calculateBottomPadding } from '../utils/layout';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -51,6 +55,9 @@ export const InventoryScreen: React.FC = () => {
   const { t } = useTranslation();
   const { registerRefreshCallback } = useInventory();
   const { inventoryCategory, setInventoryCategory } = useSelectedCategory();
+  const { user, isAuthenticated } = useAuth();
+  const loginBottomSheetRef = useRef<BottomSheetModal>(null);
+  const signupBottomSheetRef = useRef<BottomSheetModal>(null);
 
   const loadItems = async () => {
     setIsLoading(true);
@@ -131,6 +138,27 @@ export const InventoryScreen: React.FC = () => {
     }
   };
 
+  const handleAvatarPress = () => {
+    if (isAuthenticated) {
+      const rootNavigation = navigation.getParent();
+      if (rootNavigation) {
+        rootNavigation.navigate('Profile');
+      }
+    } else {
+      loginBottomSheetRef.current?.present();
+    }
+  };
+
+  const handleSignupPress = () => {
+    loginBottomSheetRef.current?.dismiss();
+    signupBottomSheetRef.current?.present();
+  };
+
+  const handleLoginPress = () => {
+    signupBottomSheetRef.current?.dismiss();
+    loginBottomSheetRef.current?.present();
+  };
+
   // Calculate bottom padding for scrollable content
   const bottomPadding = calculateBottomPadding(insets.bottom);
 
@@ -141,11 +169,21 @@ export const InventoryScreen: React.FC = () => {
           icon="list"
           title={t('inventory.title')}
           subtitle={t('inventory.loading')}
+          avatarUrl={user?.avatarUrl}
           onSettingsPress={handleSettingsPress}
+          onAvatarPress={handleAvatarPress}
         />
         <LoadingContainer>
           <ActivityIndicator size="large" />
         </LoadingContainer>
+        <LoginBottomSheet
+          bottomSheetRef={loginBottomSheetRef}
+          onSignupPress={handleSignupPress}
+        />
+        <SignupBottomSheet
+          bottomSheetRef={signupBottomSheetRef}
+          onLoginPress={handleLoginPress}
+        />
       </Container>
     );
   }
@@ -156,7 +194,9 @@ export const InventoryScreen: React.FC = () => {
         icon="list"
         title={t('inventory.title')}
         subtitle={t('inventory.itemsCount', { count: filteredItems.length })}
+        avatarUrl={user?.avatarUrl}
         onSettingsPress={handleSettingsPress}
+        onAvatarPress={handleAvatarPress}
       />
       <Content>
         <SearchInput
@@ -189,6 +229,14 @@ export const InventoryScreen: React.FC = () => {
           )}
         </ListContainer>
       </Content>
+      <LoginBottomSheet
+        bottomSheetRef={loginBottomSheetRef}
+        onSignupPress={handleSignupPress}
+      />
+      <SignupBottomSheet
+        bottomSheetRef={signupBottomSheetRef}
+        onLoginPress={handleLoginPress}
+      />
     </Container>
   );
 };
