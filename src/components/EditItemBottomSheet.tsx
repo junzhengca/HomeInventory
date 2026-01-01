@@ -10,9 +10,9 @@ import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { Category, InventoryItem } from '../types/inventory';
 import { locations } from '../data/locations';
 import { getAllCategories } from '../services/CategoryService';
-import { getItemById, updateItem } from '../services/InventoryService';
-import { useInventory } from '../contexts/InventoryContext';
-import { useCategory } from '../contexts/CategoryContext';
+import { getItemById } from '../services/InventoryService';
+import { useInventory, useCategory, useAppSelector } from '../store/hooks';
+import { selectItemById } from '../store/slices/inventorySlice';
 import { filterItemCategories } from '../utils/categoryUtils';
 import { CategoryManagerBottomSheet } from './CategoryManagerBottomSheet';
 import { BottomActionBar } from './BottomActionBar';
@@ -239,9 +239,11 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { refreshItems } = useInventory();
+  const { updateItem, loading: itemsLoading, loadItems } = useInventory();
   const { refreshCategories, registerRefreshCallback } = useCategory();
-  const [item, setItem] = useState<InventoryItem | null>(null);
+  // Get item from Redux store
+  const itemFromRedux = useAppSelector((state) => itemId ? selectItemById(state, itemId) : null);
+  const [item, setItem] = useState<InventoryItem | null>(itemFromRedux);
   const [name, setName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
@@ -263,27 +265,37 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     return filterItemCategories(categories);
   }, [categories]);
 
+  // Load item if not in Redux
   useEffect(() => {
     const loadItem = async () => {
+      // If item is in Redux, use it
+      if (itemFromRedux) {
+        setItem(itemFromRedux);
+        return;
+      }
+
+      // If items are still loading, wait
+      if (itemsLoading) {
+        return;
+      }
+
+      // Items are loaded but item not found, try loading from service
       try {
         const itemData = await getItemById(itemId);
         if (itemData) {
           setItem(itemData);
-          setName(itemData.name);
-          setSelectedCategory(itemData.category);
-          setSelectedLocation(itemData.location);
-          setPrice(itemData.price.toString());
-          setDetailedLocation(itemData.detailedLocation || '');
-          setAmount(itemData.amount?.toString() || '');
-          setTags(itemData.tags || []);
-          setPurchaseDate(itemData.purchaseDate ? new Date(itemData.purchaseDate) : null);
-          setExpiryDate(itemData.expiryDate ? new Date(itemData.expiryDate) : null);
+          // Trigger a reload of items to sync Redux
+          loadItems();
         }
       } catch (error) {
         console.error('Error loading item:', error);
       }
     };
 
+    loadItem();
+  }, [itemFromRedux, itemId, itemsLoading, loadItems]);
+
+  useEffect(() => {
     const loadCategories = async () => {
       try {
         const allCategories = await getAllCategories();
@@ -293,11 +305,8 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
       }
     };
 
-    if (itemId) {
-      loadItem();
-      loadCategories();
-    }
-  }, [itemId]);
+    loadCategories();
+  }, []);
 
   const loadCategoriesCallback = useCallback(async () => {
     try {
@@ -311,6 +320,21 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
   const handleCategoriesChanged = useCallback(() => {
     loadCategoriesCallback();
   }, [loadCategoriesCallback]);
+
+  // Update form fields when item changes
+  useEffect(() => {
+    if (item) {
+      setName(item.name);
+      setSelectedCategory(item.category);
+      setSelectedLocation(item.location);
+      setPrice(item.price.toString());
+      setDetailedLocation(item.detailedLocation || '');
+      setAmount(item.amount?.toString() || '');
+      setTags(item.tags || []);
+      setPurchaseDate(item.purchaseDate ? new Date(item.purchaseDate) : null);
+      setExpiryDate(item.expiryDate ? new Date(item.expiryDate) : null);
+    }
+  }, [item]);
 
   // Track keyboard visibility to adjust footer padding
   useEffect(() => {
@@ -399,20 +423,15 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
         iconColor: category?.iconColor || item?.iconColor || theme.colors.textSecondary,
       };
 
-      const updatedItem = await updateItem(itemId, updates);
+      updateItem(itemId, updates);
 
-      if (updatedItem) {
-        handleClose();
-        refreshItems();
-        // Refresh categories if category was changed
-        if (selectedCategory !== item?.category) {
-          refreshCategories();
-        }
-        if (onItemUpdated) {
-          onItemUpdated();
-        }
-      } else {
-        Alert.alert(t('editItem.errors.title'), t('editItem.errors.updateFailed'));
+      handleClose();
+      // Refresh categories if category was changed
+      if (selectedCategory !== item?.category) {
+        refreshCategories();
+      }
+      if (onItemUpdated) {
+        onItemUpdated();
       }
     } catch (error) {
       console.error('Error updating item:', error);
@@ -436,7 +455,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     theme,
     handleClose,
     onItemUpdated,
-    refreshItems,
+    updateItem,
     refreshCategories,
     t,
   ]);

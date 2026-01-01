@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { ScrollView, ActivityIndicator, View, Text, Alert, TouchableOpacity, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import styled from 'styled-components/native';
@@ -9,10 +9,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import i18n from '../i18n/i18n';
-import type { StyledProps } from '../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { PageHeader } from '../components/PageHeader';
 import { LogoutButton } from '../components/LogoutButton';
-import { useAuth } from '../contexts/AuthContext';
+import { Toggle } from '../components/Toggle';
+import { useAuth, useSync } from '../store/hooks';
+import { useTheme } from '../theme/ThemeProvider';
 import { calculateBottomPadding } from '../utils/layout';
 import { formatDate } from '../utils/formatters';
 import { ApiClient } from '../services/ApiClient';
@@ -75,6 +77,13 @@ const InfoSection = styled(View)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xl}px;
 `;
 
+const SectionTitle = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.xl}px;
+  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
+  color: ${({ theme }: StyledProps) => theme.colors.text};
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
 const InfoRow = styled(View)`
   flex-direction: row;
   justify-content: space-between;
@@ -96,18 +105,51 @@ const InfoValue = styled(Text)`
   color: ${({ theme }: StyledProps) => theme.colors.text};
 `;
 
+const SyncStatusText = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
+  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
+  margin-top: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+`;
+
+const ErrorText = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
+  color: ${({ theme }: StyledProps) => theme.colors.error};
+  margin-top: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+`;
+
 const LoadingContainer = styled(View)`
   flex: 1;
   justify-content: center;
   align-items: center;
 `;
 
+const SyncButton = styled(TouchableOpacity)<{ disabled?: boolean }>`
+  background-color: ${({ theme, disabled }: StyledPropsWith<{ disabled?: boolean }>) => 
+    disabled ? theme.colors.border : theme.colors.primary};
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
+  padding: ${({ theme }: StyledProps) => theme.spacing.sm}px ${({ theme }: StyledProps) => theme.spacing.md}px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  opacity: ${({ disabled }: StyledPropsWith<{ disabled?: boolean }>) => (disabled ? 0.6 : 1)};
+  margin-top: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+`;
+
+const SyncButtonText = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
+  color: ${({ theme }: StyledProps) => theme.colors.surface};
+`;
+
 export const ProfileScreen: React.FC = () => {
   const { user, isLoading, logout, updateUser } = useAuth();
+  const { enabled: syncEnabled, loading: syncLoading, lastSyncTime, error: syncError, enableSync, disableSync, syncAll } = useSync();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { t } = useTranslation();
+  const theme = useTheme();
   const [isUploading, setIsUploading] = useState(false);
+  const [localSyncEnabled, setLocalSyncEnabled] = useState(false);
 
   const getLocale = useCallback(() => {
     return i18n.language === 'zh' || i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US';
@@ -225,6 +267,52 @@ export const ProfileScreen: React.FC = () => {
     );
   };
 
+  const handleSyncToggle = useCallback(async () => {
+    try {
+      if (syncEnabled) {
+        await disableSync();
+        setLocalSyncEnabled(false);
+        Alert.alert(
+          t('profile.sync.alerts.disabled.title'),
+          t('profile.sync.alerts.disabled.message')
+        );
+      } else {
+        await enableSync();
+        setLocalSyncEnabled(true);
+        Alert.alert(
+          t('profile.sync.alerts.enabled.title'),
+          t('profile.sync.alerts.enabled.message')
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling sync:', error);
+      Alert.alert(
+        t('profile.sync.alerts.error.title'),
+        error instanceof Error ? error.message : t('profile.sync.alerts.error.toggleFailed')
+      );
+    }
+  }, [syncEnabled, enableSync, disableSync, t]);
+
+  const handleManualSync = useCallback(async () => {
+    try {
+      await syncAll();
+      Alert.alert(
+        t('profile.sync.alerts.started.title'),
+        t('profile.sync.alerts.started.message')
+      );
+    } catch (error) {
+      console.error('Error triggering manual sync:', error);
+      Alert.alert(
+        t('profile.sync.alerts.error.title'),
+        error instanceof Error ? error.message : t('profile.sync.alerts.error.syncFailed')
+      );
+    }
+  }, [syncAll, t]);
+
+  useEffect(() => {
+    setLocalSyncEnabled(syncEnabled);
+  }, [syncEnabled]);
+
   // Calculate bottom padding for scrollable content
   const bottomPadding = calculateBottomPadding(insets.bottom);
 
@@ -312,6 +400,45 @@ export const ProfileScreen: React.FC = () => {
               <InfoLabel>{t('profile.lastUpdated')}</InfoLabel>
               <InfoValue>{formatDate(user.updatedAt, getLocale(), t)}</InfoValue>
             </InfoRow>
+          )}
+        </InfoSection>
+
+        <InfoSection>
+          <SectionTitle>{t('profile.sync.title')}</SectionTitle>
+          <InfoRow>
+            <View>
+              <InfoLabel>{t('profile.sync.enableSync')}</InfoLabel>
+              <SyncStatusText>
+                {localSyncEnabled ? t('profile.sync.status.enabled') : t('profile.sync.status.disabled')}
+              </SyncStatusText>
+              {lastSyncTime && localSyncEnabled && (
+                <SyncStatusText>
+                  {t('profile.sync.lastSync')} {new Date(lastSyncTime).toLocaleString()}
+                </SyncStatusText>
+              )}
+              {syncError && (
+                <ErrorText>{t('profile.sync.error')} {syncError}</ErrorText>
+              )}
+            </View>
+            <Toggle
+              value={localSyncEnabled}
+              onValueChange={handleSyncToggle}
+              disabled={syncLoading}
+            />
+          </InfoRow>
+          {localSyncEnabled && (
+            <View style={{ marginTop: 8 }}>
+              <SyncButton
+                onPress={handleManualSync}
+                disabled={syncLoading}
+              >
+                {syncLoading ? (
+                  <ActivityIndicator size="small" color={theme.colors.surface} />
+                ) : (
+                  <SyncButtonText>{t('profile.sync.syncNow')}</SyncButtonText>
+                )}
+              </SyncButton>
+            </View>
           )}
         </InfoSection>
 

@@ -25,9 +25,8 @@ import { LoginBottomSheet } from '../components/LoginBottomSheet';
 import { SignupBottomSheet } from '../components/SignupBottomSheet';
 import { SharePanel } from '../components/SharePanel';
 import { RootStackParamList } from '../navigation/types';
-import { useTodos } from '../contexts/TodoContext';
+import { useTodos, useAuth } from '../store/hooks';
 import { useTheme } from '../theme/ThemeProvider';
-import { useAuth } from '../contexts/AuthContext';
 import { TodoItem } from '../types/inventory';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;

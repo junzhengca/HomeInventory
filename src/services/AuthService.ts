@@ -41,6 +41,23 @@ export const saveAuthTokens = async (
   refreshToken: string
 ): Promise<boolean> => {
   try {
+    // Validate that tokens are strings and not empty
+    if (!accessToken || typeof accessToken !== 'string') {
+      console.error('Error saving auth tokens: accessToken is invalid', {
+        type: typeof accessToken,
+        value: accessToken,
+      });
+      return false;
+    }
+
+    if (!refreshToken || typeof refreshToken !== 'string') {
+      console.error('Error saving auth tokens: refreshToken is invalid', {
+        type: typeof refreshToken,
+        value: refreshToken,
+      });
+      return false;
+    }
+
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
     await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
     return true;

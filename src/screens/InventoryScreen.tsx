@@ -17,10 +17,7 @@ import { LoginBottomSheet } from '../components/LoginBottomSheet';
 import { SignupBottomSheet } from '../components/SignupBottomSheet';
 import { InventoryItem } from '../types/inventory';
 import { RootStackParamList } from '../navigation/types';
-import { getAllItems } from '../services/InventoryService';
-import { useInventory } from '../contexts/InventoryContext';
-import { useSelectedCategory } from '../contexts/SelectedCategoryContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useInventory, useSelectedCategory, useAuth } from '../store/hooks';
 import { calculateBottomPadding } from '../utils/layout';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,34 +43,20 @@ const LoadingContainer = styled(View)`
 `;
 
 export const InventoryScreen: React.FC = () => {
-  const [items, setItems] = useState<InventoryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
-  const { registerRefreshCallback } = useInventory();
+  const { items, loading: isLoading, loadItems } = useInventory();
   const { inventoryCategory, setInventoryCategory } = useSelectedCategory();
   const { user, isAuthenticated } = useAuth();
   const loginBottomSheetRef = useRef<BottomSheetModal>(null);
   const signupBottomSheetRef = useRef<BottomSheetModal>(null);
 
-  const loadItems = async () => {
-    setIsLoading(true);
-    try {
-      const allItems = await getAllItems();
-      setItems(allItems);
-    } catch (error) {
-      console.error('Error loading items:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
     loadItems();
-  }, []);
+  }, [loadItems]);
 
   // Initialize and sync selectedCategory from context
   useEffect(() => {
@@ -81,11 +64,6 @@ export const InventoryScreen: React.FC = () => {
       setSelectedCategory(inventoryCategory);
     }
   }, [inventoryCategory]);
-
-  useEffect(() => {
-    const unregister = registerRefreshCallback(loadItems);
-    return unregister;
-  }, [registerRefreshCallback]);
 
   // Filter items based on selected category and search query
   const filteredItems = useMemo(() => {

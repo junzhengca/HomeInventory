@@ -2,7 +2,7 @@ import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
 import { Theme } from './types';
 import { generateTheme } from './themeGenerator';
-import { useSettings } from '../contexts/SettingsContext';
+import { useSettings } from '../store/hooks';
 
 interface ThemeContextType {
   theme: Theme;

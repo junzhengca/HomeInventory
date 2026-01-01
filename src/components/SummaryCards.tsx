@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { InventoryItem } from '../types/inventory';
 import { Theme } from '../theme/types';
-import { useSettings } from '../contexts/SettingsContext';
+import { useSettings } from '../store/hooks';
 import { getCurrencySymbol } from './CurrencySelector';
 import { countExpiringItems } from '../utils/dateUtils';
 import { formatCurrency } from '../utils/formatters';

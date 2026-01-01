@@ -4,10 +4,7 @@ import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { clearAllDataFiles } from '../services/DataInitializationService';
-import { useInventory } from '../contexts/InventoryContext';
-import { useCategory } from '../contexts/CategoryContext';
-import { useTodos } from '../contexts/TodoContext';
-import { useSettings } from '../contexts/SettingsContext';
+import { useInventory, useCategory, useTodos, useSettings } from '../store/hooks';
 import type { StyledProps } from '../utils/styledComponents';
 
 const Button = styled(TouchableOpacity)`
@@ -53,7 +50,7 @@ export const ClearDataButton: React.FC<ClearDataButtonProps> = ({
   onPress,
 }) => {
   const { t } = useTranslation();
-  const { refreshItems } = useInventory();
+  const { loadItems } = useInventory();
   const { refreshCategories } = useCategory();
   const { refreshTodos } = useTodos();
   const { updateSettings: refreshSettings } = useSettings();
@@ -75,7 +72,7 @@ export const ClearDataButton: React.FC<ClearDataButtonProps> = ({
             
             if (success) {
               // Refresh all contexts
-              refreshItems();
+              loadItems();
               refreshCategories();
               refreshTodos();
               

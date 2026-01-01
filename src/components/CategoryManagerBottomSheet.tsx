@@ -10,7 +10,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
 import { Category } from '../types/inventory';
 import { getAllCategories, createCategory, updateCategory, deleteCategory, isCategoryInUse } from '../services/CategoryService';
-import { useCategory } from '../contexts/CategoryContext';
+import { useCategory } from '../store/hooks';
 import { IconSelector } from './IconSelector';
 import { ColorPalette } from './ColorPalette';
 import { CategoryPreviewCard } from './CategoryPreviewCard';

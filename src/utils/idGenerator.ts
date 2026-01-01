@@ -42,3 +42,11 @@ export const generateCategoryId = (): string => {
   return generateId('custom');
 };
 
+/**
+ * Generate an ID for a location
+ * @returns Unique location ID
+ */
+export const generateLocationId = (): string => {
+  return generateId('loc');
+};
+

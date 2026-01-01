@@ -9,7 +9,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { CreateItemBottomSheet } from './CreateItemBottomSheet';
-import { useInventory } from '../contexts/InventoryContext';
 
 const NavBarContainer = styled(View)<{ bottomInset: number }>`
   position: absolute;
@@ -102,7 +101,6 @@ export const BottomNavBar: React.FC<BottomTabBarProps> = ({ state, navigation })
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const { refreshItems } = useInventory();
 
   const handleTabPress = (routeName: keyof TabParamList, isFocused: boolean) => {
     const event = navigation.emit({
@@ -176,7 +174,6 @@ export const BottomNavBar: React.FC<BottomTabBarProps> = ({ state, navigation })
       </NavBarContainer>
       <CreateItemBottomSheet 
         bottomSheetRef={bottomSheetRef} 
-        onItemCreated={refreshItems}
         activeTab={state.routes[state.index]?.name as keyof TabParamList}
       />
     </>

@@ -2,6 +2,7 @@ import { Category } from '../types/inventory';
 import { readFile, writeFile } from './FileSystemService';
 import { getAllItems } from './InventoryService';
 import { generateCategoryId } from '../utils/idGenerator';
+import { syncCallbackRegistry } from './SyncCallbackRegistry';
 
 const CATEGORIES_FILE = 'categories.json';
 
@@ -63,6 +64,11 @@ export const createCategory = async (
     categories.push(newCategory);
     const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories });
 
+    if (success) {
+      console.log('[CategoryService] Triggering sync after createCategory');
+      syncCallbackRegistry.trigger('categories');
+    }
+
     return success ? newCategory : null;
   } catch (error) {
     console.error('Error creating category:', error);
@@ -107,6 +113,11 @@ export const updateCategory = async (
     categories[index] = { ...categories[index], ...updates, updatedAt: new Date().toISOString() };
     const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories });
 
+    if (success) {
+      console.log('[CategoryService] Triggering sync after updateCategory');
+      syncCallbackRegistry.trigger('categories');
+    }
+
     return success ? categories[index] : null;
   } catch (error) {
     console.error('Error updating category:', error);
@@ -121,24 +132,31 @@ export const deleteCategory = async (id: string): Promise<boolean> => {
   try {
     const categories = await getAllCategories();
     const category = categories.find((cat) => cat.id === id);
-    
+
     if (!category) {
       return false; // Category not found
     }
-    
+
     // Prevent deleting system categories
     if (!category.isCustom) {
       throw new Error('Cannot delete system categories');
     }
-    
+
     // Check if category is in use
     const inUse = await isCategoryInUse(id);
     if (inUse) {
       throw new Error('Cannot delete category that is in use by items');
     }
-    
+
     const filteredCategories = categories.filter((cat) => cat.id !== id);
-    return await writeFile<CategoriesData>(CATEGORIES_FILE, { categories: filteredCategories });
+    const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories: filteredCategories });
+
+    if (success) {
+      console.log('[CategoryService] Triggering sync after deleteCategory');
+      syncCallbackRegistry.trigger('categories');
+    }
+
+    return success;
   } catch (error) {
     console.error('Error deleting category:', error);
     return false;

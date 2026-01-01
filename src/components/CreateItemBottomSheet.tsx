@@ -10,10 +10,7 @@ import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { Category } from '../types/inventory';
 import { locations } from '../data/locations';
 import { getAllCategories } from '../services/CategoryService';
-import { createItem } from '../services/InventoryService';
-import { useInventory } from '../contexts/InventoryContext';
-import { useCategory } from '../contexts/CategoryContext';
-import { useSelectedCategory } from '../contexts/SelectedCategoryContext';
+import { useInventory, useCategory, useSelectedCategory } from '../store/hooks';
 import { filterItemCategories } from '../utils/categoryUtils';
 import { CategoryManagerBottomSheet } from './CategoryManagerBottomSheet';
 import { BottomActionBar } from './BottomActionBar';
@@ -191,7 +188,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { refreshItems } = useInventory();
+  const { createItem } = useInventory();
   const { registerRefreshCallback } = useCategory();
   const { homeCategory, inventoryCategory } = useSelectedCategory();
   const [name, setName] = useState('');
@@ -347,7 +344,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
       const category = categories.find((cat) => cat.id === selectedCategory);
       const priceNum = parseFloat(price) || 0;
 
-      const newItem = await createItem({
+      createItem({
         name: name.trim(),
         category: selectedCategory,
         location: selectedLocation,
@@ -358,14 +355,9 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
         tags: [],
       });
 
-      if (newItem) {
-        handleClose();
-        refreshItems();
-        if (onItemCreated) {
-          onItemCreated();
-        }
-      } else {
-        Alert.alert(t('createItem.errors.title'), t('createItem.errors.createFailed'));
+      handleClose();
+      if (onItemCreated) {
+        onItemCreated();
       }
     } catch (error) {
       console.error('Error creating item:', error);
@@ -373,7 +365,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [name, selectedCategory, selectedLocation, price, detailedLocation, categories, theme, handleClose, onItemCreated, refreshItems, t]);
+  }, [name, selectedCategory, selectedLocation, price, detailedLocation, categories, theme, handleClose, onItemCreated, createItem, t]);
 
   const renderBackdrop = useCallback(
     (props: Parameters<typeof BottomSheetBackdrop>[0]) => <Backdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,

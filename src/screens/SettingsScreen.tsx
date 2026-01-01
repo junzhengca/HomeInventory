@@ -11,7 +11,7 @@ import { CurrencySelector } from '../components/CurrencySelector';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { ExportDataButton } from '../components/ExportDataButton';
 import { ClearDataButton } from '../components/ClearDataButton';
-import { useSettings } from '../contexts/SettingsContext';
+import { useSettings } from '../store/hooks';
 import { calculateBottomPadding } from '../utils/layout';
 
 const Container = styled(View)`

@@ -290,6 +290,36 @@
     "email": "Email",
     "memberSince": "Member since",
     "lastUpdated": "Last updated",
+    "sync": {
+      "title": "Sync Settings",
+      "enableSync": "Enable Sync",
+      "status": {
+        "enabled": "Sync is enabled",
+        "disabled": "Sync is disabled"
+      },
+      "lastSync": "Last sync:",
+      "error": "Error:",
+      "syncNow": "Sync Now",
+      "alerts": {
+        "disabled": {
+          "title": "Sync Disabled",
+          "message": "Your data will no longer be synced across devices."
+        },
+        "enabled": {
+          "title": "Sync Enabled",
+          "message": "Your data will now be synced across devices. Initial sync is starting..."
+        },
+        "started": {
+          "title": "Sync Started",
+          "message": "Manual sync has been triggered. Your data will be synced shortly."
+        },
+        "error": {
+          "title": "Sync Error",
+          "toggleFailed": "Failed to toggle sync",
+          "syncFailed": "Failed to trigger manual sync"
+        }
+      }
+    },
     "avatar": {
       "uploadSuccess": {
         "title": "Success",

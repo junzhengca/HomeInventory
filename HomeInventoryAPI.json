@@ -1,319 +1,1057 @@
 {
   "info": {
     "name": "HomeInventoryAPI",
-    "description": "",
+    "description": "Home Inventory API with Sync Endpoints",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Login",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "auth": {
-          "type": "noauth"
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{API_ENDPOINT}}/api/auth/login",
+              "protocol": "",
+              "host": [
+                "{{API_ENDPOINT}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juncapersonal@gmail.com\",\n  \"password\": \"junzheng\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         },
-        "description": "",
-        "url": {
-          "raw": "{{API_ENDPOINT}}/api/auth/login",
-          "protocol": "",
-          "host": [
-            "{{API_ENDPOINT}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "login"
-          ],
-          "query": [],
-          "variable": []
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{API_ENDPOINT}}/api/auth/signup",
+              "protocol": "",
+              "host": [
+                "{{API_ENDPOINT}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "signup"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juncapersonal@gmail.com\",\n  \"password\": \"junzheng\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"juncapersonal@gmail.com\",\n  \"password\": \"junzheng\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Refresh token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{API_ENDPOINT}}/api/auth/refresh",
+              "protocol": "",
+              "host": [
+                "{{API_ENDPOINT}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{REFRESH_TOKEN}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{API_ENDPOINT}}/api/auth/logout",
+              "protocol": "",
+              "host": [
+                "{{API_ENDPOINT}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{REFRESH_TOKEN}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{AUTH_TOKEN}}",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{API_ENDPOINT}}/api/auth/me",
+              "protocol": "",
+              "host": [
+                "{{API_ENDPOINT}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{AUTH_TOKEN}}",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{API_ENDPOINT}}/api/auth/me",
+              "protocol": "",
+              "host": [
+                "{{API_ENDPOINT}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"junzheng\",\n  \"newPassword\": \"junzheng\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Update avatar URL",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{AUTH_TOKEN}}",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{API_ENDPOINT}}/api/auth/me",
+              "protocol": "",
+              "host": [
+                "{{API_ENDPOINT}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"avatarUrl\": \"https://example.com/avatar.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }
-      }
+      ]
     },
     {
-      "name": "Signup",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "",
-        "url": {
-          "raw": "{{API_ENDPOINT}}/api/auth/signup",
-          "protocol": "",
-          "host": [
-            "{{API_ENDPOINT}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "signup"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"juncapersonal@gmail.com\",\n  \"password\": \"junzheng\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+      "name": "Images",
+      "item": [
+        {
+          "name": "Upload image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{AUTH_TOKEN}}",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{API_ENDPOINT}}/api/images/upload",
+              "protocol": "",
+              "host": [
+                "{{API_ENDPOINT}}"
+              ],
+              "path": [
+                "api",
+                "images",
+                "upload"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,...\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           }
         }
-      }
+      ]
     },
     {
-      "name": "Refresh token",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "",
-        "url": {
-          "raw": "{{API_ENDPOINT}}/api/auth/refresh",
-          "protocol": "",
-          "host": [
-            "{{API_ENDPOINT}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "refresh"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTU0MzMxZDdhYjJiODMzOGFlOGNhNDgiLCJlbWFpbCI6Imp1bmNhcGVyc29uYWxAZ21haWwuY29tIiwiaWF0IjoxNzY3MTI1Nzk3fQ.ZqaaBR76aoURyRZPlfMAxiPtwhdqVqdVCXSnT41nnG4\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+      "name": "Sync",
+      "item": [
+        {
+          "name": "Pull",
+          "item": [
+            {
+              "name": "Pull Categories",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/categories/pull",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "categories",
+                    "pull"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Pull categories data from server"
+              }
+            },
+            {
+              "name": "Pull Locations",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/locations/pull",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "locations",
+                    "pull"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Pull locations data from server"
+              }
+            },
+            {
+              "name": "Pull Inventory Items",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/inventoryItems/pull",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "inventoryItems",
+                    "pull"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Pull inventory items data from server"
+              }
+            },
+            {
+              "name": "Pull Todo Items",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/todoItems/pull",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "todoItems",
+                    "pull"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Pull todo items data from server"
+              }
+            },
+            {
+              "name": "Pull Settings",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/settings/pull",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "settings",
+                    "pull"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Pull settings data from server"
+              }
             }
-          }
-        }
-      }
-    },
-    {
-      "name": "Logout",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "auth": {
-          "type": "noauth"
+          ]
         },
-        "description": "",
-        "url": {
-          "raw": "{{API_ENDPOINT}}/api/auth/logout",
-          "protocol": "",
-          "host": [
-            "{{API_ENDPOINT}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "logout"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTU0MzMxZDdhYjJiODMzOGFlOGNhNDgiLCJlbWFpbCI6Imp1bmNhcGVyc29uYWxAZ21haWwuY29tIiwiaWF0IjoxNzY3MTI1Nzk3fQ.ZqaaBR76aoURyRZPlfMAxiPtwhdqVqdVCXSnT41nnG4\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Push",
+          "item": [
+            {
+              "name": "Push Categories",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/categories/push",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "categories",
+                    "push"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Push merged categories data to server",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"1.0.0\",\n  \"deviceId\": \"device-uuid-123\",\n  \"syncTimestamp\": \"2025-12-31T12:00:00.000Z\",\n  \"deviceName\": \"iPhone 15 Pro\",\n  \"data\": [\n    {\n      \"id\": \"cat-1\",\n      \"name\": \"electronics\",\n      \"label\": \"电子\",\n      \"isCustom\": false,\n      \"createdAt\": \"2025-12-30T10:00:00.000Z\",\n      \"updatedAt\": \"2025-12-30T10:00:00.000Z\",\n      \"icon\": \"laptop-outline\",\n      \"iconColor\": \"#3B82F6\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Push Locations",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/locations/push",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "locations",
+                    "push"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Push merged locations data to server",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"1.0.0\",\n  \"deviceId\": \"device-uuid-123\",\n  \"syncTimestamp\": \"2025-12-31T12:00:00.000Z\",\n  \"deviceName\": \"iPhone 15 Pro\",\n  \"data\": [\n    {\n      \"id\": \"loc-1\",\n      \"name\": \"Home\",\n      \"createdAt\": \"2025-12-30T10:00:00.000Z\",\n      \"updatedAt\": \"2025-12-30T10:00:00.000Z\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Push Inventory Items",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/inventoryItems/push",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "inventoryItems",
+                    "push"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Push merged inventory items data to server",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"1.0.0\",\n  \"deviceId\": \"device-uuid-123\",\n  \"syncTimestamp\": \"2025-12-31T12:00:00.000Z\",\n  \"deviceName\": \"iPhone 15 Pro\",\n  \"data\": [\n    {\n      \"id\": \"item-1\",\n      \"name\": \"Laptop\",\n      \"categoryId\": \"cat-1\",\n      \"locationId\": \"loc-1\",\n      \"createdAt\": \"2025-12-30T10:00:00.000Z\",\n      \"updatedAt\": \"2025-12-30T10:00:00.000Z\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Push Todo Items",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/todoItems/push",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "todoItems",
+                    "push"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Push merged todo items data to server",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"1.0.0\",\n  \"deviceId\": \"device-uuid-123\",\n  \"syncTimestamp\": \"2025-12-31T12:00:00.000Z\",\n  \"deviceName\": \"iPhone 15 Pro\",\n  \"data\": [\n    {\n      \"id\": \"todo-1\",\n      \"title\": \"Buy groceries\",\n      \"completed\": false,\n      \"createdAt\": \"2025-12-30T10:00:00.000Z\",\n      \"updatedAt\": \"2025-12-30T10:00:00.000Z\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Push Settings",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/settings/push",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "settings",
+                    "push"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Push merged settings data to server (single object)",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"1.0.0\",\n  \"deviceId\": \"device-uuid-123\",\n  \"syncTimestamp\": \"2025-12-31T12:00:00.000Z\",\n  \"deviceName\": \"iPhone 15 Pro\",\n  \"data\": {\n    \"theme\": \"forest\",\n    \"currency\": \"cny\",\n    \"language\": \"zh-cn\",\n    \"createdAt\": \"2025-12-30T10:00:00.000Z\",\n    \"updatedAt\": \"2025-12-31T12:00:00.000Z\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
             }
-          }
-        }
-      }
-    },
-    {
-      "name": "Current user",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{AUTH_TOKEN}}",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
+          ]
         },
-        "description": "",
-        "url": {
-          "raw": "{{API_ENDPOINT}}/api/auth/me",
-          "protocol": "",
-          "host": [
-            "{{API_ENDPOINT}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "me"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTU0MzMxZDdhYjJiODMzOGFlOGNhNDgiLCJlbWFpbCI6Imp1bmNhcGVyc29uYWxAZ21haWwuY29tIiwiaWF0IjoxNzY3MTI1Nzk3fQ.ZqaaBR76aoURyRZPlfMAxiPtwhdqVqdVCXSnT41nnG4\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Status",
+          "item": [
+            {
+              "name": "Get All Sync Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/status",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "status"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Get sync status for all file types"
+              }
+            },
+            {
+              "name": "Get Categories Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/status?fileType=categories",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "status"
+                  ],
+                  "query": [
+                    {
+                      "key": "fileType",
+                      "value": "categories"
+                    }
+                  ],
+                  "variable": []
+                },
+                "description": "Get sync status for categories only"
+              }
+            },
+            {
+              "name": "Get Locations Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/status?fileType=locations",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "status"
+                  ],
+                  "query": [
+                    {
+                      "key": "fileType",
+                      "value": "locations"
+                    }
+                  ],
+                  "variable": []
+                },
+                "description": "Get sync status for locations only"
+              }
+            },
+            {
+              "name": "Get Inventory Items Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/status?fileType=inventoryItems",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "status"
+                  ],
+                  "query": [
+                    {
+                      "key": "fileType",
+                      "value": "inventoryItems"
+                    }
+                  ],
+                  "variable": []
+                },
+                "description": "Get sync status for inventory items only"
+              }
+            },
+            {
+              "name": "Get Todo Items Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/status?fileType=todoItems",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "status"
+                  ],
+                  "query": [
+                    {
+                      "key": "fileType",
+                      "value": "todoItems"
+                    }
+                  ],
+                  "variable": []
+                },
+                "description": "Get sync status for todo items only"
+              }
+            },
+            {
+              "name": "Get Settings Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/status?fileType=settings",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "status"
+                  ],
+                  "query": [
+                    {
+                      "key": "fileType",
+                      "value": "settings"
+                    }
+                  ],
+                  "variable": []
+                },
+                "description": "Get sync status for settings only"
+              }
             }
-          }
-        }
-      }
-    },
-    {
-      "name": "Upload image",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{AUTH_TOKEN}}",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
+          ]
         },
-        "description": "",
-        "url": {
-          "raw": "{{API_ENDPOINT}}/api/images/upload",
-          "protocol": "",
-          "host": [
-            "{{API_ENDPOINT}}"
-          ],
-          "path": [
-            "api",
-            "images",
-            "upload"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"image\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTU0MzMxZDdhYjJiODMzOGFlOGNhNDgiLCJlbWFpbCI6Imp1bmNhcGVyc29uYWxAZ21haWwuY29tIiwiaWF0IjoxNzY3MTI1Nzk3fQ.ZqaaBR76aoURyRZPlfMAxiPtwhdqVqdVCXSnT41nnG4\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Delete",
+          "item": [
+            {
+              "name": "Delete Categories Data",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/categories/data",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "categories",
+                    "data"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Delete all categories data for the user"
+              }
+            },
+            {
+              "name": "Delete Locations Data",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/locations/data",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "locations",
+                    "data"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Delete all locations data for the user"
+              }
+            },
+            {
+              "name": "Delete Inventory Items Data",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/inventoryItems/data",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "inventoryItems",
+                    "data"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Delete all inventory items data for the user"
+              }
+            },
+            {
+              "name": "Delete Todo Items Data",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/todoItems/data",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "todoItems",
+                    "data"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Delete all todo items data for the user"
+              }
+            },
+            {
+              "name": "Delete Settings Data",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{AUTH_TOKEN}}",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{API_ENDPOINT}}/api/sync/settings/data",
+                  "protocol": "",
+                  "host": [
+                    "{{API_ENDPOINT}}"
+                  ],
+                  "path": [
+                    "api",
+                    "sync",
+                    "settings",
+                    "data"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "description": "Delete all settings data for the user"
+              }
             }
-          }
+          ]
         }
-      }
-    },
-    {
-      "name": "Update password",
-      "request": {
-        "method": "PATCH",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{AUTH_TOKEN}}",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "",
-        "url": {
-          "raw": "{{API_ENDPOINT}}/api/auth/me",
-          "protocol": "",
-          "host": [
-            "{{API_ENDPOINT}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "me"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"currentPassword\": \"junzheng\",\n  \"newPassword\": \"junzheng\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Update avatar URL",
-      "request": {
-        "method": "PATCH",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{AUTH_TOKEN}}",
-            "disabled": false,
-            "type": "default"
-          }
-        ],
-        "auth": {
-          "type": "noauth"
-        },
-        "description": "",
-        "url": {
-          "raw": "{{API_ENDPOINT}}/api/auth/me",
-          "protocol": "",
-          "host": [
-            "{{API_ENDPOINT}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "me"
-          ],
-          "query": [],
-          "variable": []
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"avatarUrl\": \"https://google.com\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
+      ]
     }
   ],
   "variable": [
     {
       "key": "API_ENDPOINT",
-      "value": "",
+      "value": "http://localhost:3000",
       "type": "default"
     },
     {
       "key": "AUTH_TOKEN",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "REFRESH_TOKEN",
       "value": "",
       "type": "default"
     }

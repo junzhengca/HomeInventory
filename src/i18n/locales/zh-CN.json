@@ -290,6 +290,36 @@
     "email": "邮箱",
     "memberSince": "注册时间",
     "lastUpdated": "最后更新",
+    "sync": {
+      "title": "同步设置",
+      "enableSync": "启用同步",
+      "status": {
+        "enabled": "同步已启用",
+        "disabled": "同步已禁用"
+      },
+      "lastSync": "上次同步:",
+      "error": "错误:",
+      "syncNow": "立即同步",
+      "alerts": {
+        "disabled": {
+          "title": "同步已禁用",
+          "message": "您的数据将不再跨设备同步。"
+        },
+        "enabled": {
+          "title": "同步已启用",
+          "message": "您的数据现在将跨设备同步。初始同步正在开始..."
+        },
+        "started": {
+          "title": "同步已启动",
+          "message": "手动同步已触发。您的数据将很快同步。"
+        },
+        "error": {
+          "title": "同步错误",
+          "toggleFailed": "切换同步失败",
+          "syncFailed": "触发手动同步失败"
+        }
+      }
+    },
     "avatar": {
       "uploadSuccess": {
         "title": "成功",

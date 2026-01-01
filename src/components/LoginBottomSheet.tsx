@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../store/hooks';
 import { BottomActionBar } from './BottomActionBar';
 
 const Header = styled(View)`

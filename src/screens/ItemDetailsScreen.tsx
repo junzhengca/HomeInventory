@@ -8,12 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
-import { useSettings } from '../contexts/SettingsContext';
-import { useInventory } from '../contexts/InventoryContext';
+import { useInventory, useSettings, useAppSelector } from '../store/hooks';
+import { selectItemById } from '../store/slices/inventorySlice';
 import { RootStackParamList } from '../navigation/types';
-import { InventoryItem, Category } from '../types/inventory';
-import { getItemById, deleteItem } from '../services/InventoryService';
+import { Category, InventoryItem } from '../types/inventory';
 import { getCategoryById } from '../services/CategoryService';
+import { getItemById } from '../services/InventoryService';
 import { locations } from '../data/locations';
 import { getCurrencySymbol } from '../components/CurrencySelector';
 import { EditItemBottomSheet } from '../components/EditItemBottomSheet';
@@ -172,15 +172,17 @@ const ErrorText = styled(Text)`
 export const ItemDetailsScreen: React.FC = () => {
   const theme = useTheme();
   const { settings } = useSettings();
-  const { refreshItems } = useInventory();
+  const { deleteItem, loading: itemsLoading, loadItems } = useInventory();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { itemId } = route.params;
   const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation();
 
-  const [item, setItem] = useState<InventoryItem | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Get item from Redux store
+  const itemFromRedux = useAppSelector((state) => selectItemById(state, itemId));
+  const [item, setItem] = useState<InventoryItem | null>(itemFromRedux);
+  const [isLoading, setIsLoading] = useState(!itemFromRedux && itemsLoading);
   const [locationName, setLocationName] = useState<string>('');
   const [category, setCategory] = useState<Category | null>(null);
   const editBottomSheetRef = useRef<BottomSheetModal | null>(null);
@@ -191,34 +193,60 @@ export const ItemDetailsScreen: React.FC = () => {
     return i18n.language === 'zh' ? 'zh-CN' : 'en-US';
   }, [i18n.language]);
 
-  const loadItem = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const itemData = await getItemById(itemId);
-      if (itemData) {
-        setItem(itemData);
-        const location = locations.find((loc) => loc.id === itemData.location);
-        // Use i18n translation for location name
-        setLocationName(location ? t(`locations.${location.id}`) : itemData.location);
-
-        // Load category
-        const categoryData = await getCategoryById(itemData.category);
-        setCategory(categoryData);
-      } else {
-        Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.itemNotFound'));
-        navigation.goBack();
-      }
-    } catch (error) {
-      console.error('Error loading item:', error);
-      Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.loadFailed'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [itemId, navigation, t]);
-
+  // Load item if not in Redux
   useEffect(() => {
+    const loadItem = async () => {
+      // If item is in Redux, use it
+      if (itemFromRedux) {
+        setItem(itemFromRedux);
+        setIsLoading(false);
+        return;
+      }
+
+      // If items are still loading, wait
+      if (itemsLoading) {
+        return;
+      }
+
+      // Items are loaded but item not found, try loading from service
+      setIsLoading(true);
+      try {
+        const itemData = await getItemById(itemId);
+        if (itemData) {
+          setItem(itemData);
+          // Trigger a reload of items to sync Redux
+          loadItems();
+        } else {
+          Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.itemNotFound'));
+          navigation.goBack();
+        }
+      } catch (error) {
+        console.error('Error loading item:', error);
+        Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.loadFailed'));
+        navigation.goBack();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     loadItem();
-  }, [loadItem]);
+  }, [itemFromRedux, itemId, itemsLoading, loadItems, navigation, t]);
+
+  // Load location and category when item changes
+  useEffect(() => {
+    if (item) {
+      const location = locations.find((loc) => loc.id === item.location);
+      // Use i18n translation for location name
+      setLocationName(location ? t(`locations.${location.id}`) : item.location);
+
+      // Load category
+      getCategoryById(item.category).then((categoryData) => {
+        setCategory(categoryData);
+      }).catch((error) => {
+        console.error('Error loading category:', error);
+      });
+    }
+  }, [item, t]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -232,19 +260,9 @@ export const ItemDetailsScreen: React.FC = () => {
         {
           text: t('itemDetails.delete.confirm'),
           style: 'destructive',
-          onPress: async () => {
-            try {
-              const success = await deleteItem(itemId);
-              if (success) {
-                refreshItems();
-                navigation.goBack();
-              } else {
-                Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.deleteFailed'));
-              }
-            } catch (error) {
-              console.error('Error deleting item:', error);
-              Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.deleteFailed'));
-            }
+          onPress: () => {
+            deleteItem(itemId);
+            navigation.goBack();
           },
         },
       ]
@@ -256,8 +274,7 @@ export const ItemDetailsScreen: React.FC = () => {
   };
 
   const handleItemUpdated = () => {
-    loadItem();
-    refreshItems();
+    // Item will be updated in Redux, no need to reload
   };
 
   const handleClose = () => {
@@ -267,7 +284,7 @@ export const ItemDetailsScreen: React.FC = () => {
   // Calculate bottom padding for action bar
   const bottomPadding = calculateBottomActionBarPadding(insets.bottom);
 
-  if (isLoading) {
+  if (isLoading || !item) {
     return (
       <Container>
         <PageHeader

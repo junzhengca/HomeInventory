@@ -4,7 +4,7 @@ import styled from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
 import { Category } from '../types/inventory';
 import { getAllCategories } from '../services/CategoryService';
-import { useCategory } from '../contexts/CategoryContext';
+import { useCategory } from '../store/hooks';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 
 const Container = styled(View)`

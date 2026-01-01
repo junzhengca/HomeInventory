@@ -4,7 +4,7 @@ import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { InventoryItem, Category } from '../types/inventory';
-import { useSettings } from '../contexts/SettingsContext';
+import { useSettings } from '../store/hooks';
 import { getCurrencySymbol } from './CurrencySelector';
 import { formatPrice, formatLocation } from '../utils/formatters';
 import { getLightColor } from '../utils/colors';
