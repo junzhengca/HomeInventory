@@ -18,6 +18,7 @@ export const useAuth = () => {
   const user = useAppSelector((state) => state.auth.user);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const isLoading = useAppSelector((state) => state.auth.isLoading);
+  const error = useAppSelector((state) => state.auth.error);
   const apiClient = useAppSelector((state) => state.auth.apiClient);
 
   const login = useCallback(
@@ -57,6 +58,7 @@ export const useAuth = () => {
     user,
     isAuthenticated,
     isLoading,
+    error,
     login,
     signup,
     logout,

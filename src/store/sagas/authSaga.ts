@@ -3,6 +3,7 @@ import {
   setUser,
   setAuthenticated,
   setLoading,
+  setError,
   setApiClient,
 } from '../slices/authSlice';
 import {
@@ -140,8 +141,15 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
   const { email, password } = action.payload;
   const apiClient: ApiClient = yield select((state: RootState) => state.auth.apiClient);
 
+  // Clear any previous errors and set loading
+  yield put(setError(null));
+  yield put(setLoading(true));
+
   if (!apiClient) {
-    throw new Error('API client not initialized');
+    const errorMessage = 'API client not initialized';
+    yield put(setError(errorMessage));
+    yield put(setLoading(false));
+    return;
   }
 
   try {
@@ -150,19 +158,28 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     // Validate token before saving
     if (!response?.accessToken) {
       console.error('[AuthSaga] Invalid login response:', response);
-      throw new Error('Invalid login response: missing accessToken');
+      const errorMessage = 'Invalid login response: missing accessToken';
+      yield put(setError(errorMessage));
+      yield put(setLoading(false));
+      return;
     }
 
     // Save token
     const saved = yield call(saveAuthTokens, response.accessToken);
     if (!saved) {
-      throw new Error('Failed to save authentication token');
+      const errorMessage = 'Failed to save authentication token';
+      yield put(setError(errorMessage));
+      yield put(setLoading(false));
+      return;
     }
 
     // Verify token was saved
     const savedTokens = yield call(getAuthTokens);
     if (!savedTokens || !savedTokens.accessToken) {
-      throw new Error('Failed to save authentication token');
+      const errorMessage = 'Failed to save authentication token';
+      yield put(setError(errorMessage));
+      yield put(setLoading(false));
+      return;
     }
 
     // Set token in API client
@@ -184,6 +201,8 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     }
 
     yield put(setAuthenticated(true));
+    yield put(setError(null)); // Clear error on success
+    yield put(setLoading(false));
     
     // Initialize sync service after successful login
     yield put(initializeSync());
@@ -191,7 +210,9 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     console.log('[AuthSaga] Login successful');
   } catch (error) {
     console.error('[AuthSaga] Login error:', error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
+    yield put(setError(errorMessage));
+    yield put(setLoading(false));
   }
 }
 

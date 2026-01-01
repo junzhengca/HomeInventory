@@ -7,7 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
-import { useAuth } from '../store/hooks';
+import { useAuth, useAppDispatch } from '../store/hooks';
+import { setError } from '../store/slices/authSlice';
 import { BottomActionBar } from './BottomActionBar';
 
 const Header = styled(View)`
@@ -136,12 +137,13 @@ export const LoginBottomSheet: React.FC<LoginBottomSheetProps> = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { login } = useAuth();
+  const dispatch = useAppDispatch();
+  const { login, error: authError, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [loginAttempted, setLoginAttempted] = useState(false);
 
   const snapPoints = useMemo(() => ['100%'], []);
 
@@ -190,35 +192,38 @@ export const LoginBottomSheet: React.FC<LoginBottomSheetProps> = ({
     bottomSheetRef.current?.dismiss();
     setEmail('');
     setPassword('');
-    setError(null);
+    setLocalError(null);
+    setLoginAttempted(false);
   }, [bottomSheetRef]);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(() => {
     if (!email.trim() || !password.trim()) {
-      setError(t('login.errors.emptyFields'));
+      setLocalError(t('login.errors.emptyFields'));
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
+    setLocalError(null);
+    setLoginAttempted(true);
+    login(email.trim(), password);
+  }, [email, password, login, t]);
 
-    try {
-      await login(email.trim(), password);
-      handleClose();
-      // Call onLoginSuccess callback after successful login
-      if (onLoginSuccess) {
-        // Small delay to ensure login modal is closed
-        setTimeout(() => {
-          onLoginSuccess();
-        }, 300);
+  // Watch for authentication success or failure
+  useEffect(() => {
+    if (loginAttempted && !authLoading) {
+      if (!authError) {
+        // Login was successful
+        handleClose();
+        // Call onLoginSuccess callback after successful login
+        if (onLoginSuccess) {
+          // Small delay to ensure login modal is closed
+          setTimeout(() => {
+            onLoginSuccess();
+          }, 300);
+        }
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : t('login.errors.failed');
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
+      // If there's an error, it will be displayed via displayError
     }
-  }, [email, password, login, handleClose, onLoginSuccess, t]);
+  }, [loginAttempted, authLoading, authError, handleClose, onLoginSuccess]);
 
   const handleSignupPress = useCallback(() => {
     handleClose();
@@ -232,19 +237,22 @@ export const LoginBottomSheet: React.FC<LoginBottomSheetProps> = ({
       <BottomActionBar
         actions={[
           {
-            label: isLoading ? t('login.submitting') : t('login.submit'),
+            label: authLoading ? t('login.submitting') : t('login.submit'),
             onPress: handleSubmit,
             variant: 'filled',
             icon: <Ionicons name="log-in" size={18} color={theme.colors.surface} />,
-            disabled: isLoading,
+            disabled: authLoading,
           },
         ]}
         safeArea={!isKeyboardVisible}
         inBottomSheet={true}
       />
     ),
-    [handleSubmit, isLoading, theme, t, isKeyboardVisible]
+    [handleSubmit, authLoading, theme, t, isKeyboardVisible]
   );
+
+  // Combine local and auth errors for display
+  const displayError = localError || authError;
 
   return (
     <BottomSheetModal
@@ -306,13 +314,19 @@ export const LoginBottomSheet: React.FC<LoginBottomSheetProps> = ({
           <Label>{t('login.fields.email')}</Label>
           <Input
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (displayError) {
+                setLocalError(null);
+                dispatch(setError(null));
+              }
+            }}
             placeholder={t('login.placeholders.email')}
             placeholderTextColor={theme.colors.textSecondary}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
-            editable={!isLoading}
+            editable={!authLoading}
           />
         </FormSection>
 
@@ -320,16 +334,22 @@ export const LoginBottomSheet: React.FC<LoginBottomSheetProps> = ({
           <Label>{t('login.fields.password')}</Label>
           <Input
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (displayError) {
+                setLocalError(null);
+                dispatch(setError(null));
+              }
+            }}
             placeholder={t('login.placeholders.password')}
             placeholderTextColor={theme.colors.textSecondary}
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}
-            editable={!isLoading}
+            editable={!authLoading}
             onSubmitEditing={handleSubmit}
           />
-          {error && <ErrorText>{error}</ErrorText>}
+          {displayError && <ErrorText>{displayError}</ErrorText>}
         </FormSection>
 
         <LinkButton onPress={handleSignupPress}>

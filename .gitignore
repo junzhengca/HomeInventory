@@ -43,3 +43,4 @@ yarn-error.*
 *.tar.gz
 
 *.app
+*.ipa
