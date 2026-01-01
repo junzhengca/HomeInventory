@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, memo } from 'react';
 import { TouchableOpacity, View, Text, Keyboard } from 'react-native';
 import styled from 'styled-components/native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetTextInput, BottomSheetScrollView } from '@gorhom/bottom-sheet';
@@ -123,6 +123,85 @@ const BenefitText = styled(Text)`
   line-height: ${({ theme }: StyledProps) => theme.typography.fontSize.sm * 1.4}px;
 `;
 
+// Memoized input components to prevent re-renders that interrupt IME composition
+const MemoizedEmailInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  placeholderTextColor: string;
+  editable: boolean;
+}>(({ value, onChangeText, placeholder, placeholderTextColor, editable }) => {
+  return (
+    <Input
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={placeholderTextColor}
+      keyboardType="email-address"
+      autoCapitalize="none"
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+      editable={editable}
+    />
+  );
+});
+
+const MemoizedPasswordInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  placeholderTextColor: string;
+  editable: boolean;
+}>(({ value, onChangeText, placeholder, placeholderTextColor, editable }) => {
+  return (
+    <Input
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={placeholderTextColor}
+      secureTextEntry
+      autoCapitalize="none"
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+      editable={editable}
+    />
+  );
+});
+
+const MemoizedConfirmPasswordInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  onSubmitEditing: () => void;
+  placeholder: string;
+  placeholderTextColor: string;
+  editable: boolean;
+}>(({ value, onChangeText, onSubmitEditing, placeholder, placeholderTextColor, editable }) => {
+  return (
+    <Input
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={placeholderTextColor}
+      secureTextEntry
+      autoCapitalize="none"
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+      editable={editable}
+      onSubmitEditing={onSubmitEditing}
+    />
+  );
+});
+
+MemoizedEmailInput.displayName = 'MemoizedEmailInput';
+MemoizedPasswordInput.displayName = 'MemoizedPasswordInput';
+MemoizedConfirmPasswordInput.displayName = 'MemoizedConfirmPasswordInput';
+
 interface SignupBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal>;
   onLoginPress?: () => void;
@@ -147,7 +226,8 @@ export const SignupBottomSheet: React.FC<SignupBottomSheetProps> = ({
 
   const snapPoints = useMemo(() => ['100%'], []);
 
-  const keyboardBehavior = useMemo(() => 'interactive' as const, []);
+  // Use 'extend' to prevent IME composition interruption
+  const keyboardBehavior = useMemo(() => 'extend' as const, []);
   const keyboardBlurBehavior = useMemo(() => 'restore' as const, []);
 
   // Track keyboard visibility to adjust footer padding
@@ -187,6 +267,19 @@ export const SignupBottomSheet: React.FC<SignupBottomSheetProps> = ({
     ),
     []
   );
+
+  // Stable onChangeText handlers to prevent IME composition interruption
+  const handleEmailChange = useCallback((text: string) => {
+    setEmail(text);
+  }, []);
+
+  const handlePasswordChange = useCallback((text: string) => {
+    setPassword(text);
+  }, []);
+
+  const handleConfirmPasswordChange = useCallback((text: string) => {
+    setConfirmPassword(text);
+  }, []);
 
   const handleClose = useCallback(() => {
     bottomSheetRef.current?.dismiss();
@@ -317,44 +410,35 @@ export const SignupBottomSheet: React.FC<SignupBottomSheetProps> = ({
 
         <FormSection>
           <Label>{t('signup.fields.email')}</Label>
-          <Input
+          <MemoizedEmailInput
             value={email}
-            onChangeText={setEmail}
+            onChangeText={handleEmailChange}
             placeholder={t('signup.placeholders.email')}
             placeholderTextColor={theme.colors.textSecondary}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
             editable={!isLoading}
           />
         </FormSection>
 
         <FormSection>
           <Label>{t('signup.fields.password')}</Label>
-          <Input
+          <MemoizedPasswordInput
             value={password}
-            onChangeText={setPassword}
+            onChangeText={handlePasswordChange}
             placeholder={t('signup.placeholders.password')}
             placeholderTextColor={theme.colors.textSecondary}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
             editable={!isLoading}
           />
         </FormSection>
 
         <FormSection>
           <Label>{t('signup.fields.confirmPassword')}</Label>
-          <Input
+          <MemoizedConfirmPasswordInput
             value={confirmPassword}
-            onChangeText={setConfirmPassword}
+            onChangeText={handleConfirmPasswordChange}
+            onSubmitEditing={handleSubmit}
             placeholder={t('signup.placeholders.confirmPassword')}
             placeholderTextColor={theme.colors.textSecondary}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
             editable={!isLoading}
-            onSubmitEditing={handleSubmit}
           />
           {error && <ErrorText>{error}</ErrorText>}
         </FormSection>

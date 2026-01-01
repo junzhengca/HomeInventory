@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { TouchableOpacity, Alert, View, ScrollView, Text, TextInput, Keyboard } from 'react-native';
 import styled from 'styled-components/native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
@@ -173,6 +173,87 @@ const HalfInput = styled(Input)`
   flex: 1;
 `;
 
+// Uncontrolled input components to prevent IME composition interruption
+// Using defaultValue and onChangeText to update refs, syncing to state on blur
+const UncontrolledNameInput = memo(
+  React.forwardRef<TextInput, {
+    defaultValue: string;
+    onChangeText: (text: string) => void;
+    onBlur: () => void;
+    placeholder: string;
+    placeholderTextColor: string;
+  }>(({ defaultValue, onChangeText, onBlur, placeholder, placeholderTextColor }, ref) => {
+    return (
+      <Input
+        ref={ref}
+        placeholder={placeholder}
+        defaultValue={defaultValue}
+        onChangeText={onChangeText}
+        onBlur={onBlur}
+        placeholderTextColor={placeholderTextColor}
+        autoCorrect={false}
+        spellCheck={false}
+        textContentType="none"
+        autoComplete="off"
+      />
+    );
+  })
+);
+UncontrolledNameInput.displayName = 'UncontrolledNameInput';
+
+const UncontrolledPriceInput = memo(
+  React.forwardRef<TextInput, {
+    defaultValue: string;
+    onChangeText: (text: string) => void;
+    onBlur: () => void;
+    placeholder: string;
+    placeholderTextColor: string;
+  }>(({ defaultValue, onChangeText, onBlur, placeholder, placeholderTextColor }, ref) => {
+    return (
+      <HalfInput
+        ref={ref}
+        placeholder={placeholder}
+        defaultValue={defaultValue}
+        onChangeText={onChangeText}
+        onBlur={onBlur}
+        keyboardType="numeric"
+        placeholderTextColor={placeholderTextColor}
+        autoCorrect={false}
+        spellCheck={false}
+        textContentType="none"
+        autoComplete="off"
+      />
+    );
+  })
+);
+
+const UncontrolledDetailedLocationInput = memo(
+  React.forwardRef<TextInput, {
+    defaultValue: string;
+    onChangeText: (text: string) => void;
+    onBlur: () => void;
+    placeholder: string;
+    placeholderTextColor: string;
+  }>(({ defaultValue, onChangeText, onBlur, placeholder, placeholderTextColor }, ref) => {
+    return (
+      <HalfInput
+        ref={ref}
+        placeholder={placeholder}
+        defaultValue={defaultValue}
+        onChangeText={onChangeText}
+        onBlur={onBlur}
+        placeholderTextColor={placeholderTextColor}
+        autoCorrect={false}
+        spellCheck={false}
+        textContentType="none"
+        autoComplete="off"
+      />
+    );
+  })
+);
+
+UncontrolledPriceInput.displayName = 'UncontrolledPriceInput';
+UncontrolledDetailedLocationInput.displayName = 'UncontrolledDetailedLocationInput';
 
 interface CreateItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal>;
@@ -202,6 +283,14 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const scrollViewRef = React.useRef<ScrollView>(null);
   const categoryManagerRef = React.useRef<BottomSheetModal>(null);
   const nameInputRef = React.useRef<TextInput>(null);
+  const priceInputRef = React.useRef<TextInput>(null);
+  const detailedLocationInputRef = React.useRef<TextInput>(null);
+  // Refs to store current input values without causing re-renders
+  const nameValueRef = React.useRef(name);
+  const priceValueRef = React.useRef(price);
+  const detailedLocationValueRef = React.useRef(detailedLocation);
+  // Track if form was reset to update defaultValue via key prop
+  const [formKey, setFormKey] = useState(0);
 
   // Filter to get only item-type categories (exclude location categories)
   const itemTypeCategories = useMemo(() => {
@@ -305,28 +394,75 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     loadCategories();
   }, [loadCategories]);
 
+  // Handlers to update refs during typing (no re-render)
+  // This prevents IME composition interruption
+  const handleNameChangeText = useCallback((text: string) => {
+    nameValueRef.current = text;
+  }, []);
+
+  const handlePriceChangeText = useCallback((text: string) => {
+    priceValueRef.current = text;
+  }, []);
+
+  const handleDetailedLocationChangeText = useCallback((text: string) => {
+    detailedLocationValueRef.current = text;
+  }, []);
+
+  // Handlers to sync ref values to state on blur
+  const handleNameBlur = useCallback(() => {
+    setName(nameValueRef.current);
+  }, []);
+
+  const handlePriceBlur = useCallback(() => {
+    setPrice(priceValueRef.current);
+  }, []);
+
+  const handleDetailedLocationBlur = useCallback(() => {
+    setDetailedLocation(detailedLocationValueRef.current);
+  }, []);
+
   const snapPoints = useMemo(() => ['100%'], []);
 
-  // Handle keyboard behavior - use 'interactive' for better keyboard handling
-  const keyboardBehavior = useMemo(() => 'interactive', []);
-  const keyboardBlurBehavior = useMemo(() => 'restore', []);
+  // Handle keyboard behavior - use 'extend' to prevent IME composition interruption
+  const keyboardBehavior = useMemo(() => 'extend' as const, []);
+  const keyboardBlurBehavior = useMemo(() => 'restore' as const, []);
+
+  // Memoize placeholder strings and colors to prevent re-renders
+  const namePlaceholder = useMemo(() => t('createItem.placeholders.name'), [t]);
+  const pricePlaceholder = useMemo(() => t('createItem.placeholders.price'), [t]);
+  const detailedLocationPlaceholder = useMemo(() => t('createItem.placeholders.detailedLocation'), [t]);
+  const placeholderTextColor = useMemo(() => theme.colors.textLight, [theme.colors.textLight]);
 
 
   const handleClose = useCallback(() => {
     // Dismiss keyboard immediately when closing starts
     Keyboard.dismiss();
     bottomSheetRef.current?.dismiss();
-    // Reset form
+    // Reset form - increment key to reset uncontrolled inputs
     setName('');
     setSelectedCategory('');
     setSelectedLocation('');
     setPrice('0');
     setDetailedLocation('');
+    nameValueRef.current = '';
+    priceValueRef.current = '0';
+    detailedLocationValueRef.current = '';
+    setFormKey(prev => prev + 1);
   }, [bottomSheetRef]);
 
   const handleSubmit = useCallback(async () => {
+    // Get current values from refs before validation
+    const currentName = nameValueRef.current || name || '';
+    const currentPrice = priceValueRef.current || price || '0';
+    const currentDetailedLocation = detailedLocationValueRef.current || detailedLocation || '';
+    
+    // Sync to state
+    setName(currentName);
+    setPrice(currentPrice);
+    setDetailedLocation(currentDetailedLocation);
+
     // Validation
-    if (!name.trim()) {
+    if (!currentName.trim()) {
       Alert.alert(t('createItem.errors.title'), t('createItem.errors.enterName'));
       return;
     }
@@ -342,13 +478,13 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     setIsLoading(true);
     try {
       const category = categories.find((cat) => cat.id === selectedCategory);
-      const priceNum = parseFloat(price) || 0;
+      const priceNum = parseFloat(currentPrice) || 0;
 
       createItem({
-        name: name.trim(),
+        name: currentName.trim(),
         category: selectedCategory,
         location: selectedLocation,
-        detailedLocation: detailedLocation.trim(),
+        detailedLocation: currentDetailedLocation.trim(),
         price: priceNum,
         icon: category?.icon || 'cube-outline',
         iconColor: category?.iconColor || theme.colors.textSecondary,
@@ -468,15 +604,16 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
               </CloseButton>
             </Header>
 
-            <FormContainer>
+            <FormContainer key={formKey}>
               <FormSection>
                 <Label>{t('createItem.fields.name')}</Label>
-                <Input
+                <UncontrolledNameInput
                   ref={nameInputRef}
-                  placeholder={t('createItem.placeholders.name')}
-                  value={name}
-                  onChangeText={setName}
-                  placeholderTextColor={theme.colors.textLight}
+                  defaultValue={name}
+                  onChangeText={handleNameChangeText}
+                  onBlur={handleNameBlur}
+                  placeholder={namePlaceholder}
+                  placeholderTextColor={placeholderTextColor}
                 />
               </FormSection>
 
@@ -561,21 +698,24 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
                 <Row>
                   <View style={{ flex: 1 }}>
                     <Label>{t('createItem.fields.price')}</Label>
-                    <HalfInput
-                      placeholder={t('createItem.placeholders.price')}
-                      value={price}
-                      onChangeText={setPrice}
-                      keyboardType="numeric"
-                      placeholderTextColor={theme.colors.textLight}
+                    <UncontrolledPriceInput
+                      ref={priceInputRef}
+                      defaultValue={price}
+                      onChangeText={handlePriceChangeText}
+                      onBlur={handlePriceBlur}
+                      placeholder={pricePlaceholder}
+                      placeholderTextColor={placeholderTextColor}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Label>{t('createItem.fields.detailedLocation')}</Label>
-                    <HalfInput
-                      placeholder={t('createItem.placeholders.detailedLocation')}
-                      value={detailedLocation}
-                      onChangeText={setDetailedLocation}
-                      placeholderTextColor={theme.colors.textLight}
+                    <UncontrolledDetailedLocationInput
+                      ref={detailedLocationInputRef}
+                      defaultValue={detailedLocation}
+                      onChangeText={handleDetailedLocationChangeText}
+                      onBlur={handleDetailedLocationBlur}
+                      placeholder={detailedLocationPlaceholder}
+                      placeholderTextColor={placeholderTextColor}
                     />
                   </View>
                 </Row>

@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { BottomSheetModalProvider, BottomSheetModal } from '@gorhom/bottom-sheet';
 import { I18nextProvider } from 'react-i18next';
 import { Provider } from 'react-redux';
 import { ThemeProvider } from './src/theme/ThemeProvider';
 import { RootStack } from './src/navigation/RootStack';
 import { initializeDataFiles } from './src/services/DataInitializationService';
+import { ErrorBottomSheet } from './src/components/ErrorBottomSheet';
+import { ErrorDetails } from './src/types/api';
 import i18n from './src/i18n/i18n';
 import { store } from './src/store';
-import { initializeApiClient } from './src/store/sagas/authSaga';
+import { initializeApiClient, setGlobalErrorHandler } from './src/store/sagas/authSaga';
 import { loadSettings } from './src/store/sagas/settingsSaga';
 import { loadTodos } from './src/store/sagas/todoSaga';
 import { loadItems } from './src/store/sagas/inventorySaga';
@@ -24,6 +26,22 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://your-api-u
 // Inner component to handle initialization
 function AppInner() {
   const dispatch = useAppDispatch();
+  const errorBottomSheetRef = useRef<BottomSheetModal>(null);
+  const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null);
+
+  // Set up global error handler
+  useEffect(() => {
+    const handleError = (details: ErrorDetails) => {
+      setErrorDetails(details);
+      errorBottomSheetRef.current?.present();
+    };
+    
+    setGlobalErrorHandler(handleError);
+
+    return () => {
+      setGlobalErrorHandler(() => {});
+    };
+  }, []);
 
   // Initialize Redux sagas on mount
   useEffect(() => {
@@ -40,10 +58,19 @@ function AppInner() {
     dispatch(loadItems());
   }, [dispatch]);
 
+  const handleErrorDismiss = () => {
+    setErrorDetails(null);
+  };
+
   return (
     <>
       <RootStack />
       <StatusBar style="auto" />
+      <ErrorBottomSheet
+        bottomSheetRef={errorBottomSheetRef}
+        errorDetails={errorDetails}
+        onDismiss={handleErrorDismiss}
+      />
     </>
   );
 }

@@ -156,7 +156,7 @@ export const ProfileScreen: React.FC = () => {
   }, []);
 
   const getApiClient = useCallback(async (): Promise<ApiClient | null> => {
-    const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://your-api-url.com';
+    const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://home-inventory-api.logiccore.digital';
     const apiClient = new ApiClient(API_BASE_URL);
     const tokens = await getAuthTokens();
     if (tokens) {

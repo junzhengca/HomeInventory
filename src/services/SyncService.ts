@@ -66,7 +66,10 @@ class SyncService {
   private lastSyncTime: Map<string, number> = new Map(); // Track last sync time per fileType to debounce
   private isInitialSyncRunning: boolean = false; // Track if initial sync is running
   private isMergingData: boolean = false; // Track if we're currently merging data (to suppress callbacks)
+  private lastCleanupTime: Map<string, number> = new Map(); // Track last cleanup time per fileType
   private readonly SYNC_DEBOUNCE_MS = 1000; // Minimum time between syncs for the same fileType
+  private readonly CLEANUP_RETENTION_DAYS = 7; // Days to keep deleted items before permanent removal
+  private readonly CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // Run cleanup at most once per day
 
   constructor(apiClient: {
     request: <T>(endpoint: string, options: { method: string; body?: unknown; requiresAuth?: boolean }) => Promise<T>;
@@ -622,6 +625,8 @@ class SyncService {
           await this.mergeSettings(response.data as Settings);
         } else {
           await this.mergeEntries(fileType, response.data as unknown[]);
+          // Cleanup old deleted items after merging (only for non-settings file types)
+          await this.cleanupDeletedItems(fileType);
         }
 
         // Update sync metadata (create new object to avoid read-only property issues)
@@ -723,17 +728,17 @@ class SyncService {
       let data: unknown;
 
       if (fileType === 'categories') {
-        const { getAllCategories } = await import('./CategoryService');
-        data = await getAllCategories();
+        const { getAllCategoriesForSync } = await import('./CategoryService');
+        data = await getAllCategoriesForSync();
       } else if (fileType === 'locations') {
-        const { getAllLocations } = await import('./LocationService');
-        data = await getAllLocations();
+        const { getAllLocationsForSync } = await import('./LocationService');
+        data = await getAllLocationsForSync();
       } else if (fileType === 'inventoryItems') {
-        const { getAllItems } = await import('./InventoryService');
-        data = await getAllItems();
+        const { getAllItemsForSync } = await import('./InventoryService');
+        data = await getAllItemsForSync();
       } else if (fileType === 'todoItems') {
-        const { getAllTodos } = await import('./TodoService');
-        data = await getAllTodos();
+        const { getAllTodosForSync } = await import('./TodoService');
+        data = await getAllTodosForSync();
       } else if (fileType === 'settings') {
         const { getSettings } = await import('./SettingsService');
         data = await getSettings();
@@ -912,27 +917,27 @@ class SyncService {
       let writeFile: (data: unknown) => Promise<boolean>;
 
       if (fileType === 'categories') {
-        const { getAllCategories } = await import('./CategoryService');
+        const { getAllCategoriesForSync } = await import('./CategoryService');
         const { readFile: _readFile, writeFile: writeCatFile } = await import('./FileSystemService');
-        const localCategories = await getAllCategories();
+        const localCategories = await getAllCategoriesForSync();
         localData = localCategories;
         writeFile = async (data: unknown) => writeCatFile('categories.json', { categories: data as Category[] });
       } else if (fileType === 'locations') {
-        const { getAllLocations } = await import('./LocationService');
+        const { getAllLocationsForSync } = await import('./LocationService');
         const { readFile: _readFile2, writeFile: writeLocFile } = await import('./FileSystemService');
-        const localLocations = await getAllLocations();
+        const localLocations = await getAllLocationsForSync();
         localData = localLocations;
         writeFile = async (data: unknown) => writeLocFile('locations.json', { locations: data as Location[] });
       } else if (fileType === 'inventoryItems') {
-        const { getAllItems } = await import('./InventoryService');
+        const { getAllItemsForSync } = await import('./InventoryService');
         const { readFile: _readFile3, writeFile: writeItemFile } = await import('./FileSystemService');
-        const localItems = await getAllItems();
+        const localItems = await getAllItemsForSync();
         localData = localItems;
         writeFile = async (data: unknown) => writeItemFile('items.json', { items: data as InventoryItem[] });
       } else if (fileType === 'todoItems') {
-        const { getAllTodos } = await import('./TodoService');
+        const { getAllTodosForSync } = await import('./TodoService');
         const { readFile: _readFile4, writeFile: writeTodoFile } = await import('./FileSystemService');
-        const localTodos = await getAllTodos();
+        const localTodos = await getAllTodosForSync();
         localData = localTodos;
         writeFile = async (data: unknown) => writeTodoFile('todos.json', { todos: data as TodoItem[] });
       } else {
@@ -987,9 +992,9 @@ class SyncService {
   }
 
   /**
-   * Merge two arrays of entries by timestamp
+   * Merge two arrays of entries by timestamp, handling deletions
    */
-  private mergeByTimestamp<T extends { id: string; createdAt?: string; updatedAt?: string }>(
+  private mergeByTimestamp<T extends { id: string; createdAt?: string; updatedAt?: string; deletedAt?: string }>(
     local: T[],
     server: T[]
   ): T[] {
@@ -1002,25 +1007,59 @@ class SyncService {
       mergedMap.set(entry.id, entry);
     });
 
-    // Merge with server entries based on timestamps
+    // Merge with server entries based on timestamps and deletion state
     server.forEach(serverEntry => {
       const localEntry = mergedMap.get(serverEntry.id);
 
       if (!localEntry) {
-        // Entry only exists on server - add it
-        console.log('[SyncService] Adding new server entry:', serverEntry.id);
+        // Entry only exists on server - add it (including if deleted)
+        console.log('[SyncService] Adding new server entry:', serverEntry.id, serverEntry.deletedAt ? '(deleted)' : '');
         mergedMap.set(serverEntry.id, serverEntry);
       } else {
-        // Entry exists on both - use later updatedAt timestamp
-        const localTime = new Date(localEntry.updatedAt || localEntry.createdAt || 0);
-        const serverTime = new Date(serverEntry.updatedAt || serverEntry.createdAt || 0);
+        // Entry exists on both - need to handle deletion state
+        const localDeletedAt = localEntry.deletedAt ? new Date(localEntry.deletedAt).getTime() : 0;
+        const serverDeletedAt = serverEntry.deletedAt ? new Date(serverEntry.deletedAt).getTime() : 0;
+        const localUpdatedAt = new Date(localEntry.updatedAt || localEntry.createdAt || 0).getTime();
+        const serverUpdatedAt = new Date(serverEntry.updatedAt || serverEntry.createdAt || 0).getTime();
 
-        if (serverTime > localTime) {
-          // Server version is newer - use server version
-          console.log('[SyncService] Using server version for entry:', serverEntry.id, 'server time:', serverTime.toISOString(), 'local time:', localTime.toISOString());
-          mergedMap.set(serverEntry.id, serverEntry);
-        } else {
-          console.log('[SyncService] Keeping local version for entry:', serverEntry.id, 'local time:', localTime.toISOString(), 'server time:', serverTime.toISOString());
+        // Both deleted - use later deletion timestamp
+        if (localDeletedAt > 0 && serverDeletedAt > 0) {
+          if (serverDeletedAt > localDeletedAt) {
+            console.log('[SyncService] Both deleted, using server deletion (later):', serverEntry.id);
+            mergedMap.set(serverEntry.id, serverEntry);
+          } else {
+            console.log('[SyncService] Both deleted, keeping local deletion (later):', serverEntry.id);
+          }
+        }
+        // Server deleted, local not deleted
+        else if (serverDeletedAt > 0 && localDeletedAt === 0) {
+          // If deletion is more recent than local update, apply deletion
+          if (serverDeletedAt > localUpdatedAt) {
+            console.log('[SyncService] Server deleted (more recent than local update), applying deletion:', serverEntry.id);
+            mergedMap.set(serverEntry.id, serverEntry);
+          } else {
+            console.log('[SyncService] Server deleted but local update is more recent, keeping local:', serverEntry.id);
+          }
+        }
+        // Local deleted, server not deleted
+        else if (localDeletedAt > 0 && serverDeletedAt === 0) {
+          // If deletion is more recent than server update, keep deletion
+          if (localDeletedAt > serverUpdatedAt) {
+            console.log('[SyncService] Local deleted (more recent than server update), keeping deletion:', serverEntry.id);
+          } else {
+            // Server update is more recent than deletion - restore from server
+            console.log('[SyncService] Local deleted but server update is more recent, restoring from server:', serverEntry.id);
+            mergedMap.set(serverEntry.id, serverEntry);
+          }
+        }
+        // Neither deleted - use normal timestamp-based merge
+        else {
+          if (serverUpdatedAt > localUpdatedAt) {
+            console.log('[SyncService] Using server version for entry:', serverEntry.id, 'server time:', new Date(serverUpdatedAt).toISOString(), 'local time:', new Date(localUpdatedAt).toISOString());
+            mergedMap.set(serverEntry.id, serverEntry);
+          } else {
+            console.log('[SyncService] Keeping local version for entry:', serverEntry.id, 'local time:', new Date(localUpdatedAt).toISOString(), 'server time:', new Date(serverUpdatedAt).toISOString());
+          }
         }
       }
     });
@@ -1067,6 +1106,86 @@ class SyncService {
         console.error('[SyncService] Error in listener:', error);
       }
     });
+  }
+
+  /**
+   * Cleanup deleted items older than retention period
+   */
+  private async cleanupDeletedItems(fileType: SyncFileType): Promise<void> {
+    // Check if cleanup should run (at most once per day per file type)
+    const lastCleanup = this.lastCleanupTime.get(fileType) || 0;
+    const now = Date.now();
+    if (now - lastCleanup < this.CLEANUP_INTERVAL_MS) {
+      console.log(`[SyncService] Skipping cleanup for ${fileType}, last cleanup was ${Math.round((now - lastCleanup) / (60 * 60 * 1000))} hours ago`);
+      return;
+    }
+
+    console.log(`[SyncService] Starting cleanup for ${fileType}...`);
+
+    // Suppress sync callbacks during cleanup
+    this.isMergingData = true;
+    syncCallbackRegistry.setSuppressCallbacks(true);
+
+    try {
+      let allItems: unknown[];
+      let writeFile: (data: unknown) => Promise<boolean>;
+      const cutoffDate = new Date(now - this.CLEANUP_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+
+      if (fileType === 'categories') {
+        const { getAllCategoriesForSync } = await import('./CategoryService');
+        const { writeFile: writeCatFile } = await import('./FileSystemService');
+        allItems = await getAllCategoriesForSync();
+        writeFile = async (data: unknown) => writeCatFile('categories.json', { categories: data as Category[] });
+      } else if (fileType === 'locations') {
+        const { getAllLocationsForSync } = await import('./LocationService');
+        const { writeFile: writeLocFile } = await import('./FileSystemService');
+        allItems = await getAllLocationsForSync();
+        writeFile = async (data: unknown) => writeLocFile('locations.json', { locations: data as Location[] });
+      } else if (fileType === 'inventoryItems') {
+        const { getAllItemsForSync } = await import('./InventoryService');
+        const { writeFile: writeItemFile } = await import('./FileSystemService');
+        allItems = await getAllItemsForSync();
+        writeFile = async (data: unknown) => writeItemFile('items.json', { items: data as InventoryItem[] });
+      } else if (fileType === 'todoItems') {
+        const { getAllTodosForSync } = await import('./TodoService');
+        const { writeFile: writeTodoFile } = await import('./FileSystemService');
+        allItems = await getAllTodosForSync();
+        writeFile = async (data: unknown) => writeTodoFile('todos.json', { todos: data as TodoItem[] });
+      } else {
+        return; // Settings don't need cleanup
+      }
+
+      // Filter out items with deletedAt older than retention period
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cleaned = (allItems as any[]).filter((item: { deletedAt?: string }) => {
+        if (!item.deletedAt) {
+          return true; // Keep non-deleted items
+        }
+        const deletedDate = new Date(item.deletedAt);
+        const shouldKeep = deletedDate > cutoffDate;
+        if (!shouldKeep) {
+          console.log(`[SyncService] Removing item ${(item as { id: string }).id} deleted on ${item.deletedAt}`);
+        }
+        return shouldKeep;
+      });
+
+      const removedCount = allItems.length - cleaned.length;
+      if (removedCount > 0) {
+        console.log(`[SyncService] Cleanup removed ${removedCount} old deleted items from ${fileType}`);
+        await writeFile(cleaned);
+      } else {
+        console.log(`[SyncService] No old deleted items to remove from ${fileType}`);
+      }
+
+      // Update last cleanup time
+      this.lastCleanupTime.set(fileType, now);
+    } catch (error) {
+      console.error(`[SyncService] Error during cleanup for ${fileType}:`, error);
+    } finally {
+      // Re-enable sync callbacks after cleanup completes
+      this.isMergingData = false;
+      syncCallbackRegistry.setSuppressCallbacks(false);
+    }
   }
 
   /**

@@ -405,6 +405,46 @@
       "enable": "Enable Sync",
       "enabling": "Enabling..."
     }
+  },
+  "errorBottomSheet": {
+    "title": "API Error",
+    "subtitle": "Request failed after all retry attempts",
+    "errorTitle": "Error Details",
+    "errorType": "Error Type",
+    "errorTypes": {
+      "network": "Network Error",
+      "server": "Server Error"
+    },
+    "sections": {
+      "request": "Request Details",
+      "response": "Response Details",
+      "retryHistory": "Retry History",
+      "metadata": "Metadata"
+    },
+    "fields": {
+      "endpoint": "Endpoint",
+      "method": "Method",
+      "headers": "Headers",
+      "body": "Request Body",
+      "status": "Status",
+      "responseBody": "Response Body",
+      "timestamp": "Timestamp",
+      "totalDuration": "Total Duration"
+    },
+    "retryAttempt": "Attempt {{attempt}}: Retried after {{delay}}ms at {{timestamp}}",
+    "buttons": {
+      "close": "Close",
+      "copy": "Copy Error Log",
+      "copied": "Copied!"
+    },
+    "copied": {
+      "title": "Copied!",
+      "message": "Error log has been copied to clipboard"
+    },
+    "copyError": {
+      "title": "Error",
+      "message": "Failed to copy error log to clipboard"
+    }
   }
 }
 

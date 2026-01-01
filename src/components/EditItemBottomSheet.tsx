@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { TouchableOpacity, Alert, ScrollView, View, Text, Keyboard } from 'react-native';
 import styled from 'styled-components/native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
@@ -224,6 +224,116 @@ const AddTagButton = styled(TouchableOpacity)`
   justify-content: center;
 `;
 
+// Memoized input components to prevent re-renders that interrupt IME composition
+const MemoizedNameInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  placeholderTextColor: string;
+}>(({ value, onChangeText, placeholder, placeholderTextColor }) => {
+  return (
+    <Input
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      placeholderTextColor={placeholderTextColor}
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+    />
+  );
+});
+
+const MemoizedPriceInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  placeholderTextColor: string;
+}>(({ value, onChangeText, placeholder, placeholderTextColor }) => {
+  return (
+    <HalfInput
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType="numeric"
+      placeholderTextColor={placeholderTextColor}
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+    />
+  );
+});
+
+const MemoizedDetailedLocationInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  placeholderTextColor: string;
+}>(({ value, onChangeText, placeholder, placeholderTextColor }) => {
+  return (
+    <HalfInput
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      placeholderTextColor={placeholderTextColor}
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+    />
+  );
+});
+
+const MemoizedAmountInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  placeholderTextColor: string;
+}>(({ value, onChangeText, placeholder, placeholderTextColor }) => {
+  return (
+    <Input
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType="numeric"
+      placeholderTextColor={placeholderTextColor}
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+    />
+  );
+});
+
+const MemoizedTagInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  onSubmitEditing: () => void;
+  placeholder: string;
+  placeholderTextColor: string;
+}>(({ value, onChangeText, onSubmitEditing, placeholder, placeholderTextColor }) => {
+  return (
+    <TagInput
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      placeholderTextColor={placeholderTextColor}
+      onSubmitEditing={onSubmitEditing}
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+    />
+  );
+});
+
+MemoizedNameInput.displayName = 'MemoizedNameInput';
+MemoizedPriceInput.displayName = 'MemoizedPriceInput';
+MemoizedDetailedLocationInput.displayName = 'MemoizedDetailedLocationInput';
+MemoizedAmountInput.displayName = 'MemoizedAmountInput';
+MemoizedTagInput.displayName = 'MemoizedTagInput';
 
 interface EditItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
@@ -259,6 +369,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const scrollViewRef = React.useRef<ScrollView>(null);
   const categoryManagerRef = React.useRef<BottomSheetModal>(null);
+  const isModalOpenRef = React.useRef<boolean>(false);
 
   // Filter to get only item-type categories (exclude location categories)
   const itemTypeCategories = useMemo(() => {
@@ -321,9 +432,11 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     loadCategoriesCallback();
   }, [loadCategoriesCallback]);
 
-  // Update form fields when item changes
+  // Initialize form fields when modal opens or when item loads initially
+  // Don't update form when item changes while modal is already open (prevents sync refill)
   useEffect(() => {
-    if (item) {
+    if (item && !isModalOpenRef.current) {
+      // Only initialize form when modal is closed (initial load)
       setName(item.name);
       setSelectedCategory(item.category);
       setSelectedLocation(item.location);
@@ -333,6 +446,29 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
       setTags(item.tags || []);
       setPurchaseDate(item.purchaseDate ? new Date(item.purchaseDate) : null);
       setExpiryDate(item.expiryDate ? new Date(item.expiryDate) : null);
+    }
+  }, [item]);
+
+  // Initialize form when modal opens
+  const handleSheetChanges = useCallback((index: number) => {
+    if (index === 0) {
+      // Modal opened
+      isModalOpenRef.current = true;
+      // Initialize form from current item when modal opens
+      if (item) {
+        setName(item.name);
+        setSelectedCategory(item.category);
+        setSelectedLocation(item.location);
+        setPrice(item.price.toString());
+        setDetailedLocation(item.detailedLocation || '');
+        setAmount(item.amount?.toString() || '');
+        setTags(item.tags || []);
+        setPurchaseDate(item.purchaseDate ? new Date(item.purchaseDate) : null);
+        setExpiryDate(item.expiryDate ? new Date(item.expiryDate) : null);
+      }
+    } else if (index === -1) {
+      // Modal closed
+      isModalOpenRef.current = false;
     }
   }, [item]);
 
@@ -369,8 +505,30 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
 
   const snapPoints = useMemo(() => ['100%'], []);
 
-  const keyboardBehavior = useMemo(() => 'interactive', []);
-  const keyboardBlurBehavior = useMemo(() => 'restore', []);
+  // Use 'extend' to prevent IME composition interruption
+  const keyboardBehavior = useMemo(() => 'extend' as const, []);
+  const keyboardBlurBehavior = useMemo(() => 'restore' as const, []);
+
+  // Stable onChangeText handlers to prevent IME composition interruption
+  const handleNameChange = useCallback((text: string) => {
+    setName(text);
+  }, []);
+
+  const handlePriceChange = useCallback((text: string) => {
+    setPrice(text);
+  }, []);
+
+  const handleDetailedLocationChange = useCallback((text: string) => {
+    setDetailedLocation(text);
+  }, []);
+
+  const handleAmountChange = useCallback((text: string) => {
+    setAmount(text);
+  }, []);
+
+  const handleNewTagChange = useCallback((text: string) => {
+    setNewTag(text);
+  }, []);
 
   const handleClose = useCallback(() => {
     bottomSheetRef.current?.dismiss();
@@ -499,6 +657,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
       index={0}
       footerComponent={renderFooter}
       enableDynamicSizing={false}
+      onChange={handleSheetChanges}
     >
       <ContentContainer>
         <BottomSheetScrollView
@@ -522,10 +681,10 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
           <FormContainer>
           <FormSection>
             <Label>{t('editItem.fields.name')}</Label>
-            <Input
-              placeholder={t('editItem.placeholders.name')}
+            <MemoizedNameInput
               value={name}
-              onChangeText={setName}
+              onChangeText={handleNameChange}
+              placeholder={t('editItem.placeholders.name')}
               placeholderTextColor={theme.colors.textLight}
             />
           </FormSection>
@@ -611,20 +770,19 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
             <Row>
               <HalfContainer>
                 <Label>{t('editItem.fields.price')}</Label>
-                <HalfInput
-                  placeholder={t('editItem.placeholders.price')}
+                <MemoizedPriceInput
                   value={price}
-                  onChangeText={setPrice}
-                  keyboardType="numeric"
+                  onChangeText={handlePriceChange}
+                  placeholder={t('editItem.placeholders.price')}
                   placeholderTextColor={theme.colors.textLight}
                 />
               </HalfContainer>
               <HalfContainer>
                 <Label>{t('editItem.fields.detailedLocation')}</Label>
-                <HalfInput
-                  placeholder={t('editItem.placeholders.detailedLocation')}
+                <MemoizedDetailedLocationInput
                   value={detailedLocation}
-                  onChangeText={setDetailedLocation}
+                  onChangeText={handleDetailedLocationChange}
+                  placeholder={t('editItem.placeholders.detailedLocation')}
                   placeholderTextColor={theme.colors.textLight}
                 />
               </HalfContainer>
@@ -633,11 +791,10 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
 
           <FormSection>
             <Label>{t('editItem.fields.amount')}</Label>
-            <Input
-              placeholder={t('editItem.placeholders.amount')}
+            <MemoizedAmountInput
               value={amount}
-              onChangeText={setAmount}
-              keyboardType="numeric"
+              onChangeText={handleAmountChange}
+              placeholder={t('editItem.placeholders.amount')}
               placeholderTextColor={theme.colors.textLight}
             />
           </FormSection>
@@ -657,12 +814,12 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
               </TagsContainer>
             )}
             <TagInputContainer>
-              <TagInput
-                placeholder={t('editItem.placeholders.addTag')}
+              <MemoizedTagInput
                 value={newTag}
-                onChangeText={setNewTag}
-                placeholderTextColor={theme.colors.textLight}
+                onChangeText={handleNewTagChange}
                 onSubmitEditing={handleAddTag}
+                placeholder={t('editItem.placeholders.addTag')}
+                placeholderTextColor={theme.colors.textLight}
               />
               <AddTagButton onPress={handleAddTag} activeOpacity={0.8}>
                 <Ionicons name="add" size={20} color={theme.colors.surface} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   ScrollView,
   TextInput,
@@ -153,6 +153,11 @@ export const NotesScreen: React.FC = () => {
   useEffect(() => {
     refreshTodos();
   }, [refreshTodos]);
+
+  // Stable onChangeText handler to prevent IME composition interruption
+  const handleTodoTextChange = useCallback((text: string) => {
+    setNewTodoText(text);
+  }, []);
 
   const handleSettingsPress = () => {
     // Navigate to Settings - need to use parent navigator (RootStack)
@@ -359,11 +364,14 @@ export const NotesScreen: React.FC = () => {
               placeholder={t('notes.addTodo')}
               placeholderTextColor={theme.colors.textLight}
               value={newTodoText}
-              onChangeText={setNewTodoText}
+              onChangeText={handleTodoTextChange}
               onSubmitEditing={handleAddTodo}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               autoCorrect={false}
+              spellCheck={false}
+              textContentType="none"
+              autoComplete="off"
             />
             <AddButton 
               onPress={handleAddTodo} 

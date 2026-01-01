@@ -405,6 +405,46 @@
       "enable": "启用同步",
       "enabling": "启用中..."
     }
+  },
+  "errorBottomSheet": {
+    "title": "API错误",
+    "subtitle": "所有重试尝试后请求失败",
+    "errorTitle": "错误详情",
+    "errorType": "错误类型",
+    "errorTypes": {
+      "network": "网络错误",
+      "server": "服务器错误"
+    },
+    "sections": {
+      "request": "请求详情",
+      "response": "响应详情",
+      "retryHistory": "重试历史",
+      "metadata": "元数据"
+    },
+    "fields": {
+      "endpoint": "端点",
+      "method": "方法",
+      "headers": "请求头",
+      "body": "请求体",
+      "status": "状态",
+      "responseBody": "响应体",
+      "timestamp": "时间戳",
+      "totalDuration": "总耗时"
+    },
+    "retryAttempt": "尝试 {{attempt}}：在 {{timestamp}} 延迟 {{delay}}ms 后重试",
+    "buttons": {
+      "close": "关闭",
+      "copy": "复制错误日志",
+      "copied": "已复制！"
+    },
+    "copied": {
+      "title": "已复制！",
+      "message": "错误日志已复制到剪贴板"
+    },
+    "copyError": {
+      "title": "错误",
+      "message": "复制错误日志到剪贴板失败"
+    }
   }
 }
 

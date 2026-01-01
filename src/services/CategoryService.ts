@@ -11,19 +11,28 @@ interface CategoriesData {
 }
 
 /**
- * Get all categories
+ * Get all categories (excluding deleted categories)
  */
 export const getAllCategories = async (): Promise<Category[]> => {
+  const data = await readFile<CategoriesData>(CATEGORIES_FILE);
+  const categories = data?.categories || [];
+  return categories.filter((category) => !category.deletedAt);
+};
+
+/**
+ * Get all categories for sync (including deleted categories)
+ */
+export const getAllCategoriesForSync = async (): Promise<Category[]> => {
   const data = await readFile<CategoriesData>(CATEGORIES_FILE);
   return data?.categories || [];
 };
 
 /**
- * Get a single category by ID
+ * Get a single category by ID (excluding deleted categories)
  */
 export const getCategoryById = async (id: string): Promise<Category | null> => {
   const categories = await getAllCategories();
-  return categories.find((category) => category.id === id) || null;
+  return categories.find((category) => category.id === id && !category.deletedAt) || null;
 };
 
 /**
@@ -126,11 +135,12 @@ export const updateCategory = async (
 };
 
 /**
- * Delete a category
+ * Delete a category (soft delete - sets deletedAt timestamp)
  */
 export const deleteCategory = async (id: string): Promise<boolean> => {
   try {
-    const categories = await getAllCategories();
+    const data = await readFile<CategoriesData>(CATEGORIES_FILE);
+    const categories = data?.categories || [];
     const category = categories.find((cat) => cat.id === id);
 
     if (!category) {
@@ -142,14 +152,27 @@ export const deleteCategory = async (id: string): Promise<boolean> => {
       throw new Error('Cannot delete system categories');
     }
 
-    // Check if category is in use
+    // Check if category is in use (only check non-deleted items)
     const inUse = await isCategoryInUse(id);
     if (inUse) {
       throw new Error('Cannot delete category that is in use by items');
     }
 
-    const filteredCategories = categories.filter((cat) => cat.id !== id);
-    const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories: filteredCategories });
+    // If already deleted, return true (idempotent)
+    if (category.deletedAt) {
+      return true;
+    }
+
+    // Soft delete: set deletedAt and update updatedAt
+    const index = categories.findIndex((cat) => cat.id === id);
+    const now = new Date().toISOString();
+    categories[index] = {
+      ...categories[index],
+      deletedAt: now,
+      updatedAt: now,
+    };
+
+    const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories });
 
     if (success) {
       console.log('[CategoryService] Triggering sync after deleteCategory');

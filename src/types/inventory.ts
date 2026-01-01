@@ -7,6 +7,7 @@ export interface Category {
   isCustom: boolean; // Flag to distinguish system vs user-created categories
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
+  deletedAt?: string; // ISO date string - marks soft deletion
   icon?: keyof typeof Ionicons.glyphMap;
   iconColor?: string;
 }
@@ -16,6 +17,7 @@ export interface Location {
   name: string; // Chinese label (will be i18n'd in future)
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
+  deletedAt?: string; // ISO date string - marks soft deletion
 }
 
 export interface InventoryItem {
@@ -33,6 +35,7 @@ export interface InventoryItem {
   purchaseDate?: string; // ISO date string (optional)
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
+  deletedAt?: string; // ISO date string - marks soft deletion
 }
 
 export interface TodoItem {
@@ -41,5 +44,6 @@ export interface TodoItem {
   completed: boolean;
   createdAt: string; // ISO date string
   updatedAt?: string; // ISO date string
+  deletedAt?: string; // ISO date string - marks soft deletion
 }
 

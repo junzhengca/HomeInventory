@@ -1,0 +1,136 @@
+---
+alwaysApply: true
+---
+# Uncontrolled Input Pattern for Pinyin/IME Composition
+
+## Problem
+When using controlled inputs (with `value` prop) in React Native, especially in bottom sheet modals, Chinese Pinyin input (IME composition) gets interrupted. The keyboard resets on every keystroke because the component re-renders when state updates, breaking the IME composition flow.
+
+## Solution
+Use **uncontrolled inputs** with `defaultValue` and refs to store the current text value. Only sync to React state when needed (on blur or submit), preventing re-renders during typing.
+
+## Pattern
+
+### 1. Create Uncontrolled Input Component
+```typescript
+import React, { memo } from 'react';
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
+
+const UncontrolledInput = memo(
+  React.forwardRef<TextInput, {
+    defaultValue: string;
+    onChangeText: (text: string) => void;
+    onBlur: () => void;
+    placeholder: string;
+    placeholderTextColor: string;
+  }>(({ defaultValue, onChangeText, onBlur, placeholder, placeholderTextColor }, ref) => {
+    return (
+      <BottomSheetTextInput
+        ref={ref}
+        placeholder={placeholder}
+        defaultValue={defaultValue}
+        onChangeText={onChangeText}
+        onBlur={onBlur}
+        placeholderTextColor={placeholderTextColor}
+        autoCorrect={false}
+        spellCheck={false}
+        textContentType="none"
+        autoComplete="off"
+      />
+    );
+  })
+);
+```
+
+### 2. Use Refs to Store Current Value
+```typescript
+const [name, setName] = useState('');
+const nameInputRef = React.useRef<TextInput>(null);
+const nameValueRef = React.useRef(name); // Store current value without re-renders
+const [formKey, setFormKey] = useState(0); // For resetting form
+```
+
+### 3. Update Ref on Change, Sync to State on Blur
+```typescript
+// Update ref during typing (no re-render)
+const handleNameChangeText = useCallback((text: string) => {
+  nameValueRef.current = text;
+}, []);
+
+// Sync ref to state on blur
+const handleNameBlur = useCallback(() => {
+  setName(nameValueRef.current);
+}, []);
+```
+
+### 4. Use in JSX
+```typescript
+<UncontrolledInput
+  ref={nameInputRef}
+  defaultValue={name}
+  onChangeText={handleNameChangeText}
+  onBlur={handleNameBlur}
+  placeholder={namePlaceholder}
+  placeholderTextColor={placeholderTextColor}
+/>
+```
+
+### 5. Get Value from Ref on Submit
+```typescript
+const handleSubmit = useCallback(async () => {
+  // Get current value from ref
+  const currentName = nameValueRef.current || name || '';
+  
+  // Sync to state if needed
+  setName(currentName);
+  
+  // Use the value
+  // ...
+}, [name]);
+```
+
+### 6. Reset Form with Key Prop
+```typescript
+const handleClose = useCallback(() => {
+  Keyboard.dismiss();
+  bottomSheetRef.current?.dismiss();
+  
+  // Reset state
+  setName('');
+  
+  // Reset refs
+  nameValueRef.current = '';
+  
+  // Increment key to reset uncontrolled inputs
+  setFormKey(prev => prev + 1);
+}, [bottomSheetRef]);
+
+// In JSX
+<FormContainer key={formKey}>
+  <UncontrolledInput ... />
+</FormContainer>
+```
+
+## Key Points
+
+1. **Use `defaultValue` instead of `value`** - This makes the input uncontrolled
+2. **Store current text in refs** - Update refs in `onChangeText` without triggering re-renders
+3. **Sync to state on blur/submit** - Only update React state when needed
+4. **Use `key` prop for reset** - Increment key to reset uncontrolled inputs when form closes
+5. **Memoize placeholder strings** - Use `useMemo` for placeholder text to prevent re-renders
+
+## When to Use
+
+- All text inputs in bottom sheet modals
+- Any input that needs to support IME composition (Chinese, Japanese, Korean, etc.)
+- Inputs where re-renders during typing cause issues
+
+## When NOT to Use
+
+- Simple forms where IME composition isn't needed
+- Inputs that need real-time validation on every keystroke
+- Inputs where controlled state is required for other reasons
+
+## Example Files
+
+See `src/components/CreateItemBottomSheet.tsx` for a complete implementation example.

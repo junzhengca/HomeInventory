@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { TouchableOpacity, Alert, View, Text, Keyboard } from 'react-native';
 import styled from 'styled-components/native';
 // Note: View and Text are imported above and will be used in styled components
@@ -97,6 +97,50 @@ const EmptyStateText = styled(Text)`
   text-align: center;
 `;
 
+// Memoized input components to prevent re-renders that interrupt IME composition
+const MemoizedCategoryNameInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  placeholderTextColor: string;
+}>(({ value, onChangeText, placeholder, placeholderTextColor }) => {
+  return (
+    <Input
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      placeholderTextColor={placeholderTextColor}
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+    />
+  );
+});
+
+const MemoizedCategoryLabelInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  placeholderTextColor: string;
+}>(({ value, onChangeText, placeholder, placeholderTextColor }) => {
+  return (
+    <Input
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      placeholderTextColor={placeholderTextColor}
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+    />
+  );
+});
+
+MemoizedCategoryNameInput.displayName = 'MemoizedCategoryNameInput';
+MemoizedCategoryLabelInput.displayName = 'MemoizedCategoryLabelInput';
+
 interface CategoryManagerBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal>;
   onCategoriesChanged?: () => void;
@@ -123,7 +167,8 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
 
   const snapPoints = useMemo(() => ['100%'], []);
 
-  const keyboardBehavior = useMemo(() => 'interactive' as const, []);
+  // Use 'extend' to prevent IME composition interruption
+  const keyboardBehavior = useMemo(() => 'extend' as const, []);
   const keyboardBlurBehavior = useMemo(() => 'restore' as const, []);
 
   useEffect(() => {
@@ -164,6 +209,15 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
+  }, []);
+
+  // Stable onChangeText handlers to prevent IME composition interruption
+  const handleCategoryNameChange = useCallback((text: string) => {
+    setCategoryName(text);
+  }, []);
+
+  const handleCategoryLabelChange = useCallback((text: string) => {
+    setCategoryLabel(text);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -434,20 +488,20 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
           <>
             <FormSection>
               <Label>{t('categoryManager.nameEn')}</Label>
-              <Input
-                placeholder={t('categoryManager.placeholderEn')}
+              <MemoizedCategoryNameInput
                 value={categoryName}
-                onChangeText={setCategoryName}
+                onChangeText={handleCategoryNameChange}
+                placeholder={t('categoryManager.placeholderEn')}
                 placeholderTextColor={theme.colors.textLight}
               />
             </FormSection>
 
             <FormSection>
               <Label>{t('categoryManager.nameZh')}</Label>
-              <Input
-                placeholder={t('categoryManager.placeholderZh')}
+              <MemoizedCategoryLabelInput
                 value={categoryLabel}
-                onChangeText={setCategoryLabel}
+                onChangeText={handleCategoryLabelChange}
+                placeholder={t('categoryManager.placeholderZh')}
                 placeholderTextColor={theme.colors.textLight}
               />
             </FormSection>

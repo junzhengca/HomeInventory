@@ -10,19 +10,28 @@ interface TodosData {
 }
 
 /**
- * Get all todos
+ * Get all todos (excluding deleted todos)
  */
 export const getAllTodos = async (): Promise<TodoItem[]> => {
+  const data = await readFile<TodosData>(TODOS_FILE);
+  const todos = data?.todos || [];
+  return todos.filter((todo) => !todo.deletedAt);
+};
+
+/**
+ * Get all todos for sync (including deleted todos)
+ */
+export const getAllTodosForSync = async (): Promise<TodoItem[]> => {
   const data = await readFile<TodosData>(TODOS_FILE);
   return data?.todos || [];
 };
 
 /**
- * Get a single todo by ID
+ * Get a single todo by ID (excluding deleted todos)
  */
 export const getTodoById = async (id: string): Promise<TodoItem | null> => {
   const todos = await getAllTodos();
-  return todos.find((todo) => todo.id === id) || null;
+  return todos.find((todo) => todo.id === id && !todo.deletedAt) || null;
 };
 
 /**
@@ -86,18 +95,32 @@ export const updateTodo = async (
 };
 
 /**
- * Delete a todo
+ * Delete a todo (soft delete - sets deletedAt timestamp)
  */
 export const deleteTodo = async (id: string): Promise<boolean> => {
   try {
-    const todos = await getAllTodos();
-    const filteredTodos = todos.filter((todo) => todo.id !== id);
+    const data = await readFile<TodosData>(TODOS_FILE);
+    const todos = data?.todos || [];
+    const index = todos.findIndex((todo) => todo.id === id);
 
-    if (filteredTodos.length === todos.length) {
+    if (index === -1) {
       return false; // Todo not found
     }
+    
+    // If already deleted, return true (idempotent)
+    if (todos[index].deletedAt) {
+      return true;
+    }
+    
+    // Soft delete: set deletedAt and update updatedAt
+    const now = new Date().toISOString();
+    todos[index] = {
+      ...todos[index],
+      deletedAt: now,
+      updatedAt: now,
+    };
 
-    const success = await writeFile<TodosData>(TODOS_FILE, { todos: filteredTodos });
+    const success = await writeFile<TodosData>(TODOS_FILE, { todos });
 
     if (success) {
       console.log('[TodoService] Triggering sync after deleteTodo');

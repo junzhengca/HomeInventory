@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { TouchableOpacity, Alert, View, Text, Keyboard } from 'react-native';
 import styled from 'styled-components/native';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetTextInput, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -75,6 +75,36 @@ const Input = styled(BottomSheetTextInput)<{ isFocused: boolean }>`
   color: ${({ theme }: StyledProps) => theme.colors.text};
 `;
 
+// Memoized input component to prevent re-renders that interrupt IME composition
+const MemoizedTodoInput = memo<{
+  value: string;
+  onChangeText: (text: string) => void;
+  onFocus: () => void;
+  onBlur: () => void;
+  isFocused: boolean;
+  placeholder: string;
+  placeholderTextColor: string;
+}>(({ value, onChangeText, onFocus, onBlur, isFocused, placeholder, placeholderTextColor }) => {
+  return (
+    <Input
+      placeholder={placeholder}
+      value={value}
+      onChangeText={onChangeText}
+      placeholderTextColor={placeholderTextColor}
+      isFocused={isFocused}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      autoFocus={true}
+      autoCorrect={false}
+      spellCheck={false}
+      textContentType="none"
+      autoComplete="off"
+    />
+  );
+});
+
+MemoizedTodoInput.displayName = 'MemoizedTodoInput';
+
 interface EditTodoBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
   todoId: string;
@@ -96,10 +126,13 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const isModalOpenRef = React.useRef<boolean>(false);
 
-  // Update text when initialText changes
+  // Initialize text when initialText changes, but only if modal is closed (prevents sync refill)
   useEffect(() => {
-    setText(initialText);
+    if (!isModalOpenRef.current) {
+      setText(initialText);
+    }
   }, [initialText]);
 
   // Track keyboard visibility to adjust footer padding
@@ -139,10 +172,15 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
     setIsFocused(false);
   }, [bottomSheetRef]);
 
-  // Reset text when bottom sheet index changes to 0 (opened)
+  // Initialize text when modal opens, track modal state
   const handleSheetChanges = useCallback((index: number) => {
     if (index === 0) {
+      // Modal opened
+      isModalOpenRef.current = true;
       setText(initialText);
+    } else if (index === -1) {
+      // Modal closed
+      isModalOpenRef.current = false;
     }
   }, [initialText]);
 
@@ -167,10 +205,10 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
     }
   }, [text, todoId, updateTodo, handleClose, onTodoUpdated, t]);
 
-  const snapPoints = useMemo(() => ['40%'], []);
+  const snapPoints = useMemo(() => ['100%'], []);
 
-  // Handle keyboard behavior - use 'interactive' for better keyboard handling
-  const keyboardBehavior = useMemo(() => 'interactive' as const, []);
+  // Use 'extend' to prevent IME composition interruption
+  const keyboardBehavior = useMemo(() => 'extend' as const, []);
   const keyboardBlurBehavior = useMemo(() => 'restore' as const, []);
 
   const renderBackdrop = useCallback(
@@ -215,7 +253,13 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
       onChange={handleSheetChanges}
     >
       <ContentContainer>
-        <View style={{ padding: theme.spacing.lg }}>
+        <BottomSheetScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: theme.spacing.lg }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          enableOnPanDownToDismiss={false}
+        >
           <Header>
             <HeaderLeft>
               <Title>{t('notes.editTodo.title')}</Title>
@@ -228,19 +272,17 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
 
           <FormSection>
             <Label>{t('notes.editTodo.placeholders.text')}</Label>
-            <Input
-              placeholder={t('notes.editTodo.placeholders.text')}
+            <MemoizedTodoInput
               value={text}
               onChangeText={handleTodoTextChange}
-              placeholderTextColor={theme.colors.textLight}
-              isFocused={isFocused}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              autoFocus={true}
-              autoCorrect={false}
+              isFocused={isFocused}
+              placeholder={t('notes.editTodo.placeholders.text')}
+              placeholderTextColor={theme.colors.textLight}
             />
           </FormSection>
-        </View>
+        </BottomSheetScrollView>
       </ContentContainer>
     </BottomSheetModal>
   );

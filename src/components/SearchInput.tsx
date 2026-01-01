@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { TextInput, View } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,17 +50,27 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   // Use translated placeholder if none provided
   const translatedPlaceholder = placeholder || t('search.placeholder');
 
+  // Stable onChangeText handler to prevent IME composition interruption
+  const handleChangeText = useCallback((text: string) => {
+    if (onChangeText) {
+      onChangeText(text);
+    }
+  }, [onChangeText]);
+
   return (
     <Container isFocused={isFocused}>
       <SearchIcon name="search-outline" size={22} />
       <Input
         value={value}
-        onChangeText={onChangeText}
+        onChangeText={handleChangeText}
         placeholder={translatedPlaceholder}
         placeholderTextColor={theme.colors.textLight}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         autoCorrect={false}
+        spellCheck={false}
+        textContentType="none"
+        autoComplete="off"
       />
     </Container>
   );

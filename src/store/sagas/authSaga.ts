@@ -20,9 +20,17 @@ import {
   getUser,
   saveUser,
 } from '../../services/AuthService';
-import { User } from '../../types/api';
+import { User, ErrorDetails } from '../../types/api';
 import * as SecureStore from 'expo-secure-store';
 import type { RootState } from '../types';
+
+// Global error handler - will be set by App.tsx
+let globalErrorHandler: ((errorDetails: ErrorDetails) => void) | null = null;
+
+// Function to set global error handler (called from App.tsx)
+export const setGlobalErrorHandler = (handler: (errorDetails: ErrorDetails) => void) => {
+  globalErrorHandler = handler;
+};
 
 // Action types
 const CHECK_AUTH = 'auth/CHECK_AUTH';
@@ -58,6 +66,16 @@ function* initializeApiClientSaga(action: { type: string; payload: string }) {
     apiClient.setOnAuthError(() => {
       console.log('[AuthSaga] Auth error callback triggered');
       handleAuthError();
+    });
+
+    // Set up error callback for API errors (when all retries are exhausted)
+    apiClient.setOnError((errorDetails: ErrorDetails) => {
+      console.log('[AuthSaga] API error callback triggered, showing error bottom sheet');
+      if (globalErrorHandler) {
+        globalErrorHandler(errorDetails);
+      } else {
+        console.warn('[AuthSaga] Global error handler not set, cannot show error bottom sheet');
+      }
     });
 
     yield put(setApiClient(apiClient));
