@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.homeinventory.app",
+      "bundleIdentifier": "com.stoatworks.homeinventory",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to upload avatar images.",
@@ -22,7 +22,7 @@
       }
     },
     "android": {
-      "package": "com.homeinventory.app",
+      "package": "com.stoatworks.homeinventory",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
