@@ -33,7 +33,7 @@ const Container = styled(View)`
 
 const Content = styled(View)`
   flex: 1;
-  padding: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
 const ListContainer = styled(View)`
@@ -244,8 +244,15 @@ export const HomeScreen: React.FC = () => {
               renderItem={({ item }) => (
                 <ItemCard item={item} onPress={handleItemPress} />
               )}
+              numColumns={2}
+              columnWrapperStyle={{
+                justifyContent: 'flex-start',
+                marginBottom: 0,
+              }}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: bottomPadding }}
+              contentContainerStyle={{ 
+                paddingBottom: bottomPadding,
+              }}
             />
           )}
         </ListContainer>
