@@ -4,23 +4,27 @@ export type HomeStackParamList = {
   Home: undefined;
 };
 
-export type InventoryStackParamList = {
-  Inventory: undefined;
-};
-
 export type NotesStackParamList = {
   Notes: undefined;
 };
 
+export type ShareStackParamList = {
+  Share: undefined;
+};
+
+export type SettingsStackParamList = {
+  Settings: undefined;
+};
+
 export type TabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList>;
-  InventoryTab: NavigatorScreenParams<InventoryStackParamList>;
   NotesTab: NavigatorScreenParams<NotesStackParamList>;
+  ShareTab: NavigatorScreenParams<ShareStackParamList>;
+  SettingsTab: NavigatorScreenParams<SettingsStackParamList>;
 };
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<TabParamList>;
-  Settings: undefined;
   ItemDetails: { itemId: string };
   ExportData: undefined;
   ExportDataDetail: { filename: string };

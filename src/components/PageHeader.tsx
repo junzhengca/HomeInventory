@@ -185,12 +185,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       </LeftSection>
       {showRightButtons && (
         <RightSection>
-          <ActionButton onPress={handleSharePress}>
-            <ActionIcon name="share-outline" size={20} />
-          </ActionButton>
-          <ActionButton onPress={handleSettingsPress}>
-            <ActionIcon name="settings-outline" size={20} />
-          </ActionButton>
           <AvatarButton onPress={handleAvatarPress}>
             {avatarUrl ? (
               <AvatarImage source={{ uri: avatarUrl }} contentFit="cover" cachePolicy="memory-disk" />

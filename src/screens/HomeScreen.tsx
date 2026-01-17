@@ -1,26 +1,26 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { ScrollView, ActivityIndicator, View } from 'react-native';
+import { FlatList, ActivityIndicator, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../utils/styledComponents';
 
 import { PageHeader } from '../components/PageHeader';
 import { SearchInput } from '../components/SearchInput';
 import { CategorySelector } from '../components/CategorySelector';
-import { SummaryCards } from '../components/SummaryCards';
-import { RecentlyAdded } from '../components/RecentlyAdded';
+import { ItemCard } from '../components/ItemCard';
 import { EmptyState } from '../components/EmptyState';
 import { LoginBottomSheet } from '../components/LoginBottomSheet';
 import { SignupBottomSheet } from '../components/SignupBottomSheet';
 import { EnableSyncBottomSheet } from '../components/EnableSyncBottomSheet';
+import { FloatingActionButton } from '../components/FloatingActionButton';
+import { CreateItemBottomSheet } from '../components/CreateItemBottomSheet';
 import { InventoryItem } from '../types/inventory';
-import { RootStackParamList, TabParamList } from '../navigation/types';
-import { useInventory, useSelectedCategory, useAuth, useSync } from '../store/hooks';
+import { RootStackParamList } from '../navigation/types';
+import { useInventory, useSelectedCategory, useSync, useAuth } from '../store/hooks';
 import { calculateBottomPadding } from '../utils/layout';
 import * as SecureStore from 'expo-secure-store';
 
@@ -31,9 +31,13 @@ const Container = styled(View)`
   background-color: ${({ theme }: StyledProps) => theme.colors.background};
 `;
 
-const Content = styled(ScrollView)`
+const Content = styled(View)`
   flex: 1;
   padding: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+`;
+
+const ListContainer = styled(View)`
+  flex: 1;
 `;
 
 const LoadingContainer = styled(View)`
@@ -49,16 +53,24 @@ export const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { items, loading: isLoading, loadItems } = useInventory();
-  const { setHomeCategory, setInventoryCategory } = useSelectedCategory();
-  const { user, isAuthenticated } = useAuth();
+  const { homeCategory, setHomeCategory } = useSelectedCategory();
   const { isSyncEnabled } = useSync();
+  const { user } = useAuth();
   const loginBottomSheetRef = useRef<BottomSheetModal>(null);
   const signupBottomSheetRef = useRef<BottomSheetModal>(null);
   const enableSyncBottomSheetRef = useRef<BottomSheetModal>(null);
+  const createItemBottomSheetRef = useRef<BottomSheetModal>(null);
 
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  // Initialize and sync selectedCategory from context
+  useEffect(() => {
+    if (homeCategory) {
+      setSelectedCategory(homeCategory);
+    }
+  }, [homeCategory]);
 
   const handleLoginSuccess = async () => {
     // Always show the enable sync prompt after login
@@ -128,38 +140,9 @@ export const HomeScreen: React.FC = () => {
   }, [selectedCategory, setHomeCategory]);
 
   const handleItemPress = (item: InventoryItem) => {
-    // Navigate to ItemDetails in RootStack
     const rootNavigation = navigation.getParent();
     if (rootNavigation) {
       rootNavigation.navigate('ItemDetails', { itemId: item.id });
-    }
-  };
-
-  const handleViewAll = () => {
-    // Set the inventory category to the currently selected category
-    setInventoryCategory(selectedCategory);
-    // Navigate to InventoryTab - get the tab navigator (parent of HomeStack)
-    const tabNavigation = navigation.getParent<BottomTabNavigationProp<TabParamList>>();
-    if (tabNavigation) {
-      tabNavigation.navigate('InventoryTab', { screen: 'Inventory' });
-    }
-  };
-
-  const handleSettingsPress = () => {
-    navigation.navigate('Settings');
-  };
-
-  const handleAvatarPress = () => {
-    console.log('Avatar pressed, isAuthenticated:', isAuthenticated);
-    if (isAuthenticated) {
-      // Navigate to Profile - need to use parent navigator (RootStack)
-      const rootNavigation = navigation.getParent();
-      if (rootNavigation) {
-        rootNavigation.navigate('Profile');
-      }
-    } else {
-      console.log('Presenting login bottom sheet, ref:', loginBottomSheetRef.current);
-      loginBottomSheetRef.current?.present();
     }
   };
 
@@ -173,6 +156,22 @@ export const HomeScreen: React.FC = () => {
     loginBottomSheetRef.current?.present();
   };
 
+  const handleManualAdd = () => {
+    createItemBottomSheetRef.current?.present();
+  };
+
+  const handleAIAutomatic = () => {
+    console.log('AI automatic button pressed');
+    // TODO: Implement AI automatic functionality
+  };
+
+  const handleAvatarPress = () => {
+    const rootNavigation = navigation.getParent();
+    if (rootNavigation) {
+      rootNavigation.navigate('Profile');
+    }
+  };
+
   // Calculate bottom padding for scrollable content
   const bottomPadding = calculateBottomPadding(insets.bottom);
 
@@ -180,11 +179,11 @@ export const HomeScreen: React.FC = () => {
     return (
       <Container>
         <PageHeader
-          icon="home"
-          title={t('home.title')}
-          subtitle={t('home.subtitle')}
+          icon="list"
+          title={t('inventory.title')}
+          subtitle={t('inventory.loading')}
+          showRightButtons={true}
           avatarUrl={user?.avatarUrl}
-          onSettingsPress={handleSettingsPress}
           onAvatarPress={handleAvatarPress}
         />
         <LoadingContainer>
@@ -205,6 +204,7 @@ export const HomeScreen: React.FC = () => {
           onSkip={handleSyncPromptSkip}
           onEnableSync={handleSyncPromptEnable}
         />
+        <CreateItemBottomSheet bottomSheetRef={createItemBottomSheetRef} />
       </Container>
     );
   }
@@ -212,17 +212,14 @@ export const HomeScreen: React.FC = () => {
   return (
     <Container>
       <PageHeader
-        icon="home"
-        title={t('home.title')}
-        subtitle={t('home.subtitle')}
+        icon="list"
+        title={t('inventory.title')}
+        subtitle={t('inventory.itemsCount', { count: filteredItems.length })}
+        showRightButtons={true}
         avatarUrl={user?.avatarUrl}
-        onSettingsPress={handleSettingsPress}
         onAvatarPress={handleAvatarPress}
       />
-      <Content
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: bottomPadding, flexGrow: 1 }}
-      >
+      <Content>
         <SearchInput
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -231,23 +228,27 @@ export const HomeScreen: React.FC = () => {
           selectedCategory={selectedCategory}
           onCategoryChange={handleCategoryChange}
         />
-        {filteredItems.length === 0 ? (
-          <EmptyState
-            icon="cube-outline"
-            title={t('home.empty.title')}
-            description={t('home.empty.description')}
-          />
-        ) : (
-          <>
-            <SummaryCards items={filteredItems} />
-            <RecentlyAdded
-              items={filteredItems}
-              maxItems={3}
-              onItemPress={handleItemPress}
-              onViewAll={handleViewAll}
+        <ListContainer>
+          {filteredItems.length === 0 ? (
+            <EmptyState
+              icon="list-outline"
+              title={t('inventory.empty.title')}
+              description={searchQuery.trim() || selectedCategory !== 'all'
+                ? t('inventory.empty.filtered')
+                : t('inventory.empty.description')}
             />
-          </>
-        )}
+          ) : (
+            <FlatList
+              data={filteredItems}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <ItemCard item={item} onPress={handleItemPress} />
+              )}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: bottomPadding }}
+            />
+          )}
+        </ListContainer>
       </Content>
       <LoginBottomSheet
         bottomSheetRef={loginBottomSheetRef}
@@ -263,6 +264,11 @@ export const HomeScreen: React.FC = () => {
         bottomSheetRef={enableSyncBottomSheetRef}
         onSkip={handleSyncPromptSkip}
         onEnableSync={handleSyncPromptEnable}
+      />
+      <CreateItemBottomSheet bottomSheetRef={createItemBottomSheetRef} />
+      <FloatingActionButton
+        onManualAdd={handleManualAdd}
+        onAIAutomatic={handleAIAutomatic}
       />
     </Container>
   );

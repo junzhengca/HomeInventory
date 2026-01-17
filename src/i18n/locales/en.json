@@ -445,6 +445,18 @@
       "title": "Error",
       "message": "Failed to copy error log to clipboard"
     }
+  },
+  "fab": {
+    "manuallyAdd": "Manually Add",
+    "aiAutomatic": "AI Automatic"
+  },
+  "share": {
+    "title": "Share",
+    "subtitle": "Share your inventory",
+    "comingSoon": {
+      "title": "Coming Soon",
+      "description": "Share functionality will be available in a future update"
+    }
   }
 }
 

@@ -13,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { useTranslation } from 'react-i18next';
 
@@ -25,12 +24,11 @@ import { LoginBottomSheet } from '../components/LoginBottomSheet';
 import { SignupBottomSheet } from '../components/SignupBottomSheet';
 import { EnableSyncBottomSheet } from '../components/EnableSyncBottomSheet';
 import { SharePanel } from '../components/SharePanel';
-import { RootStackParamList } from '../navigation/types';
 import { useTodos, useAuth } from '../store/hooks';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../theme/ThemeProvider';
 import { TodoItem } from '../types/inventory';
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const Container = styled(View)`
   flex: 1;
@@ -131,6 +129,8 @@ const DeleteAction = styled(ActionButton)`
   elevation: 3;
 `;
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export const NotesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
@@ -159,25 +159,6 @@ export const NotesScreen: React.FC = () => {
     setNewTodoText(text);
   }, []);
 
-  const handleSettingsPress = () => {
-    // Navigate to Settings - need to use parent navigator (RootStack)
-    const rootNavigation = navigation.getParent();
-    if (rootNavigation) {
-      rootNavigation.navigate('Settings');
-    }
-  };
-
-  const handleAvatarPress = () => {
-    if (isAuthenticated) {
-      // Navigate to Profile - need to use parent navigator (RootStack)
-      const rootNavigation = navigation.getParent();
-      if (rootNavigation) {
-        rootNavigation.navigate('Profile');
-      }
-    } else {
-      loginBottomSheetRef.current?.present();
-    }
-  };
 
   const handleSignupPress = () => {
     loginBottomSheetRef.current?.dismiss();
@@ -200,6 +181,13 @@ export const NotesScreen: React.FC = () => {
 
   const handleSyncPromptEnable = async () => {
     // No-op: sync enabling is handled by EnableSyncBottomSheet
+  };
+
+  const handleAvatarPress = () => {
+    const rootNavigation = navigation.getParent();
+    if (rootNavigation) {
+      rootNavigation.navigate('Profile');
+    }
   };
 
   const handleAddTodo = async () => {
@@ -313,8 +301,8 @@ export const NotesScreen: React.FC = () => {
           icon="document-text"
           title={t('notes.title')}
           subtitle={t('notes.subtitle')}
+          showRightButtons={true}
           avatarUrl={user?.avatarUrl}
-          onSettingsPress={handleSettingsPress}
           onAvatarPress={handleAvatarPress}
         />
         <LoginBottomSheet
@@ -342,8 +330,8 @@ export const NotesScreen: React.FC = () => {
           icon="document-text"
           title={t('notes.title')}
           subtitle={t('notes.subtitle')}
+          showRightButtons={true}
           avatarUrl={user?.avatarUrl}
-          onSettingsPress={handleSettingsPress}
           onAvatarPress={handleAvatarPress}
         />
         <Content

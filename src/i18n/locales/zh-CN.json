@@ -445,6 +445,18 @@
       "title": "错误",
       "message": "复制错误日志到剪贴板失败"
     }
+  },
+  "fab": {
+    "manuallyAdd": "手动添加",
+    "aiAutomatic": "AI 自动"
+  },
+  "share": {
+    "title": "分享",
+    "subtitle": "分享您的库存",
+    "comingSoon": {
+      "title": "即将推出",
+      "description": "分享功能将在未来的更新中提供"
+    }
   }
 }
 

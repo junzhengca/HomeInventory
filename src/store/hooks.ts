@@ -176,7 +176,6 @@ export const useTodos = () => {
 export const useSelectedCategory = () => {
   const dispatch = useAppDispatch();
   const homeCategory = useAppSelector((state) => state.ui.homeCategory);
-  const inventoryCategory = useAppSelector((state) => state.ui.inventoryCategory);
 
   const setHomeCategory = useCallback(
     (category: string) => {
@@ -185,18 +184,9 @@ export const useSelectedCategory = () => {
     [dispatch]
   );
 
-  const setInventoryCategory = useCallback(
-    (category: string) => {
-      dispatch({ type: 'ui/setInventoryCategory', payload: category });
-    },
-    [dispatch]
-  );
-
   return {
     homeCategory,
-    inventoryCategory,
     setHomeCategory,
-    setInventoryCategory,
   };
 };
 

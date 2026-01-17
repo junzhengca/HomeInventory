@@ -2,6 +2,8 @@ import React from 'react';
 import { ScrollView, ActivityIndicator, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../utils/styledComponents';
 
@@ -11,8 +13,9 @@ import { CurrencySelector } from '../components/CurrencySelector';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { ExportDataButton } from '../components/ExportDataButton';
 import { ClearDataButton } from '../components/ClearDataButton';
-import { useSettings } from '../store/hooks';
+import { useSettings, useAuth } from '../store/hooks';
 import { calculateBottomPadding } from '../utils/layout';
+import { RootStackParamList } from '../navigation/types';
 
 const Container = styled(View)`
   flex: 1;
@@ -50,10 +53,21 @@ const LoadingContainer = styled(View)`
   align-items: center;
 `;
 
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
 export const SettingsScreen: React.FC = () => {
   const { settings, updateSettings, isLoading } = useSettings();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavigationProp>();
+  const { user } = useAuth();
+
+  const handleAvatarPress = () => {
+    const rootNavigation = navigation.getParent();
+    if (rootNavigation) {
+      rootNavigation.navigate('Profile');
+    }
+  };
 
   const handleThemeChange = async (themeId: string) => {
     const success = await updateSettings({ theme: themeId });
@@ -86,8 +100,10 @@ export const SettingsScreen: React.FC = () => {
           icon="settings"
           title={t('settings.title')}
           subtitle={t('settings.subtitle')}
-          showBackButton={true}
-          showRightButtons={false}
+          showBackButton={false}
+          showRightButtons={true}
+          avatarUrl={user?.avatarUrl}
+          onAvatarPress={handleAvatarPress}
         />
         <LoadingContainer>
           <ActivityIndicator size="large" />
@@ -103,7 +119,9 @@ export const SettingsScreen: React.FC = () => {
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}
         showBackButton={true}
-        showRightButtons={false}
+        showRightButtons={true}
+        avatarUrl={user?.avatarUrl}
+        onAvatarPress={handleAvatarPress}
       />
       <Content
         showsVerticalScrollIndicator={false}

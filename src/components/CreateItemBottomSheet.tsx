@@ -14,7 +14,6 @@ import { BottomSheetHeader, FormSection, MemoizedInput } from './ui';
 import { CategoryField, LocationField } from './form';
 import { CategoryManagerBottomSheet } from './CategoryManagerBottomSheet';
 import { BottomActionBar } from './BottomActionBar';
-import { TabParamList } from '../navigation/types';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -66,7 +65,6 @@ const ManageCategoriesText = styled.Text`
 interface CreateItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal>;
   onItemCreated?: () => void;
-  activeTab?: keyof TabParamList;
 }
 
 /**
@@ -79,14 +77,13 @@ interface CreateItemBottomSheetProps {
 export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   bottomSheetRef,
   onItemCreated,
-  activeTab,
 }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { createItem } = useInventory();
   const { registerRefreshCallback } = useCategory();
-  const { homeCategory, inventoryCategory } = useSelectedCategory();
+  const { homeCategory } = useSelectedCategory();
   const { isKeyboardVisible, dismissKeyboard } = useKeyboardVisibility();
 
   const categoryManagerRef = useRef<BottomSheetModal>(null);
@@ -147,15 +144,10 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
     let categoryToSelect = '';
 
-    if (activeTab === 'HomeTab' && homeCategory && homeCategory !== 'all') {
+    if (homeCategory && homeCategory !== 'all') {
       const categoryExists = itemTypeCategories.some((cat) => cat.id === homeCategory);
       if (categoryExists) {
         categoryToSelect = homeCategory;
-      }
-    } else if (activeTab === 'InventoryTab' && inventoryCategory && inventoryCategory !== 'all') {
-      const categoryExists = itemTypeCategories.some((cat) => cat.id === inventoryCategory);
-      if (categoryExists) {
-        categoryToSelect = inventoryCategory;
       }
     }
 
@@ -168,7 +160,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     }
 
     return categoryToSelect;
-  }, [categories, activeTab, homeCategory, inventoryCategory]);
+  }, [categories, homeCategory]);
 
   // Auto-select category when sheet opens
   const handleSheetChange = useCallback((index: number) => {

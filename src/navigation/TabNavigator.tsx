@@ -2,8 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TabParamList } from './types';
 import { HomeStack } from './HomeStack';
-import { InventoryStack } from './InventoryStack';
 import { NotesStack } from './NotesStack';
+import { ShareStack } from './ShareStack';
+import { SettingsStack } from './SettingsStack';
 import { BottomNavBar } from '../components/BottomNavBar';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -22,8 +23,9 @@ export const TabNavigator: React.FC = () => {
       }}
     >
       <Tab.Screen name="HomeTab" component={HomeStack} />
-      <Tab.Screen name="InventoryTab" component={InventoryStack} />
       <Tab.Screen name="NotesTab" component={NotesStack} />
+      <Tab.Screen name="ShareTab" component={ShareStack} />
+      <Tab.Screen name="SettingsTab" component={SettingsStack} />
     </Tab.Navigator>
   );
 };

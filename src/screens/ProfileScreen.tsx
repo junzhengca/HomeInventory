@@ -322,7 +322,7 @@ export const ProfileScreen: React.FC = () => {
           icon="person"
           title={t('profile.title')}
           subtitle={t('profile.subtitle')}
-          showBackButton={true}
+          showBackButton={false}
           showRightButtons={false}
         />
         <LoadingContainer>
@@ -339,7 +339,7 @@ export const ProfileScreen: React.FC = () => {
           icon="person"
           title={t('profile.title')}
           subtitle={t('profile.subtitle')}
-          showBackButton={true}
+          showBackButton={false}
           showRightButtons={false}
         />
         <Content
