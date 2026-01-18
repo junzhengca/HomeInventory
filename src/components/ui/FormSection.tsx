@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components/native';
 import type { StyledProps } from '../../utils/styledComponents';
+import type { StyleProp, ViewStyle } from 'react-native';
 
 const Container = styled.View`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
@@ -8,7 +9,8 @@ const Container = styled.View`
 
 const Label = styled.Text`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
+  font-weight: ${({ theme }: StyledProps) =>
+    theme.typography.fontWeight.medium};
   color: ${({ theme }: StyledProps) => theme.colors.text};
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
@@ -16,7 +18,7 @@ const Label = styled.Text`
 export interface FormSectionProps {
   label?: string;
   children: React.ReactNode;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 }
 
 /**
@@ -28,7 +30,11 @@ export interface FormSectionProps {
  *   <TextInput value={name} onChangeText={setName} />
  * </FormSection>
  */
-export const FormSection: React.FC<FormSectionProps> = ({ label, children, style }) => {
+export const FormSection: React.FC<FormSectionProps> = ({
+  label,
+  children,
+  style,
+}) => {
   return (
     <Container style={style}>
       {label && <Label>{label}</Label>}

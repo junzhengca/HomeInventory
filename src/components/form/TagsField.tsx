@@ -85,11 +85,14 @@ export const TagsField: React.FC<TagsFieldProps> = ({
     }
   }, [newTag, onAddTag]);
 
-  const handleKeyPress = useCallback((e: any) => {
-    if (e.nativeEvent.key === 'Enter') {
-      handleAddTag();
-    }
-  }, [handleAddTag]);
+  const handleKeyPress = useCallback(
+    (e: { nativeEvent: { key: string } }) => {
+      if (e.nativeEvent.key === 'Enter') {
+        handleAddTag();
+      }
+    },
+    [handleAddTag]
+  );
 
   return (
     <>
@@ -99,7 +102,11 @@ export const TagsField: React.FC<TagsFieldProps> = ({
             <Tag key={index}>
               <TagText>#{tag}</TagText>
               <TagRemoveButton onPress={() => onRemoveTag(tag)}>
-                <Ionicons name="close-circle" size={16} color={theme.colors.primary} />
+                <Ionicons
+                  name="close-circle"
+                  size={16}
+                  color={theme.colors.primary}
+                />
               </TagRemoveButton>
             </Tag>
           ))}

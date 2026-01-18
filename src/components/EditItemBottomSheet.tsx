@@ -1,7 +1,11 @@
 import React, { useRef, useCallback, useMemo, useEffect } from 'react';
-import { Alert, ScrollView, View, Text } from 'react-native';
+import { Alert, ScrollView, Text } from 'react-native';
 import styled from 'styled-components/native';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -103,7 +107,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     initializeFromItem,
   } = useItemForm({
     itemId,
-    onItemLoaded: (loadedItem) => {
+    onItemLoaded: (_loadedItem) => {
       // Mark as initialized when item is loaded
       isModalOpenRef.current = false;
     },
@@ -126,16 +130,19 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
   }, [refreshCategories]);
 
   // Handle sheet open/close - initialize form when opening
-  const handleSheetChanges = useCallback((index: number) => {
-    if (index === 0 && item) {
-      // Modal opened - initialize form from item
-      isModalOpenRef.current = true;
-      initializeFromItem(item);
-    } else if (index === -1) {
-      // Modal closed
-      isModalOpenRef.current = false;
-    }
-  }, [item, initializeFromItem]);
+  const handleSheetChanges = useCallback(
+    (index: number) => {
+      if (index === 0 && item) {
+        // Modal opened - initialize form from item
+        isModalOpenRef.current = true;
+        initializeFromItem(item);
+      } else if (index === -1) {
+        // Modal closed
+        isModalOpenRef.current = false;
+      }
+    },
+    [item, initializeFromItem]
+  );
 
   const handleClose = useCallback(() => {
     dismissKeyboard();
@@ -150,7 +157,9 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     try {
       const category = categories.find((cat) => cat.id === formData.categoryId);
       const priceNum = parseFloat(formData.price) || 0;
-      const amountNum = formData.amount ? parseInt(formData.amount, 10) : undefined;
+      const amountNum = formData.amount
+        ? parseInt(formData.amount, 10)
+        : undefined;
 
       const updates = {
         name: formData.name.trim(),
@@ -163,7 +172,8 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
         purchaseDate: formData.purchaseDate?.toISOString(),
         expiryDate: formData.expiryDate?.toISOString(),
         icon: category?.icon || item?.icon || 'cube-outline',
-        iconColor: category?.iconColor || item?.iconColor || theme.colors.textSecondary,
+        iconColor:
+          category?.iconColor || item?.iconColor || theme.colors.textSecondary,
       };
 
       updateItem(itemId, updates);
@@ -178,7 +188,10 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
       onItemUpdated?.();
     } catch (error) {
       console.error('Error updating item:', error);
-      Alert.alert(t('editItem.errors.title'), t('editItem.errors.updateFailed'));
+      Alert.alert(
+        t('editItem.errors.title'),
+        t('editItem.errors.updateFailed')
+      );
     }
   }, [
     formData,
@@ -213,7 +226,13 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
             label: t('editItem.submit'),
             onPress: handleSubmit,
             variant: 'filled',
-            icon: <Ionicons name="checkmark" size={18} color={theme.colors.surface} />,
+            icon: (
+              <Ionicons
+                name="checkmark"
+                size={18}
+                color={theme.colors.surface}
+              />
+            ),
             disabled: isLoading,
           },
         ]}
@@ -245,7 +264,10 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
         <BottomSheetScrollView
           ref={scrollViewRef}
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: theme.spacing.lg }}
+          contentContainerStyle={{
+            padding: theme.spacing.lg,
+            paddingBottom: theme.spacing.lg,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           enableOnPanDownToDismiss={false}
@@ -269,26 +291,36 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
             <FormSection label={t('editItem.fields.category')}>
               <CategorySection>
                 <CategoryHeader>
-                  <Text style={{
-                    fontSize: theme.typography.fontSize.md,
-                    fontWeight: theme.typography.fontWeight.medium,
-                    color: theme.colors.text,
-                  }}>
+                  <Text
+                    style={{
+                      fontSize: theme.typography.fontSize.md,
+                      fontWeight: theme.typography.fontWeight.medium,
+                      color: theme.colors.text,
+                    }}
+                  >
                     {t('editItem.fields.category')}
                   </Text>
                   <ManageCategoriesButton
                     onPress={() => categoryManagerRef.current?.present()}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="create-outline" size={16} color={theme.colors.primary} />
-                    <ManageCategoriesText>{t('editItem.manageCategories')}</ManageCategoriesText>
+                    <Ionicons
+                      name="create-outline"
+                      size={16}
+                      color={theme.colors.primary}
+                    />
+                    <ManageCategoriesText>
+                      {t('editItem.manageCategories')}
+                    </ManageCategoriesText>
                   </ManageCategoriesButton>
                 </CategoryHeader>
                 <CategoryField
                   categories={categories}
                   selectedId={formData.categoryId}
                   onSelect={(id) => updateField('categoryId', id)}
-                  onManageCategories={() => categoryManagerRef.current?.present()}
+                  onManageCategories={() =>
+                    categoryManagerRef.current?.present()
+                  }
                 />
               </CategorySection>
             </FormSection>
@@ -302,7 +334,10 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
 
             <Row>
               <HalfContainer>
-                <FormSection label={t('editItem.fields.price')} style={{ marginBottom: theme.spacing.lg }}>
+                <FormSection
+                  label={t('editItem.fields.price')}
+                  style={{ marginBottom: theme.spacing.lg }}
+                >
                   <HalfInput
                     value={formData.price}
                     onChangeText={(text: string) => updateField('price', text)}
@@ -313,10 +348,15 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
                 </FormSection>
               </HalfContainer>
               <HalfContainer>
-                <FormSection label={t('editItem.fields.detailedLocation')} style={{ marginBottom: theme.spacing.lg }}>
+                <FormSection
+                  label={t('editItem.fields.detailedLocation')}
+                  style={{ marginBottom: theme.spacing.lg }}
+                >
                   <HalfInput
                     value={formData.detailedLocation}
-                    onChangeText={(text: string) => updateField('detailedLocation', text)}
+                    onChangeText={(text: string) =>
+                      updateField('detailedLocation', text)
+                    }
                     placeholder={t('editItem.placeholders.detailedLocation')}
                     placeholderTextColor={theme.colors.textLight}
                   />

@@ -1,7 +1,11 @@
-import React, { useRef, useCallback, useMemo, useState, useEffect } from 'react';
-import { Alert, View, Text } from 'react-native';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { Alert, View } from 'react-native';
 import styled from 'styled-components/native';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -59,10 +63,9 @@ interface CategoryFormData {
  * - Keyboard tracking to useKeyboardVisibility hook
  * - UI components to reusable ui/ directory
  */
-export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProps> = ({
-  bottomSheetRef,
-  onCategoriesChanged,
-}) => {
+export const CategoryManagerBottomSheet: React.FC<
+  CategoryManagerBottomSheetProps
+> = ({ bottomSheetRef, onCategoriesChanged }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
@@ -127,8 +130,8 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
     setFormData({
       name: category.name,
       label: category.label,
-      icon: category.icon || (categoryIcons[0] || 'cube-outline'),
-      iconColor: category.iconColor || (categoryColors[0] || '#4A90E2'),
+      icon: category.icon || categoryIcons[0] || 'cube-outline',
+      iconColor: category.iconColor || categoryColors[0] || '#4A90E2',
     });
     setEditingId(category.id);
     setMode('edit');
@@ -140,13 +143,17 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
 
   const handleSave = useCallback(async () => {
     if (!formData.name.trim() || !formData.label.trim()) {
-      Alert.alert(t('categoryManager.errors.title'), t('categoryManager.errors.enterName'));
+      Alert.alert(
+        t('categoryManager.errors.title'),
+        t('categoryManager.errors.enterName')
+      );
       return;
     }
 
     setIsLoading(true);
     try {
-      const { createCategory, updateCategory, getAllCategories } = await import('../services/CategoryService');
+      const { createCategory, updateCategory } =
+        await import('../services/CategoryService');
 
       let result: Category | null = null;
 
@@ -174,7 +181,9 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
       } else {
         Alert.alert(
           t('categoryManager.errors.title'),
-          editingId ? t('categoryManager.errors.updateFailed') : t('categoryManager.errors.createFailed')
+          editingId
+            ? t('categoryManager.errors.updateFailed')
+            : t('categoryManager.errors.createFailed')
         );
       }
     } catch (error: unknown) {
@@ -182,50 +191,75 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
       const errorMessage = error instanceof Error ? error.message : undefined;
       Alert.alert(
         t('categoryManager.errors.title'),
-        errorMessage || (editingId ? t('categoryManager.errors.updateFailed') : t('categoryManager.errors.createFailed'))
+        errorMessage ||
+          (editingId
+            ? t('categoryManager.errors.updateFailed')
+            : t('categoryManager.errors.createFailed'))
       );
     } finally {
       setIsLoading(false);
     }
-  }, [formData, editingId, loadCategories, refreshCategories, onCategoriesChanged, resetForm, t]);
+  }, [
+    formData,
+    editingId,
+    loadCategories,
+    refreshCategories,
+    onCategoriesChanged,
+    resetForm,
+    t,
+  ]);
 
-  const handleDelete = useCallback(async (categoryId: string) => {
-    Alert.alert(
-      t('categoryManager.delete.title'),
-      t('categoryManager.delete.message'),
-      [
-        { text: t('categoryManager.buttons.cancel'), style: 'cancel' },
-        {
-          text: t('categoryManager.buttons.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const { deleteCategory, isCategoryInUse, getAllCategories } = await import('../services/CategoryService');
+  const handleDelete = useCallback(
+    async (categoryId: string) => {
+      Alert.alert(
+        t('categoryManager.delete.title'),
+        t('categoryManager.delete.message'),
+        [
+          { text: t('categoryManager.buttons.cancel'), style: 'cancel' },
+          {
+            text: t('categoryManager.buttons.delete'),
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const { deleteCategory, isCategoryInUse } =
+                  await import('../services/CategoryService');
 
-              const inUse = await isCategoryInUse(categoryId);
-              if (inUse) {
-                Alert.alert(t('categoryManager.errors.title'), t('categoryManager.errors.deleteInUse'));
-                return;
+                const inUse = await isCategoryInUse(categoryId);
+                if (inUse) {
+                  Alert.alert(
+                    t('categoryManager.errors.title'),
+                    t('categoryManager.errors.deleteInUse')
+                  );
+                  return;
+                }
+
+                const success = await deleteCategory(categoryId);
+                if (success) {
+                  await loadCategories();
+                  refreshCategories();
+                  onCategoriesChanged?.();
+                } else {
+                  Alert.alert(
+                    t('categoryManager.errors.title'),
+                    t('categoryManager.errors.deleteFailed')
+                  );
+                }
+              } catch (error: unknown) {
+                console.error('Error deleting category:', error);
+                const errorMessage =
+                  error instanceof Error ? error.message : undefined;
+                Alert.alert(
+                  t('categoryManager.errors.title'),
+                  errorMessage || t('categoryManager.errors.deleteFailed')
+                );
               }
-
-              const success = await deleteCategory(categoryId);
-              if (success) {
-                await loadCategories();
-                refreshCategories();
-                onCategoriesChanged?.();
-              } else {
-                Alert.alert(t('categoryManager.errors.title'), t('categoryManager.errors.deleteFailed'));
-              }
-            } catch (error: unknown) {
-              console.error('Error deleting category:', error);
-              const errorMessage = error instanceof Error ? error.message : undefined;
-              Alert.alert(t('categoryManager.errors.title'), errorMessage || t('categoryManager.errors.deleteFailed'));
-            }
+            },
           },
-        },
-      ]
-    );
-  }, [loadCategories, refreshCategories, onCategoriesChanged, t]);
+        ]
+      );
+    },
+    [loadCategories, refreshCategories, onCategoriesChanged, t]
+  );
 
   const renderBackdrop = useCallback(
     (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
@@ -241,7 +275,8 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
   }, [mode, t]);
 
   const getSubtitleText = useCallback(() => {
-    if (mode === 'create' || mode === 'edit') return t('categoryManager.formSubtitle');
+    if (mode === 'create' || mode === 'edit')
+      return t('categoryManager.formSubtitle');
     return t('categoryManager.subtitle');
   }, [mode, t]);
 
@@ -259,7 +294,13 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
               label: t('categoryManager.buttons.save'),
               onPress: handleSave,
               variant: 'filled',
-              icon: <Ionicons name="checkmark" size={18} color={theme.colors.surface} />,
+              icon: (
+                <Ionicons
+                  name="checkmark"
+                  size={18}
+                  color={theme.colors.surface}
+                />
+              ),
               disabled: isLoading,
             },
           ]}
@@ -275,14 +316,25 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
             label: t('categoryManager.buttons.create'),
             onPress: handleStartCreate,
             variant: 'filled',
-            icon: <Ionicons name="add" size={18} color={theme.colors.surface} />,
+            icon: (
+              <Ionicons name="add" size={18} color={theme.colors.surface} />
+            ),
           },
         ]}
         safeArea={!isKeyboardVisible}
         inBottomSheet
       />
     );
-  }, [mode, handleCancel, handleSave, handleStartCreate, isLoading, theme, t, isKeyboardVisible]);
+  }, [
+    mode,
+    handleCancel,
+    handleSave,
+    handleStartCreate,
+    isLoading,
+    theme,
+    t,
+    isKeyboardVisible,
+  ]);
 
   return (
     <BottomSheetModal
@@ -303,7 +355,10 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
       <ContentContainer>
         <BottomSheetScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: theme.spacing.lg }}
+          contentContainerStyle={{
+            padding: theme.spacing.lg,
+            paddingBottom: theme.spacing.lg,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           enableOnPanDownToDismiss={false}
@@ -318,7 +373,9 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
             <FormSection label={t('categoryManager.customCategories')}>
               {categories.length === 0 ? (
                 <EmptyState>
-                  <EmptyStateText>{t('categoryManager.emptyState')}</EmptyStateText>
+                  <EmptyStateText>
+                    {t('categoryManager.emptyState')}
+                  </EmptyStateText>
                 </EmptyState>
               ) : (
                 <View>
@@ -338,7 +395,9 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
               <FormSection label={t('categoryManager.nameEn')}>
                 <MemoizedInput
                   value={formData.name}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, name: text }))
+                  }
                   placeholder={t('categoryManager.placeholderEn')}
                   placeholderTextColor={theme.colors.textLight}
                 />
@@ -347,7 +406,9 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
               <FormSection label={t('categoryManager.nameZh')}>
                 <MemoizedInput
                   value={formData.label}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, label: text }))}
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, label: text }))
+                  }
                   placeholder={t('categoryManager.placeholderZh')}
                   placeholderTextColor={theme.colors.textLight}
                 />
@@ -357,14 +418,18 @@ export const CategoryManagerBottomSheet: React.FC<CategoryManagerBottomSheetProp
                 <IconSelector
                   selectedIcon={formData.icon}
                   iconColor={formData.iconColor}
-                  onIconSelect={(icon) => setFormData((prev) => ({ ...prev, icon }))}
+                  onIconSelect={(icon) =>
+                    setFormData((prev) => ({ ...prev, icon }))
+                  }
                 />
               </FormSection>
 
               <FormSection label={t('categoryManager.color')}>
                 <ColorPalette
                   selectedColor={formData.iconColor}
-                  onColorSelect={(color) => setFormData((prev) => ({ ...prev, iconColor: color }))}
+                  onColorSelect={(color) =>
+                    setFormData((prev) => ({ ...prev, iconColor: color }))
+                  }
                 />
               </FormSection>
             </>

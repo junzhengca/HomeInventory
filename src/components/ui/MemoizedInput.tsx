@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import styled from 'styled-components/native';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import type { StyleProp } from 'react-native';
 import type { StyledProps } from '../../utils/styledComponents';
 
 const Input = styled(BottomSheetTextInput)`
@@ -20,7 +21,7 @@ export interface MemoizedInputProps {
   placeholderTextColor: string;
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
   onSubmitEditing?: () => void;
-  style?: any;
+  style?: StyleProp<unknown>;
 }
 
 /**
@@ -35,30 +36,32 @@ export interface MemoizedInputProps {
  *   placeholderTextColor={theme.colors.textLight}
  * />
  */
-export const MemoizedInput = memo<MemoizedInputProps>(({
-  value,
-  onChangeText,
-  placeholder,
-  placeholderTextColor,
-  keyboardType = 'default',
-  onSubmitEditing,
-  style,
-}) => {
-  return (
-    <Input
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={placeholder}
-      placeholderTextColor={placeholderTextColor}
-      keyboardType={keyboardType}
-      onSubmitEditing={onSubmitEditing}
-      autoCorrect={false}
-      spellCheck={false}
-      textContentType="none"
-      autoComplete="off"
-      style={style}
-    />
-  );
-});
+export const MemoizedInput = memo<MemoizedInputProps>(
+  ({
+    value,
+    onChangeText,
+    placeholder,
+    placeholderTextColor,
+    keyboardType = 'default',
+    onSubmitEditing,
+    style,
+  }) => {
+    return (
+      <Input
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={placeholderTextColor}
+        keyboardType={keyboardType}
+        onSubmitEditing={onSubmitEditing}
+        autoCorrect={false}
+        spellCheck={false}
+        textContentType="none"
+        autoComplete="off"
+        style={style}
+      />
+    );
+  }
+);
 
 MemoizedInput.displayName = 'MemoizedInput';

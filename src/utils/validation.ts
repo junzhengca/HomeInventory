@@ -1,5 +1,4 @@
 import { Alert } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import type { ItemFormData, ItemFormErrors } from '../hooks/useItemForm';
 
 /**
@@ -21,10 +20,14 @@ export const validateItemForm = (
     errors.name = t ? t('editItem.errors.enterName') : 'Name is required';
   }
   if (!data.categoryId) {
-    errors.categoryId = t ? t('editItem.errors.selectCategory') : 'Category is required';
+    errors.categoryId = t
+      ? t('editItem.errors.selectCategory')
+      : 'Category is required';
   }
   if (!data.locationId) {
-    errors.locationId = t ? t('editItem.errors.selectLocation') : 'Location is required';
+    errors.locationId = t
+      ? t('editItem.errors.selectLocation')
+      : 'Location is required';
   }
 
   return Object.keys(errors).length > 0 ? errors : null;
@@ -63,9 +66,14 @@ export const isValidEmail = (email: string): boolean => {
  * Password strength validation.
  * Returns object with isValid boolean and optional message.
  */
-export const validatePassword = (password: string): { isValid: boolean; message?: string } => {
+export const validatePassword = (
+  password: string
+): { isValid: boolean; message?: string } => {
   if (password.length < 8) {
-    return { isValid: false, message: 'Password must be at least 8 characters' };
+    return {
+      isValid: false,
+      message: 'Password must be at least 8 characters',
+    };
   }
 
   // Check for at least one letter and one number
@@ -73,7 +81,10 @@ export const validatePassword = (password: string): { isValid: boolean; message?
   const hasNumber = /[0-9]/.test(password);
 
   if (!hasLetter || !hasNumber) {
-    return { isValid: false, message: 'Password must contain both letters and numbers' };
+    return {
+      isValid: false,
+      message: 'Password must contain both letters and numbers',
+    };
   }
 
   return { isValid: true };
@@ -99,10 +110,14 @@ export const validateCategoryForm = (
   const errors: CategoryFormErrors = {};
 
   if (!data.name.trim()) {
-    errors.name = t ? t('categoryManager.errors.enterName') : 'Name is required';
+    errors.name = t
+      ? t('categoryManager.errors.enterName')
+      : 'Name is required';
   }
   if (!data.label.trim()) {
-    errors.label = t ? t('categoryManager.errors.enterName') : 'Label is required';
+    errors.label = t
+      ? t('categoryManager.errors.enterName')
+      : 'Label is required';
   }
 
   return Object.keys(errors).length > 0 ? errors : null;

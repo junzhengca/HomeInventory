@@ -2,8 +2,10 @@ import React from 'react';
 import { TouchableOpacity, ScrollView } from 'react-native';
 import styled from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '../../theme/ThemeProvider';
-import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
+import type {
+  StyledProps,
+  StyledPropsWith,
+} from '../../utils/styledComponents';
 import { locations } from '../../data/locations';
 
 const LocationScrollView = styled(ScrollView)`
@@ -16,10 +18,16 @@ const LocationButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
   padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
-  background-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
+  background-color: ${({
+    theme,
+    isSelected,
+  }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.surface};
   border-width: 1px;
-  border-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
+  border-color: ${({
+    theme,
+    isSelected,
+  }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.border};
   margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
@@ -44,8 +52,10 @@ export interface LocationFieldProps {
  *   onSelect={(id) => updateField('locationId', id)}
  * />
  */
-export const LocationField: React.FC<LocationFieldProps> = ({ selectedId, onSelect }) => {
-  const theme = useTheme();
+export const LocationField: React.FC<LocationFieldProps> = ({
+  selectedId,
+  onSelect,
+}) => {
   const { t } = useTranslation();
 
   return (

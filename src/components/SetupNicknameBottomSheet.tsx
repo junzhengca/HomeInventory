@@ -1,7 +1,18 @@
-import React, { useRef, useCallback, useMemo, useEffect, useState } from 'react';
-import { View, TextInput, Keyboard, TouchableOpacity } from 'react-native';
+import React, {
+  useRef,
+  useCallback,
+  useMemo,
+  useEffect,
+  useState,
+} from 'react';
+import { View, TextInput, Keyboard } from 'react-native';
 import styled from 'styled-components/native';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetTextInput, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetTextInput,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -67,7 +78,8 @@ const FormSection = styled.View`
 
 const Label = styled.Text`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
+  font-weight: ${({ theme }: StyledProps) =>
+    theme.typography.fontWeight.medium};
   color: ${({ theme }: StyledProps) => theme.colors.text};
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
@@ -109,28 +121,36 @@ const LogoutLinkText = styled.Text`
 
 // Uncontrolled input component to prevent IME interruption
 const UncontrolledInput = React.memo(
-  React.forwardRef<TextInput, {
-    defaultValue: string;
-    onChangeText: (text: string) => void;
-    onBlur: () => void;
-    placeholder: string;
-    placeholderTextColor: string;
-  }>(({ defaultValue, onChangeText, onBlur, placeholder, placeholderTextColor }, ref) => {
-    return (
-      <Input
-        ref={ref}
-        placeholder={placeholder}
-        defaultValue={defaultValue}
-        onChangeText={onChangeText}
-        onBlur={onBlur}
-        placeholderTextColor={placeholderTextColor}
-        autoCorrect={false}
-        spellCheck={false}
-        textContentType="none"
-        autoComplete="off"
-      />
-    );
-  })
+  React.forwardRef<
+    TextInput,
+    {
+      defaultValue: string;
+      onChangeText: (text: string) => void;
+      onBlur: () => void;
+      placeholder: string;
+      placeholderTextColor: string;
+    }
+  >(
+    (
+      { defaultValue, onChangeText, onBlur, placeholder, placeholderTextColor },
+      ref
+    ) => {
+      return (
+        <Input
+          ref={ref}
+          placeholder={placeholder}
+          defaultValue={defaultValue}
+          onChangeText={onChangeText}
+          onBlur={onBlur}
+          placeholderTextColor={placeholderTextColor}
+          autoCorrect={false}
+          spellCheck={false}
+          textContentType="none"
+          autoComplete="off"
+        />
+      );
+    }
+  )
 );
 
 UncontrolledInput.displayName = 'UncontrolledInput';
@@ -141,17 +161,15 @@ interface SetupNicknameBottomSheetProps {
   onLogout?: () => void;
 }
 
-export const SetupNicknameBottomSheet: React.FC<SetupNicknameBottomSheetProps> = ({
-  bottomSheetRef,
-  onNicknameSet,
-  onLogout,
-}) => {
+export const SetupNicknameBottomSheet: React.FC<
+  SetupNicknameBottomSheetProps
+> = ({ bottomSheetRef, onNicknameSet, onLogout }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { user, updateUser, logout } = useAuth();
-  const { isKeyboardVisible, dismissKeyboard } = useKeyboardVisibility();
+  const { isKeyboardVisible } = useKeyboardVisibility();
 
   const nicknameInputRef = useRef<TextInput>(null);
   const nicknameValueRef = useRef('');
@@ -191,12 +209,15 @@ export const SetupNicknameBottomSheet: React.FC<SetupNicknameBottomSheetProps> =
   }, [bottomSheetRef]);
 
   // Update ref during typing (no re-render)
-  const handleNicknameChangeText = useCallback((text: string) => {
-    nicknameValueRef.current = text;
-    if (error) {
-      setError(null);
-    }
-  }, [error]);
+  const handleNicknameChangeText = useCallback(
+    (text: string) => {
+      nicknameValueRef.current = text;
+      if (error) {
+        setError(null);
+      }
+    },
+    [error]
+  );
 
   // Sync ref to state on blur (not needed for this use case, but following pattern)
   const handleNicknameBlur = useCallback(() => {
@@ -217,7 +238,9 @@ export const SetupNicknameBottomSheet: React.FC<SetupNicknameBottomSheetProps> =
 
     try {
       // Get API client
-      const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://home-inventory-api.logiccore.digital';
+      const API_BASE_URL =
+        process.env.EXPO_PUBLIC_API_BASE_URL ||
+        'https://home-inventory-api.logiccore.digital';
       const apiClient = new ApiClient(API_BASE_URL);
       const tokens = await getAuthTokens();
       if (!tokens) {
@@ -262,7 +285,9 @@ export const SetupNicknameBottomSheet: React.FC<SetupNicknameBottomSheetProps> =
             label: t('setupNickname.submit'),
             onPress: handleSubmit,
             variant: 'filled',
-            icon: <Ionicons name="home" size={18} color={theme.colors.surface} />,
+            icon: (
+              <Ionicons name="home" size={18} color={theme.colors.surface} />
+            ),
             disabled: isLoading,
           },
         ]}
@@ -301,7 +326,10 @@ export const SetupNicknameBottomSheet: React.FC<SetupNicknameBottomSheetProps> =
       <ContentContainer>
         <BottomSheetScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: theme.spacing.lg }}
+          contentContainerStyle={{
+            padding: theme.spacing.lg,
+            paddingBottom: theme.spacing.lg,
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           enableOnPanDownToDismiss={false}
@@ -311,10 +339,16 @@ export const SetupNicknameBottomSheet: React.FC<SetupNicknameBottomSheetProps> =
             <Subtitle>{t('setupNickname.subtitle')}</Subtitle>
           </Header>
 
-          <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
+          <View
+            style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}
+          >
             <AvatarContainer>
               <AvatarPlaceholder>
-                <Ionicons name="person" size={60} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="person"
+                  size={60}
+                  color={theme.colors.textSecondary}
+                />
               </AvatarPlaceholder>
             </AvatarContainer>
           </View>
@@ -334,7 +368,12 @@ export const SetupNicknameBottomSheet: React.FC<SetupNicknameBottomSheetProps> =
           </FormSection>
 
           <LogoutLink onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={16} color={theme.colors.textSecondary} style={{ marginRight: 4 }} />
+            <Ionicons
+              name="log-out-outline"
+              size={16}
+              color={theme.colors.textSecondary}
+              style={{ marginRight: 4 }}
+            />
             <LogoutLinkText>{t('setupNickname.logoutLink')}</LogoutLinkText>
           </LogoutLink>
         </BottomSheetScrollView>

@@ -6,43 +6,37 @@ import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 const CardContainer = styled(View)<{ compact?: boolean; square?: boolean }>`
   flex-direction: ${({ square }: { square?: boolean }) => (square ? 'column' : 'row')};
   align-items: ${({ square }: { square?: boolean }) => (square ? 'stretch' : 'center')};
-  ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 1; flex: 1;' : '')}
+  ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 0.85;' : '')}
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
   padding: ${({ theme, compact }: StyledPropsWith<{ compact?: boolean }>) =>
-    compact ? theme.spacing.sm : theme.spacing.md}px;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  ${({ square, theme }: StyledPropsWith<{ square?: boolean }>) =>
-    square ? `margin-horizontal: ${theme.spacing.xs}px;` : ''}
+    compact ? 12 : theme.spacing.md}px;
   position: relative;
   
   /* Subtle shadow for the card */
   shadow-color: #000;
-  shadow-offset: 0px 2px;
+  shadow-offset: 0px 4px;
   shadow-opacity: 0.05;
-  shadow-radius: 8px;
-  elevation: 2;
+  shadow-radius: 12px;
+  elevation: 3;
 `;
 
 const TouchableCardContainer = styled(TouchableOpacity)<{ compact?: boolean; square?: boolean }>`
   flex-direction: ${({ square }: { square?: boolean }) => (square ? 'column' : 'row')};
   align-items: ${({ square }: { square?: boolean }) => (square ? 'stretch' : 'center')};
-  ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 1; flex: 1;' : '')}
+  ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 0.85;' : '')}
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
   padding: ${({ theme, compact }: StyledPropsWith<{ compact?: boolean }>) =>
-    compact ? theme.spacing.sm : theme.spacing.md}px;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  ${({ square, theme }: StyledPropsWith<{ square?: boolean }>) =>
-    square ? `margin-horizontal: ${theme.spacing.xs}px;` : ''}
+    compact ? 12 : theme.spacing.md}px;
   position: relative;
   
   /* Subtle shadow for the card */
   shadow-color: #000;
-  shadow-offset: 0px 2px;
+  shadow-offset: 0px 4px;
   shadow-opacity: 0.05;
-  shadow-radius: 8px;
-  elevation: 2;
+  shadow-radius: 12px;
+  elevation: 3;
 `;
 
 interface BaseCardProps {

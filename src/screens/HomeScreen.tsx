@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { FlatList, ActivityIndicator, View } from 'react-native';
+import { FlatList, ActivityIndicator, View, Dimensions } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -60,6 +60,14 @@ export const HomeScreen: React.FC = () => {
   const signupBottomSheetRef = useRef<BottomSheetModal>(null);
   const enableSyncBottomSheetRef = useRef<BottomSheetModal>(null);
   const createItemBottomSheetRef = useRef<BottomSheetModal>(null);
+
+  // Calculate card width for 2-column grid to prevent the "last row single item" expansion issue
+  const cardWidth = useMemo(() => {
+    const screenWidth = Dimensions.get('window').width;
+    const contentPadding = 16 * 2; // theme.spacing.md on each side
+    const gap = 12;
+    return (screenWidth - contentPadding - gap) / 2;
+  }, []);
 
   useEffect(() => {
     loadItems();
@@ -242,12 +250,14 @@ export const HomeScreen: React.FC = () => {
               data={filteredItems}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
-                <ItemCard item={item} onPress={handleItemPress} />
+                <View style={{ width: cardWidth }}>
+                  <ItemCard item={item} onPress={handleItemPress} />
+                </View>
               )}
               numColumns={2}
               columnWrapperStyle={{
-                justifyContent: 'flex-start',
-                marginBottom: 0,
+                gap: 12,
+                marginBottom: 12,
               }}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ 

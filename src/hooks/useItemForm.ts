@@ -4,9 +4,8 @@ import { useTranslation } from 'react-i18next';
 import type { InventoryItem, Category } from '../types/inventory';
 import { getItemById } from '../services/InventoryService';
 import { getAllCategories } from '../services/CategoryService';
-import { useInventory, useCategory } from '../store/hooks';
+import { useInventory, useCategory, useAppSelector } from '../store/hooks';
 import { selectItemById } from '../store/slices/inventorySlice';
-import { useAppSelector } from '../store/hooks';
 
 /**
  * Form data structure for item creation/editing
@@ -47,7 +46,10 @@ interface UseItemFormReturn {
   errors: ItemFormErrors;
 
   // Actions
-  updateField: <K extends keyof ItemFormData>(field: K, value: ItemFormData[K]) => void;
+  updateField: <K extends keyof ItemFormData>(
+    field: K,
+    value: ItemFormData[K]
+  ) => void;
   addTag: (tag: string) => void;
   removeTag: (tag: string) => void;
   validate: () => boolean;
@@ -89,7 +91,7 @@ export const useItemForm = ({
 }: UseItemFormOptions = {}): UseItemFormReturn => {
   const { t } = useTranslation();
   const { loading: itemsLoading } = useInventory();
-  const { refreshCategories } = useCategory();
+  useCategory();
 
   // Get item from Redux store if itemId is provided
   const itemFromRedux = useAppSelector((state) =>
@@ -100,7 +102,7 @@ export const useItemForm = ({
   const [formData, setFormData] = useState<ItemFormData>(INITIAL_FORM_DATA);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving] = useState(false);
   const [errors, setErrors] = useState<ItemFormErrors>({});
 
   // Track if form was initialized to prevent re-initialization during edits
@@ -154,21 +156,26 @@ export const useItemForm = ({
   }, [itemFromRedux, itemId, itemsLoading]);
 
   // Initialize form data when item is loaded
-  const initializeFromItem = useCallback((itemData: InventoryItem) => {
-    setFormData({
-      name: itemData.name,
-      categoryId: itemData.category,
-      locationId: itemData.location,
-      price: itemData.price.toString(),
-      detailedLocation: itemData.detailedLocation || '',
-      amount: itemData.amount?.toString() || '',
-      tags: itemData.tags || [],
-      purchaseDate: itemData.purchaseDate ? new Date(itemData.purchaseDate) : null,
-      expiryDate: itemData.expiryDate ? new Date(itemData.expiryDate) : null,
-    });
-    isInitializedRef.current = true;
-    onItemLoaded?.(itemData);
-  }, [onItemLoaded]);
+  const initializeFromItem = useCallback(
+    (itemData: InventoryItem) => {
+      setFormData({
+        name: itemData.name,
+        categoryId: itemData.category,
+        locationId: itemData.location,
+        price: itemData.price.toString(),
+        detailedLocation: itemData.detailedLocation || '',
+        amount: itemData.amount?.toString() || '',
+        tags: itemData.tags || [],
+        purchaseDate: itemData.purchaseDate
+          ? new Date(itemData.purchaseDate)
+          : null,
+        expiryDate: itemData.expiryDate ? new Date(itemData.expiryDate) : null,
+      });
+      isInitializedRef.current = true;
+      onItemLoaded?.(itemData);
+    },
+    [onItemLoaded]
+  );
 
   // Auto-initialize when item changes (only for edit mode)
   useEffect(() => {
@@ -177,30 +184,36 @@ export const useItemForm = ({
     }
   }, [item, itemId, initializeFromItem]);
 
-  const updateField = useCallback(<K extends keyof ItemFormData>(
-    field: K,
-    value: ItemFormData[K]
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when field is updated
-    if (errors[field as keyof ItemFormErrors]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field as keyof ItemFormErrors];
-        return newErrors;
-      });
-    }
-  }, [errors]);
+  const updateField = useCallback(
+    <K extends keyof ItemFormData>(field: K, value: ItemFormData[K]) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      // Clear error when field is updated
+      if (errors[field as keyof ItemFormErrors]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[field as keyof ItemFormErrors];
+          return newErrors;
+        });
+      }
+    },
+    [errors]
+  );
 
-  const addTag = useCallback((tag: string) => {
-    const trimmed = tag.trim();
-    if (trimmed && !formData.tags.includes(trimmed)) {
-      setFormData((prev) => ({ ...prev, tags: [...prev.tags, trimmed] }));
-    }
-  }, [formData.tags]);
+  const addTag = useCallback(
+    (tag: string) => {
+      const trimmed = tag.trim();
+      if (trimmed && !formData.tags.includes(trimmed)) {
+        setFormData((prev) => ({ ...prev, tags: [...prev.tags, trimmed] }));
+      }
+    },
+    [formData.tags]
+  );
 
   const removeTag = useCallback((tag: string) => {
-    setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((t) => t !== tag),
+    }));
   }, []);
 
   const validate = useCallback((): boolean => {

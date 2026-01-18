@@ -40,7 +40,8 @@ const IconContainer = styled(View)`
   width: 48px;
   height: 48px;
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
-  background-color: ${({ theme }: StyledProps) => theme.colors.primaryExtraLight};
+  background-color: ${({ theme }: StyledProps) =>
+    theme.colors.primaryExtraLight};
   align-items: center;
   justify-content: center;
   margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;
@@ -64,7 +65,8 @@ const Title = styled(Text)`
 
 const Subtitle = styled(Text)`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
+  font-weight: ${({ theme }: StyledProps) =>
+    theme.typography.fontWeight.medium};
   color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
   margin-top: 2px;
 `;
@@ -87,10 +89,6 @@ const ActionButton = styled(TouchableOpacity)`
   shadow-offset: 0px 2px;
   shadow-opacity: 0.05;
   shadow-radius: 4px;
-`;
-
-const ActionIcon = styled(Ionicons)`
-  color: ${({ theme }: StyledProps) => theme.colors.textLight};
 `;
 
 const BackButton = styled(ActionButton)`
@@ -134,19 +132,15 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
-  const handleSharePress = () => {
+  const _handleSharePress = () => {
     if (onSharePress) {
       onSharePress();
-    } else {
-      console.log('Share button pressed');
     }
   };
 
-  const handleSettingsPress = () => {
+  const _handleSettingsPress = () => {
     if (onSettingsPress) {
       onSettingsPress();
-    } else {
-      console.log('Settings button pressed');
     }
   };
 
@@ -187,7 +181,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         <RightSection>
           <AvatarButton onPress={handleAvatarPress}>
             {avatarUrl ? (
-              <AvatarImage source={{ uri: avatarUrl }} contentFit="cover" cachePolicy="memory-disk" />
+              <AvatarImage
+                source={{ uri: avatarUrl }}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
             ) : (
               <AvatarPlaceholder>
                 <Ionicons name="person" size={20} color="white" />
@@ -199,5 +197,3 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     </HeaderContainer>
   );
 };
-
-

@@ -1,6 +1,5 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 
 // Complete the auth session for web browsers
@@ -64,7 +63,10 @@ export const signInWithGoogle = async (): Promise<string | null> => {
     const clientId = getGoogleClientId();
     const platform = Platform.OS;
 
-    console.log(`[GoogleAuth] Using ${platform} client ID:`, clientId.substring(0, 20) + '...');
+    console.log(
+      `[GoogleAuth] Using ${platform} client ID:`,
+      clientId.substring(0, 20) + '...'
+    );
 
     // Get redirect URI using custom scheme
     const redirectUri = getRedirectUri();
@@ -83,7 +85,9 @@ export const signInWithGoogle = async (): Promise<string | null> => {
     });
 
     // Prompt for authentication
-    console.log('[GoogleAuth] Starting OAuth flow with Authorization Code + PKCE...');
+    console.log(
+      '[GoogleAuth] Starting OAuth flow with Authorization Code + PKCE...'
+    );
     const result = await request.promptAsync({
       authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
       tokenEndpoint: 'https://oauth2.googleapis.com/token',
@@ -97,20 +101,27 @@ export const signInWithGoogle = async (): Promise<string | null> => {
       const code = result.params.code;
 
       if (!code) {
-        console.error('[GoogleAuth] Authorization code not found in response params:', result.params);
+        console.error(
+          '[GoogleAuth] Authorization code not found in response params:',
+          result.params
+        );
         throw new Error(
           'Authorization code not found in OAuth response. Check that the redirect URI matches exactly in Google Cloud Console.'
         );
       }
 
-      console.log('[GoogleAuth] Received authorization code, exchanging for ID token...');
+      console.log(
+        '[GoogleAuth] Received authorization code, exchanging for ID token...'
+      );
 
       // Exchange the authorization code for tokens
       // Get the code verifier from the request (PKCE)
       const codeVerifier = request.codeVerifier;
-      
+
       if (!codeVerifier) {
-        throw new Error('Code verifier not found. PKCE may not be properly configured.');
+        throw new Error(
+          'Code verifier not found. PKCE may not be properly configured.'
+        );
       }
 
       // Manually exchange the authorization code for tokens
@@ -131,11 +142,16 @@ export const signInWithGoogle = async (): Promise<string | null> => {
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
         console.error('[GoogleAuth] Token exchange failed:', errorText);
-        throw new Error(`Token exchange failed: ${tokenResponse.status} ${tokenResponse.statusText}`);
+        throw new Error(
+          `Token exchange failed: ${tokenResponse.status} ${tokenResponse.statusText}`
+        );
       }
 
       const tokenData = await tokenResponse.json();
-      console.log('[GoogleAuth] Token exchange result:', JSON.stringify({ ...tokenData, id_token: '***' }, null, 2));
+      console.log(
+        '[GoogleAuth] Token exchange result:',
+        JSON.stringify({ ...tokenData, id_token: '***' }, null, 2)
+      );
 
       // Extract the ID token from the token response
       const idToken = tokenData.id_token;
@@ -144,14 +160,25 @@ export const signInWithGoogle = async (): Promise<string | null> => {
         console.log('[GoogleAuth] Successfully received ID token');
         return idToken;
       } else {
-        console.error('[GoogleAuth] ID token not found in token response:', tokenData);
-        throw new Error('ID token not found after token exchange. The OAuth flow may have failed.');
+        console.error(
+          '[GoogleAuth] ID token not found in token response:',
+          tokenData
+        );
+        throw new Error(
+          'ID token not found after token exchange. The OAuth flow may have failed.'
+        );
       }
     } else if (result.type === 'error') {
       const errorMessage = result.error?.message || 'Unknown error';
       const errorCode = result.error?.code;
-      console.error('[GoogleAuth] OAuth error:', { errorMessage, errorCode, error: result.error });
-      throw new Error(`OAuth error: ${errorMessage}${errorCode ? ` (code: ${errorCode})` : ''}`);
+      console.error('[GoogleAuth] OAuth error:', {
+        errorMessage,
+        errorCode,
+        error: result.error,
+      });
+      throw new Error(
+        `OAuth error: ${errorMessage}${errorCode ? ` (code: ${errorCode})` : ''}`
+      );
     } else {
       // User cancelled or dismissed
       console.log('[GoogleAuth] User cancelled or dismissed OAuth flow');

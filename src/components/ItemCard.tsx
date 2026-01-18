@@ -18,30 +18,30 @@ const CardContent = styled(View)`
 `;
 
 const IconContainer = styled(View)<{ backgroundColor: string }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
   background-color: ${({ backgroundColor }: { backgroundColor: string }) => backgroundColor};
   align-items: center;
   justify-content: center;
   position: absolute;
-  top: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-  left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  top: 2px;
+  left: 2px;
 `;
 
 const TopRightContainer = styled(View)`
   position: absolute;
-  top: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-  right: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  top: 4px;
+  right: 2px;
   align-items: flex-end;
 `;
 
 const QuantityBadge = styled(View)`
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 `;
 
 const QuantityText = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
+  font-size: 14px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   color: ${({ theme }: StyledProps) => theme.colors.text};
 `;
@@ -49,7 +49,7 @@ const QuantityText = styled(Text)`
 const StatusBadge = styled(View)`
   flex-direction: row;
   align-items: center;
-  margin-top: 2px;
+  margin-top: 0;
 `;
 
 const StatusIcon = styled(View)`
@@ -57,36 +57,36 @@ const StatusIcon = styled(View)`
 `;
 
 const StatusText = styled(Text)`
-  font-size: 10px;
-  color: #ff8a80; /* Light red/pink from screenshot */
+  font-size: 11px;
+  color: #ff8a80;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
 `;
 
 const MiddleContainer = styled(View)`
   flex: 1;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: flex-start;
-  margin-top: 48px;
-  padding-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  margin-top: 52px;
 `;
 
 const ItemName = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+  font-size: 16px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   color: ${({ theme }: StyledProps) => theme.colors.text};
   text-align: left;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  line-height: 20px;
 `;
 
 const LocationText = styled(Text)`
-  font-size: 10px;
+  font-size: 12px;
   color: ${({ theme }: StyledProps) => theme.colors.textLight};
   text-align: left;
   margin-bottom: 4px;
 `;
 
 const PriceText = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
+  font-size: 16px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   color: ${({ theme }: StyledProps) => theme.colors.text};
   text-align: left;
@@ -94,17 +94,24 @@ const PriceText = styled(Text)`
 
 const BottomRightContainer = styled(View)`
   position: absolute;
-  bottom: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-  right: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  bottom: 2px;
+  right: 2px;
 `;
 
 const UsageButton = styled(View)`
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   border-width: 1px;
   border-color: ${({ theme }: StyledProps) => theme.colors.borderLight};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
-  padding-horizontal: 10px;
+  border-radius: 20px;
+  padding-horizontal: 12px;
   padding-vertical: 6px;
+  
+  /* Subtle shadow for the button */
+  shadow-color: #000;
+  shadow-offset: 0px 1px;
+  shadow-opacity: 0.05;
+  shadow-radius: 2px;
+  elevation: 1;
 `;
 
 const UsageText = styled(Text)`
@@ -138,11 +145,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
   const inUse = true; // Placeholder - always show "使用中" for now
 
   return (
-    <BaseCard onPress={handlePress} activeOpacity={0.8} square>
+    <BaseCard onPress={handlePress} activeOpacity={0.8} square compact>
       <CardContent>
         {/* Top-left: Icon */}
         <IconContainer backgroundColor={getLightColor(item.iconColor)}>
-          <Ionicons name={item.icon} size={20} color={item.iconColor} />
+          <Ionicons name={item.icon} size={22} color={item.iconColor} />
         </IconContainer>
 
         {/* Top-right: Quantity and Status */}

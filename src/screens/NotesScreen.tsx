@@ -12,7 +12,11 @@ import { Ionicons } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import {
+  GestureHandlerRootView,
+  Swipeable,
+} from 'react-native-gesture-handler';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { useTranslation } from 'react-i18next';
 
@@ -43,7 +47,10 @@ const AddTodoContainer = styled(View)<{ isFocused: boolean }>`
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   border-width: 1.5px;
-  border-color: ${({ theme, isFocused }: StyledPropsWith<{ isFocused: boolean }>) =>
+  border-color: ${({
+    theme,
+    isFocused,
+  }: StyledPropsWith<{ isFocused: boolean }>) =>
     isFocused ? theme.colors.inputFocus : theme.colors.borderLight};
   overflow: hidden;
 `;
@@ -64,7 +71,10 @@ const TodoInput = styled(TextInput)`
 `;
 
 const ToggleNotesButton = styled(TouchableOpacity)<{ isActive: boolean }>`
-  background-color: ${({ theme, isActive }: StyledPropsWith<{ isActive: boolean }>) =>
+  background-color: ${({
+    theme,
+    isActive,
+  }: StyledPropsWith<{ isActive: boolean }>) =>
     isActive ? theme.colors.primary : theme.colors.borderLight};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
   margin-left: ${({ theme }: StyledProps) => theme.spacing.sm}px;
@@ -119,8 +129,10 @@ const CardWrapper = styled(View)`
 
 const SwipeActionsContainer = styled(View)`
   flex-direction: row;
-  border-top-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  border-bottom-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  border-top-right-radius: ${({ theme }: StyledProps) =>
+    theme.borderRadius.xxl}px;
+  border-bottom-right-radius: ${({ theme }: StyledProps) =>
+    theme.borderRadius.xxl}px;
   overflow: hidden;
   margin-left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
 `;
@@ -135,11 +147,15 @@ const ActionButton = styled(TouchableOpacity)`
 
 const DeleteAction = styled(ActionButton)`
   background-color: ${({ theme }: StyledProps) => theme.colors.error};
-  border-top-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  border-bottom-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  border-top-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  border-bottom-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  
+  border-top-left-radius: ${({ theme }: StyledProps) =>
+    theme.borderRadius.xxl}px;
+  border-bottom-left-radius: ${({ theme }: StyledProps) =>
+    theme.borderRadius.xxl}px;
+  border-top-right-radius: ${({ theme }: StyledProps) =>
+    theme.borderRadius.xxl}px;
+  border-bottom-right-radius: ${({ theme }: StyledProps) =>
+    theme.borderRadius.xxl}px;
+
   /* Shadow for depth */
   shadow-color: ${({ theme }: StyledProps) => theme.colors.error};
   shadow-offset: 0px 2px;
@@ -153,22 +169,30 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export const NotesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { pendingTodos, completedTodos, loading, refreshTodos, addTodo, toggleTodoCompletion, removeTodo, updateTodo } =
-    useTodos();
+  const {
+    pendingTodos,
+    completedTodos,
+    loading,
+    refreshTodos,
+    addTodo,
+    toggleTodoCompletion,
+    removeTodo,
+    updateTodo,
+  } = useTodos();
   const theme = useTheme();
   const { t } = useTranslation();
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
 
   const [newTodoText, setNewTodoText] = useState('');
   const [newTodoNote, setNewTodoNote] = useState('');
   const [showNotesField, setShowNotesField] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  
+
   const loginBottomSheetRef = useRef<BottomSheetModal>(null);
   const signupBottomSheetRef = useRef<BottomSheetModal>(null);
   const enableSyncBottomSheetRef = useRef<BottomSheetModal>(null);
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
-  
+
   // Animation values for notes field - height cannot use native driver
   const notesHeight = useRef(new Animated.Value(0)).current;
   const notesOpacity = useRef(new Animated.Value(0)).current;
@@ -218,7 +242,6 @@ export const NotesScreen: React.FC = () => {
     setNewTodoNote(text);
   }, []);
 
-
   const handleSignupPress = () => {
     loginBottomSheetRef.current?.dismiss();
     signupBottomSheetRef.current?.present();
@@ -263,23 +286,19 @@ export const NotesScreen: React.FC = () => {
   };
 
   const handleDeleteTodo = (id: string) => {
-    Alert.alert(
-      t('notes.deleteTodo.title'),
-      t('notes.deleteTodo.message'),
-      [
-        {
-          text: t('notes.deleteTodo.cancel'),
-          style: 'cancel',
+    Alert.alert(t('notes.deleteTodo.title'), t('notes.deleteTodo.message'), [
+      {
+        text: t('notes.deleteTodo.cancel'),
+        style: 'cancel',
+      },
+      {
+        text: t('notes.deleteTodo.confirm'),
+        style: 'destructive',
+        onPress: async () => {
+          await removeTodo(id);
         },
-        {
-          text: t('notes.deleteTodo.confirm'),
-          style: 'destructive',
-          onPress: async () => {
-            await removeTodo(id);
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   const renderSwipeActions = (todo: TodoItem) => {
@@ -394,14 +413,16 @@ export const NotesScreen: React.FC = () => {
                 activeOpacity={0.7}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons 
-                  name={showNotesField ? "document-text" : "document-text-outline"} 
-                  size={18} 
-                  color={showNotesField ? "white" : theme.colors.textSecondary} 
+                <Ionicons
+                  name={
+                    showNotesField ? 'document-text' : 'document-text-outline'
+                  }
+                  size={18}
+                  color={showNotesField ? 'white' : theme.colors.textSecondary}
                 />
               </ToggleNotesButton>
-              <AddButton 
-                onPress={handleAddTodo} 
+              <AddButton
+                onPress={handleAddTodo}
                 activeOpacity={0.7}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
@@ -437,7 +458,9 @@ export const NotesScreen: React.FC = () => {
 
           {pendingTodos.length > 0 && (
             <>
-              <SectionTitle>{t('notes.pending')} ({pendingTodos.length})</SectionTitle>
+              <SectionTitle>
+                {t('notes.pending')} ({pendingTodos.length})
+              </SectionTitle>
               {pendingTodos.map((todo) => renderTodoItem(todo))}
             </>
           )}
@@ -459,7 +482,7 @@ export const NotesScreen: React.FC = () => {
             />
           )}
         </Content>
-        
+
         <LoginBottomSheet
           bottomSheetRef={loginBottomSheetRef}
           onSignupPress={handleSignupPress}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,12 +23,14 @@ interface ToastProps {
   duration?: number;
 }
 
-const AnimatedContainer = Animated.createAnimatedComponent(styled.View<StyledProps>`
-  position: absolute;
-  left: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  right: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  z-index: 9999;
-`);
+const AnimatedContainer = Animated.createAnimatedComponent(
+  styled.View<StyledProps>`
+    position: absolute;
+    left: ${({ theme }: StyledProps) => theme.spacing.md}px;
+    right: ${({ theme }: StyledProps) => theme.spacing.md}px;
+    z-index: 9999;
+  `
+);
 
 const ToastContainer = styled.View<StyledProps & { type: ToastType }>`
   background-color: ${({ theme, type }: StyledProps & { type: ToastType }) => {
@@ -59,7 +61,8 @@ const IconContainer = styled(View)`
 
 const ToastText = styled(Text)`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
+  font-weight: ${({ theme }: StyledProps) =>
+    theme.typography.fontWeight.medium};
   color: ${({ theme }: StyledProps) => theme.colors.surface};
   flex: 1;
 `;
@@ -86,9 +89,11 @@ export const Toast: React.FC<ToastProps> = ({
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(-200);
   const opacity = useSharedValue(0);
-  const autoDismissTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
-  const dismissToast = () => {
+  const dismissToast = useCallback(() => {
     translateY.value = withTiming(-200, {
       duration: 250,
       easing: Easing.in(Easing.ease),
@@ -101,14 +106,14 @@ export const Toast: React.FC<ToastProps> = ({
     setTimeout(() => {
       onHide();
     }, 250);
-  };
+  }, [translateY, opacity, onHide]);
 
-  const cancelAutoDismiss = () => {
+  const cancelAutoDismiss = useCallback(() => {
     if (autoDismissTimerRef.current) {
       clearTimeout(autoDismissTimerRef.current);
       autoDismissTimerRef.current = null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -136,7 +141,7 @@ export const Toast: React.FC<ToastProps> = ({
       opacity.value = 0;
       cancelAutoDismiss();
     }
-  }, [visible, duration, translateY, opacity]);
+  }, [visible, duration, translateY, opacity, dismissToast, cancelAutoDismiss]);
 
   // Pan gesture for swipe up to dismiss
   const panGesture = Gesture.Pan()
@@ -193,11 +198,7 @@ export const Toast: React.FC<ToastProps> = ({
       >
         <ToastContainer type={type}>
           <IconContainer>
-            <Ionicons
-              name={getIconName(type)}
-              size={20}
-              color="white"
-            />
+            <Ionicons name={getIconName(type)} size={20} color="white" />
           </IconContainer>
           <ToastText>{message}</ToastText>
         </ToastContainer>
