@@ -9,6 +9,7 @@ interface AuthState {
   error: string | null;
   apiBaseUrl: string;
   apiClient: ApiClient | null;
+  showNicknameSetup: boolean;
 }
 
 const initialState: AuthState = {
@@ -18,6 +19,7 @@ const initialState: AuthState = {
   error: null,
   apiBaseUrl: '',
   apiClient: null,
+  showNicknameSetup: false,
 };
 
 const authSlice = createSlice({
@@ -42,10 +44,13 @@ const authSlice = createSlice({
     setApiClient: (state, action: PayloadAction<ApiClient | null>) => {
       state.apiClient = action.payload;
     },
+    setShowNicknameSetup: (state, action: PayloadAction<boolean>) => {
+      state.showNicknameSetup = action.payload;
+    },
   },
 });
 
-export const { setUser, setAuthenticated, setLoading, setError, setApiBaseUrl, setApiClient } =
+export const { setUser, setAuthenticated, setLoading, setError, setApiBaseUrl, setApiClient, setShowNicknameSetup } =
   authSlice.actions;
 export default authSlice.reducer;
 

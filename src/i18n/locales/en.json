@@ -54,6 +54,7 @@
     "title": "Notes",
     "subtitle": "Your todos",
     "addTodo": "Add a new todo...",
+    "addNote": "Add a note (optional)...",
     "pending": "Pending",
     "completed": "Completed",
     "deleteTodo": {
@@ -67,7 +68,8 @@
       "subtitle": "Update your todo",
       "submit": "Save Changes",
       "placeholders": {
-        "text": "Enter todo text..."
+        "text": "Enter todo text...",
+        "note": "Enter note (optional)..."
       },
       "errors": {
         "title": "Error",
@@ -288,6 +290,8 @@
     "noUserData": "No user data available",
     "userId": "ID",
     "email": "Email",
+    "nickname": "Nickname",
+    "editNickname": "Edit Nickname",
     "memberSince": "Member since",
     "lastUpdated": "Last updated",
     "auth": {
@@ -479,6 +483,19 @@
     "loginSuccess": "Successfully logged in",
     "logoutSuccess": "Successfully logged out",
     "signupSuccess": "Account created successfully"
+  },
+  "setupNickname": {
+    "title": "Setup Profile",
+    "subtitle": "Just one last step.",
+    "nicknameLabel": "Give yourself a catchy name.",
+    "nicknameHelper": "This is the name other users will see.",
+    "submit": "Enter my home",
+    "logoutLink": "Not your account? Log out",
+    "errors": {
+      "title": "Error",
+      "enterNickname": "Please enter a nickname",
+      "updateFailed": "Failed to update nickname, please try again"
+    }
   }
 }
 

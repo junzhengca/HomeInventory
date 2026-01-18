@@ -28,12 +28,12 @@ const UPDATE_TODO = 'todo/UPDATE_TODO';
 // Action creators
 export const loadTodos = () => ({ type: LOAD_TODOS });
 export const silentRefreshTodos = () => ({ type: SILENT_REFRESH_TODOS });
-export const addTodo = (text: string) => ({ type: ADD_TODO, payload: text });
+export const addTodo = (text: string, note?: string) => ({ type: ADD_TODO, payload: { text, note } });
 export const toggleTodo = (id: string) => ({ type: TOGGLE_TODO, payload: id });
 export const deleteTodoAction = (id: string) => ({ type: DELETE_TODO, payload: id });
-export const updateTodoText = (id: string, text: string) => ({
+export const updateTodoText = (id: string, text: string, note?: string) => ({
   type: UPDATE_TODO,
-  payload: { id, text },
+  payload: { id, text, note },
 });
 
 function* loadTodosSaga() {
@@ -64,12 +64,12 @@ function* silentRefreshTodosSaga() {
   }
 }
 
-function* addTodoSaga(action: { type: string; payload: string }) {
-  const text = action.payload;
+function* addTodoSaga(action: { type: string; payload: { text: string; note?: string } }) {
+  const { text, note } = action.payload;
   if (!text.trim()) return;
 
   try {
-    const newTodo: TodoItem = yield call(createTodo, text);
+    const newTodo: TodoItem = yield call(createTodo, text, note);
     if (newTodo) {
       // Optimistically add to state
       yield put(addTodoSlice(newTodo));
@@ -133,20 +133,20 @@ function* deleteTodoSaga(action: { type: string; payload: string }) {
   }
 }
 
-function* updateTodoSaga(action: { type: string; payload: { id: string; text: string } }) {
-  const { id, text } = action.payload;
+function* updateTodoSaga(action: { type: string; payload: { id: string; text: string; note?: string } }) {
+  const { id, text, note } = action.payload;
 
   try {
     // Optimistically update to state
     const currentTodos: TodoItem[] = yield select((state: RootState) => state.todo.todos);
     const todoToUpdate = currentTodos.find((todo) => todo.id === id);
     if (todoToUpdate) {
-      const updatedTodo = { ...todoToUpdate, text };
+      const updatedTodo = { ...todoToUpdate, text, note: note !== undefined ? note : todoToUpdate.note };
       yield put(updateTodoSlice(updatedTodo));
     }
 
     // Then update in storage
-    yield call(updateTodo, id, { text });
+    yield call(updateTodo, id, { text, note });
 
     // Refresh to ensure sync (but don't set loading)
     const allTodos: TodoItem[] = yield call(getAllTodos);

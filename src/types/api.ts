@@ -27,6 +27,10 @@ export interface UpdateAvatarUrlRequest {
   avatarUrl: string;
 }
 
+export interface UpdateNicknameRequest {
+  nickname: string;
+}
+
 // Response types
 export interface AuthResponse {
   accessToken: string;
@@ -36,6 +40,7 @@ export interface AuthResponse {
 export interface User {
   id: string;
   email: string;
+  nickname?: string;
   avatarUrl?: string;
   createdAt?: string;
   updatedAt?: string;

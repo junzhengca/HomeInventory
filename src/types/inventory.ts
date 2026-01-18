@@ -42,6 +42,7 @@ export interface TodoItem {
   id: string;
   text: string;
   completed: boolean;
+  note?: string; // Optional note field
   createdAt: string; // ISO date string
   updatedAt?: string; // ISO date string
   deletedAt?: string; // ISO date string - marks soft deletion

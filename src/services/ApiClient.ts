@@ -5,6 +5,7 @@ import {
   UploadImageRequest,
   UpdatePasswordRequest,
   UpdateAvatarUrlRequest,
+  UpdateNicknameRequest,
   AuthResponse,
   User,
   UploadImageResponse,
@@ -469,6 +470,18 @@ export class ApiClient {
    */
   async updateAvatarUrl(avatarUrl: string): Promise<User> {
     const request: UpdateAvatarUrlRequest = { avatarUrl };
+    return this.request<User>('/api/auth/me', {
+      method: 'PATCH',
+      body: request,
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Update user nickname
+   */
+  async updateNickname(nickname: string): Promise<User> {
+    const request: UpdateNicknameRequest = { nickname };
     return this.request<User>('/api/auth/me', {
       method: 'PATCH',
       body: request,

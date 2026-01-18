@@ -6,24 +6,22 @@ import {
   Alert,
   Text,
   View,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 import { useTranslation } from 'react-i18next';
 
 import { PageHeader } from '../components/PageHeader';
 import { TodoCard } from '../components/TodoCard';
 import { EmptyState } from '../components/EmptyState';
-import { EditTodoBottomSheet } from '../components/EditTodoBottomSheet';
 import { LoginBottomSheet } from '../components/LoginBottomSheet';
 import { SignupBottomSheet } from '../components/SignupBottomSheet';
 import { EnableSyncBottomSheet } from '../components/EnableSyncBottomSheet';
-import { SharePanel } from '../components/SharePanel';
 import { useTodos, useAuth } from '../store/hooks';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -41,16 +39,20 @@ const Content = styled(ScrollView)`
 `;
 
 const AddTodoContainer = styled(View)<{ isFocused: boolean }>`
-  flex-direction: row;
-  align-items: center;
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
-  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  height: 48px;
   border-width: 1.5px;
   border-color: ${({ theme, isFocused }: StyledPropsWith<{ isFocused: boolean }>) =>
     isFocused ? theme.colors.inputFocus : theme.colors.borderLight};
+  overflow: hidden;
+`;
+
+const TodoInputRow = styled(View)`
+  flex-direction: row;
+  align-items: center;
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  height: 48px;
 `;
 
 const TodoInput = styled(TextInput)`
@@ -61,6 +63,17 @@ const TodoInput = styled(TextInput)`
   padding-vertical: 0;
 `;
 
+const ToggleNotesButton = styled(TouchableOpacity)<{ isActive: boolean }>`
+  background-color: ${({ theme, isActive }: StyledPropsWith<{ isActive: boolean }>) =>
+    isActive ? theme.colors.primary : theme.colors.borderLight};
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
+  margin-left: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+`;
+
 const AddButton = styled(TouchableOpacity)`
   background-color: ${({ theme }: StyledProps) => theme.colors.primary};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
@@ -69,6 +82,24 @@ const AddButton = styled(TouchableOpacity)`
   width: 28px;
   align-items: center;
   justify-content: center;
+`;
+
+// Use regular Animated.View for height animation (non-native driver)
+const NotesHeightWrapper = Animated.View;
+
+const NotesInputContainer = styled(View)`
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  padding-top: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  padding-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  border-top-width: 1px;
+  border-top-color: ${({ theme }: StyledProps) => theme.colors.borderLight};
+`;
+
+const NotesInput = styled(TextInput)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+  color: ${({ theme }: StyledProps) => theme.colors.text};
+  min-height: 40px;
+  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.xs}px;
 `;
 
 const SectionTitle = styled(Text)`
@@ -102,24 +133,12 @@ const ActionButton = styled(TouchableOpacity)`
   position: relative;
 `;
 
-const EditAction = styled(ActionButton)`
-  background-color: ${({ theme }: StyledProps) => theme.colors.warning};
-  border-top-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  border-bottom-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  
-  /* Shadow for depth */
-  shadow-color: ${({ theme }: StyledProps) => theme.colors.warning};
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.2;
-  shadow-radius: 4px;
-  elevation: 3;
-`;
-
 const DeleteAction = styled(ActionButton)`
   background-color: ${({ theme }: StyledProps) => theme.colors.error};
+  border-top-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  border-bottom-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
   border-top-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
   border-bottom-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
-  margin-left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
   
   /* Shadow for depth */
   shadow-color: ${({ theme }: StyledProps) => theme.colors.error};
@@ -134,29 +153,69 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export const NotesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { pendingTodos, completedTodos, loading, refreshTodos, addTodo, toggleTodoCompletion, removeTodo } =
+  const { pendingTodos, completedTodos, loading, refreshTodos, addTodo, toggleTodoCompletion, removeTodo, updateTodo } =
     useTodos();
   const theme = useTheme();
   const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
 
   const [newTodoText, setNewTodoText] = useState('');
+  const [newTodoNote, setNewTodoNote] = useState('');
+  const [showNotesField, setShowNotesField] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [editingTodo, setEditingTodo] = useState<{ id: string; text: string } | null>(null);
   
-  const editBottomSheetRef = useRef<BottomSheetModal>(null);
   const loginBottomSheetRef = useRef<BottomSheetModal>(null);
   const signupBottomSheetRef = useRef<BottomSheetModal>(null);
   const enableSyncBottomSheetRef = useRef<BottomSheetModal>(null);
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
+  
+  // Animation values for notes field - height cannot use native driver
+  const notesHeight = useRef(new Animated.Value(0)).current;
+  const notesOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     refreshTodos();
   }, [refreshTodos]);
 
+  // Animate notes field show/hide
+  // Using non-native driver for both to avoid conflicts when mixing with height
+  useEffect(() => {
+    if (showNotesField) {
+      Animated.parallel([
+        Animated.timing(notesHeight, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: false, // Height cannot use native driver
+        }),
+        Animated.timing(notesOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: false, // Using false to avoid conflicts with height animation
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(notesHeight, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: false,
+        }),
+        Animated.timing(notesOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    }
+  }, [showNotesField, notesHeight, notesOpacity]);
+
   // Stable onChangeText handler to prevent IME composition interruption
   const handleTodoTextChange = useCallback((text: string) => {
     setNewTodoText(text);
+  }, []);
+
+  const handleTodoNoteChange = useCallback((text: string) => {
+    setNewTodoNote(text);
   }, []);
 
 
@@ -192,8 +251,10 @@ export const NotesScreen: React.FC = () => {
 
   const handleAddTodo = async () => {
     if (newTodoText.trim()) {
-      await addTodo(newTodoText.trim());
+      await addTodo(newTodoText.trim(), newTodoNote.trim() || undefined);
       setNewTodoText('');
+      setNewTodoNote('');
+      setShowNotesField(false);
     }
   };
 
@@ -221,27 +282,9 @@ export const NotesScreen: React.FC = () => {
     );
   };
 
-  const handleEditTodo = (id: string, text: string) => {
-    setEditingTodo({ id, text });
-    editBottomSheetRef.current?.present();
-  };
-
-  const handleTodoUpdated = () => {
-    setEditingTodo(null);
-  };
-
   const renderSwipeActions = (todo: TodoItem) => {
     return (
       <SwipeActionsContainer>
-        <EditAction
-          onPress={() => {
-            handleEditTodo(todo.id, todo.text);
-            swipeableRefs.current.get(todo.id)?.close();
-          }}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="create" size={22} color="white" />
-        </EditAction>
         <DeleteAction
           onPress={() => {
             handleDeleteTodo(todo.id);
@@ -255,40 +298,32 @@ export const NotesScreen: React.FC = () => {
     );
   };
 
-  const renderTodoItem = (todo: TodoItem, isPending: boolean = false) => {
-    if (isPending) {
-      return (
-        <SwipeableWrapper key={todo.id}>
-          <Swipeable
-            ref={(ref) => {
-              if (ref) {
-                swipeableRefs.current.set(todo.id, ref);
-              }
-            }}
-            renderRightActions={() => renderSwipeActions(todo)}
-            rightThreshold={40}
-            friction={2}
-            enableTrackpadTwoFingerGesture
-          >
-            <CardWrapper>
-              <TodoCard
-                todo={todo}
-                onToggle={handleToggleTodo}
-                style={{ marginBottom: 0 }}
-              />
-            </CardWrapper>
-          </Swipeable>
-        </SwipeableWrapper>
-      );
-    } else {
-      return (
-        <TodoCard
-          key={todo.id}
-          todo={todo}
-          onToggle={handleToggleTodo}
-        />
-      );
-    }
+  const renderTodoItem = (todo: TodoItem) => {
+    // Wrap all todos in Swipeable to allow deletion
+    return (
+      <SwipeableWrapper key={todo.id}>
+        <Swipeable
+          ref={(ref) => {
+            if (ref) {
+              swipeableRefs.current.set(todo.id, ref);
+            }
+          }}
+          renderRightActions={() => renderSwipeActions(todo)}
+          rightThreshold={40}
+          friction={2}
+          enableTrackpadTwoFingerGesture
+        >
+          <CardWrapper>
+            <TodoCard
+              todo={todo}
+              onToggle={handleToggleTodo}
+              onUpdate={updateTodo}
+              style={{ marginBottom: 0 }}
+            />
+          </CardWrapper>
+        </Swipeable>
+      </SwipeableWrapper>
+    );
   };
 
   // Calculate bottom padding: nav bar height (60) + margin (16*2) + safe area + extra spacing
@@ -338,42 +373,72 @@ export const NotesScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomPadding }}
         >
-          <SharePanel
-            userAvatarUrl={user?.avatarUrl}
-            pendingTodos={pendingTodos}
-            isAuthenticated={isAuthenticated}
-            onInvitePress={() => {
-              // TODO: Implement invite functionality
-              console.log('Invite pressed');
-            }}
-          />
           <AddTodoContainer isFocused={isFocused}>
-            <TodoInput
-              placeholder={t('notes.addTodo')}
-              placeholderTextColor={theme.colors.textLight}
-              value={newTodoText}
-              onChangeText={handleTodoTextChange}
-              onSubmitEditing={handleAddTodo}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              autoCorrect={false}
-              spellCheck={false}
-              textContentType="none"
-              autoComplete="off"
-            />
-            <AddButton 
-              onPress={handleAddTodo} 
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            <TodoInputRow>
+              <TodoInput
+                placeholder={t('notes.addTodo')}
+                placeholderTextColor={theme.colors.textLight}
+                value={newTodoText}
+                onChangeText={handleTodoTextChange}
+                onSubmitEditing={handleAddTodo}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                autoCorrect={false}
+                spellCheck={false}
+                textContentType="none"
+                autoComplete="off"
+              />
+              <ToggleNotesButton
+                isActive={showNotesField}
+                onPress={() => setShowNotesField(!showNotesField)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons 
+                  name={showNotesField ? "document-text" : "document-text-outline"} 
+                  size={18} 
+                  color={showNotesField ? "white" : theme.colors.textSecondary} 
+                />
+              </ToggleNotesButton>
+              <AddButton 
+                onPress={handleAddTodo} 
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="add" size={18} color="white" />
+              </AddButton>
+            </TodoInputRow>
+            <NotesHeightWrapper
+              style={{
+                height: notesHeight.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 80],
+                }),
+                opacity: notesOpacity,
+                overflow: 'hidden',
+              }}
+              pointerEvents={showNotesField ? 'auto' : 'none'}
             >
-              <Ionicons name="add" size={18} color="white" />
-            </AddButton>
+              <NotesInputContainer>
+                <NotesInput
+                  placeholder={t('notes.addNote')}
+                  placeholderTextColor={theme.colors.textLight}
+                  value={newTodoNote}
+                  onChangeText={handleTodoNoteChange}
+                  multiline={true}
+                  autoCorrect={false}
+                  spellCheck={false}
+                  textContentType="none"
+                  autoComplete="off"
+                />
+              </NotesInputContainer>
+            </NotesHeightWrapper>
           </AddTodoContainer>
 
           {pendingTodos.length > 0 && (
             <>
               <SectionTitle>{t('notes.pending')} ({pendingTodos.length})</SectionTitle>
-              {pendingTodos.map((todo) => renderTodoItem(todo, true))}
+              {pendingTodos.map((todo) => renderTodoItem(todo))}
             </>
           )}
 
@@ -382,7 +447,7 @@ export const NotesScreen: React.FC = () => {
               <SectionTitle style={{ marginTop: 20 }}>
                 {t('notes.completed')} ({completedTodos.length})
               </SectionTitle>
-              {completedTodos.map((todo) => renderTodoItem(todo, false))}
+              {completedTodos.map((todo) => renderTodoItem(todo))}
             </>
           )}
 
@@ -395,12 +460,6 @@ export const NotesScreen: React.FC = () => {
           )}
         </Content>
         
-        <EditTodoBottomSheet
-          bottomSheetRef={editBottomSheetRef}
-          todoId={editingTodo?.id || ''}
-          initialText={editingTodo?.text || ''}
-          onTodoUpdated={handleTodoUpdated}
-        />
         <LoginBottomSheet
           bottomSheetRef={loginBottomSheetRef}
           onSignupPress={handleSignupPress}

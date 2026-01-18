@@ -5,6 +5,7 @@ import {
   setLoading,
   setError,
   setApiClient,
+  setShowNicknameSetup,
 } from '../slices/authSlice';
 import {
   setSyncEnabled,
@@ -137,11 +138,25 @@ function* checkAuthSaga() {
         yield put(setUser(currentUser));
         yield put(setAuthenticated(true));
         
+        // Check if nickname is missing
+        if (!currentUser.nickname || currentUser.nickname.trim() === '') {
+          yield put(setShowNicknameSetup(true));
+        } else {
+          yield put(setShowNicknameSetup(false));
+        }
+        
         // Initialize sync service after successful authentication
         yield put(initializeSync());
       } else if (savedUser) {
         yield put(setUser(savedUser));
         yield put(setAuthenticated(true));
+        
+        // Check if nickname is missing
+        if (!savedUser.nickname || savedUser.nickname.trim() === '') {
+          yield put(setShowNicknameSetup(true));
+        } else {
+          yield put(setShowNicknameSetup(false));
+        }
         
         // Initialize sync service after successful authentication
         yield put(initializeSync());
@@ -223,6 +238,13 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     if (userData) {
       yield call(saveUser, userData);
       yield put(setUser(userData));
+      
+      // Check if nickname is missing
+      if (!userData.nickname || userData.nickname.trim() === '') {
+        yield put(setShowNicknameSetup(true));
+      } else {
+        yield put(setShowNicknameSetup(false));
+      }
     }
 
     yield put(setAuthenticated(true));
@@ -292,6 +314,13 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
     if (userData) {
       yield call(saveUser, userData);
       yield put(setUser(userData));
+      
+      // Check if nickname is missing
+      if (!userData.nickname || userData.nickname.trim() === '') {
+        yield put(setShowNicknameSetup(true));
+      } else {
+        yield put(setShowNicknameSetup(false));
+      }
     }
 
     yield put(setAuthenticated(true));
@@ -373,6 +402,13 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     if (userData) {
       yield call(saveUser, userData);
       yield put(setUser(userData));
+      
+      // Check if nickname is missing
+      if (!userData.nickname || userData.nickname.trim() === '') {
+        yield put(setShowNicknameSetup(true));
+      } else {
+        yield put(setShowNicknameSetup(false));
+      }
     }
 
     yield put(setAuthenticated(true));

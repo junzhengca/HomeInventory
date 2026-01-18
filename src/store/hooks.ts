@@ -140,8 +140,8 @@ export const useTodos = () => {
   }, [dispatch]);
 
   const addTodo = useCallback(
-    (text: string) => {
-      dispatch({ type: 'todo/ADD_TODO', payload: text });
+    (text: string, note?: string) => {
+      dispatch({ type: 'todo/ADD_TODO', payload: { text, note } });
     },
     [dispatch]
   );
@@ -161,8 +161,8 @@ export const useTodos = () => {
   );
 
   const updateTodo = useCallback(
-    (id: string, text: string) => {
-      dispatch({ type: 'todo/UPDATE_TODO', payload: { id, text } });
+    (id: string, text: string, note?: string) => {
+      dispatch({ type: 'todo/UPDATE_TODO', payload: { id, text, note } });
     },
     [dispatch]
   );

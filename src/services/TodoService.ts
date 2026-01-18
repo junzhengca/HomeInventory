@@ -37,7 +37,7 @@ export const getTodoById = async (id: string): Promise<TodoItem | null> => {
 /**
  * Create a new todo
  */
-export const createTodo = async (text: string): Promise<TodoItem | null> => {
+export const createTodo = async (text: string, note?: string): Promise<TodoItem | null> => {
   try {
     const todos = await getAllTodos();
     const now = new Date().toISOString();
@@ -45,6 +45,7 @@ export const createTodo = async (text: string): Promise<TodoItem | null> => {
       id: generateTodoId(),
       text: text.trim(),
       completed: false,
+      note: note?.trim() || undefined,
       createdAt: now,
       updatedAt: now,
     };

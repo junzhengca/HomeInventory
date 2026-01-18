@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { ThemeProvider } from './src/theme/ThemeProvider';
 import { RootStack } from './src/navigation/RootStack';
 import { initializeDataFiles } from './src/services/DataInitializationService';
 import { ErrorBottomSheet } from './src/components/ErrorBottomSheet';
+import { SetupNicknameBottomSheet } from './src/components/SetupNicknameBottomSheet';
 import { ErrorDetails } from './src/types/api';
 import i18n from './src/i18n/i18n';
 import { store } from './src/store';
@@ -18,7 +19,8 @@ import { initializeApiClient, setGlobalErrorHandler } from './src/store/sagas/au
 import { loadSettings } from './src/store/sagas/settingsSaga';
 import { loadTodos } from './src/store/sagas/todoSaga';
 import { loadItems } from './src/store/sagas/inventorySaga';
-import { useAppDispatch } from './src/store/hooks';
+import { useAppDispatch, useAppSelector } from './src/store/hooks';
+import { setShowNicknameSetup } from './src/store/slices/authSlice';
 import { ToastProvider } from './src/components/ToastProvider';
 
 // TODO: Configure your API base URL here or use environment variables
@@ -28,7 +30,10 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://your-api-u
 function AppInner() {
   const dispatch = useAppDispatch();
   const errorBottomSheetRef = useRef<BottomSheetModal>(null);
+  const setupNicknameBottomSheetRef = useRef<BottomSheetModal>(null);
   const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null);
+  const showNicknameSetup = useAppSelector((state) => state.auth.showNicknameSetup);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   // Set up global error handler
   useEffect(() => {
@@ -63,6 +68,21 @@ function AppInner() {
     setErrorDetails(null);
   };
 
+  // Show setup nickname bottom sheet when needed
+  useEffect(() => {
+    if (showNicknameSetup && isAuthenticated) {
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        setupNicknameBottomSheetRef.current?.present();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [showNicknameSetup, isAuthenticated]);
+
+  const handleNicknameSet = useCallback(async () => {
+    dispatch(setShowNicknameSetup(false));
+  }, [dispatch]);
+
   return (
     <>
       <RootStack />
@@ -71,6 +91,10 @@ function AppInner() {
         bottomSheetRef={errorBottomSheetRef}
         errorDetails={errorDetails}
         onDismiss={handleErrorDismiss}
+      />
+      <SetupNicknameBottomSheet
+        bottomSheetRef={setupNicknameBottomSheetRef}
+        onNicknameSet={handleNicknameSet}
       />
     </>
   );

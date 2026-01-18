@@ -75,6 +75,19 @@ const Input = styled(BottomSheetTextInput)<{ isFocused: boolean }>`
   color: ${({ theme }: StyledProps) => theme.colors.text};
 `;
 
+const NotesInput = styled(BottomSheetTextInput)<{ isFocused: boolean }>`
+  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
+  border-width: 1.5px;
+  border-color: ${({ theme, isFocused }: StyledPropsWith<{ isFocused: boolean }>) =>
+    isFocused ? theme.colors.inputFocus : theme.colors.border};
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  min-height: 80px;
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+  color: ${({ theme }: StyledProps) => theme.colors.text};
+`;
+
 // Memoized input component to prevent re-renders that interrupt IME composition
 const MemoizedTodoInput = memo<{
   value: string;
@@ -109,6 +122,7 @@ interface EditTodoBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
   todoId: string;
   initialText: string;
+  initialNote?: string;
   onTodoUpdated?: () => void;
 }
 
@@ -116,6 +130,7 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
   bottomSheetRef,
   todoId,
   initialText,
+  initialNote,
   onTodoUpdated,
 }) => {
   const theme = useTheme();
@@ -123,17 +138,20 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
   const { t } = useTranslation();
   const { updateTodo } = useTodos();
   const [text, setText] = useState('');
+  const [note, setNote] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [isNoteFocused, setIsNoteFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const isModalOpenRef = React.useRef<boolean>(false);
 
-  // Initialize text when initialText changes, but only if modal is closed (prevents sync refill)
+  // Initialize text and note when initialText/initialNote changes, but only if modal is closed (prevents sync refill)
   useEffect(() => {
     if (!isModalOpenRef.current) {
       setText(initialText);
+      setNote(initialNote || '');
     }
-  }, [initialText]);
+  }, [initialText, initialNote]);
 
   // Track keyboard visibility to adjust footer padding
   useEffect(() => {
@@ -165,24 +183,31 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
     setText(newText);
   }, []);
 
+  const handleTodoNoteChange = useCallback((newNote: string) => {
+    setNote(newNote);
+  }, []);
+
   const handleClose = useCallback(() => {
     Keyboard.dismiss();
     bottomSheetRef.current?.dismiss();
     setText('');
+    setNote('');
     setIsFocused(false);
+    setIsNoteFocused(false);
   }, [bottomSheetRef]);
 
-  // Initialize text when modal opens, track modal state
+  // Initialize text and note when modal opens, track modal state
   const handleSheetChanges = useCallback((index: number) => {
     if (index === 0) {
       // Modal opened
       isModalOpenRef.current = true;
       setText(initialText);
+      setNote(initialNote || '');
     } else if (index === -1) {
       // Modal closed
       isModalOpenRef.current = false;
     }
-  }, [initialText]);
+  }, [initialText, initialNote]);
 
   const handleSubmit = useCallback(async () => {
     if (!text.trim()) {
@@ -192,7 +217,7 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
 
     setIsLoading(true);
     try {
-      await updateTodo(todoId, text.trim());
+      await updateTodo(todoId, text.trim(), note.trim() || undefined);
       handleClose();
       if (onTodoUpdated) {
         onTodoUpdated();
@@ -203,7 +228,7 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [text, todoId, updateTodo, handleClose, onTodoUpdated, t]);
+  }, [text, note, todoId, updateTodo, handleClose, onTodoUpdated, t]);
 
   const snapPoints = useMemo(() => ['100%'], []);
 
@@ -280,6 +305,24 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
               isFocused={isFocused}
               placeholder={t('notes.editTodo.placeholders.text')}
               placeholderTextColor={theme.colors.textLight}
+            />
+          </FormSection>
+
+          <FormSection>
+            <Label>{t('notes.editTodo.placeholders.note')}</Label>
+            <NotesInput
+              placeholder={t('notes.editTodo.placeholders.note')}
+              value={note}
+              onChangeText={handleTodoNoteChange}
+              placeholderTextColor={theme.colors.textLight}
+              isFocused={isNoteFocused}
+              onFocus={() => setIsNoteFocused(true)}
+              onBlur={() => setIsNoteFocused(false)}
+              multiline={true}
+              autoCorrect={false}
+              spellCheck={false}
+              textContentType="none"
+              autoComplete="off"
             />
           </FormSection>
         </BottomSheetScrollView>

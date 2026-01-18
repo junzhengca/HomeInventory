@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -16,6 +17,7 @@ import { LogoutButton } from '../components/LogoutButton';
 import { Toggle } from '../components/Toggle';
 import { LoginBottomSheet } from '../components/LoginBottomSheet';
 import { SignupBottomSheet } from '../components/SignupBottomSheet';
+import { SetupNicknameBottomSheet } from '../components/SetupNicknameBottomSheet';
 import { Button } from '../components/ui/Button';
 import { useAuth, useSync } from '../store/hooks';
 import { useTheme } from '../theme/ThemeProvider';
@@ -66,10 +68,27 @@ const AvatarPlaceholder = styled(View)`
   justify-content: center;
 `;
 
-const UserEmail = styled(Text)`
+const UserNameContainer = styled(View)`
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+`;
+
+const UserName = styled(Text)`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   color: ${({ theme }: StyledProps) => theme.colors.text};
+  margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+`;
+
+const EditNicknameButton = styled(TouchableOpacity)`
+  padding: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+`;
+
+const UserEmail = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xs}px;
 `;
 
@@ -191,6 +210,7 @@ export const ProfileScreen: React.FC = () => {
   const [localSyncEnabled, setLocalSyncEnabled] = useState(false);
   const loginBottomSheetRef = useRef<BottomSheetModal>(null);
   const signupBottomSheetRef = useRef<BottomSheetModal>(null);
+  const editNicknameBottomSheetRef = useRef<BottomSheetModal>(null);
 
   const getLocale = useCallback(() => {
     return i18n.language === 'zh' || i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US';
@@ -518,11 +538,23 @@ export const ProfileScreen: React.FC = () => {
               </AvatarPlaceholder>
             )}
           </AvatarContainer>
-          <UserEmail>{user.email}</UserEmail>
+          <UserNameContainer>
+            <UserName>{user.nickname || user.email}</UserName>
+            <EditNicknameButton onPress={() => editNicknameBottomSheetRef.current?.present()}>
+              <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+            </EditNicknameButton>
+          </UserNameContainer>
+          {user.nickname && <UserEmail>{user.email}</UserEmail>}
           {user.id && <UserId>{t('profile.userId')}: {user.id}</UserId>}
         </ProfileSection>
 
         <InfoSection>
+          {user.nickname && (
+            <InfoRow>
+              <InfoLabel>{t('profile.nickname')}</InfoLabel>
+              <InfoValue>{user.nickname}</InfoValue>
+            </InfoRow>
+          )}
           <InfoRow>
             <InfoLabel>{t('profile.email')}</InfoLabel>
             <InfoValue>{user.email}</InfoValue>
@@ -591,6 +623,17 @@ export const ProfileScreen: React.FC = () => {
         bottomSheetRef={signupBottomSheetRef}
         onLoginPress={handleLoginPress}
         onSignupSuccess={handleSignupSuccess}
+      />
+      <SetupNicknameBottomSheet
+        bottomSheetRef={editNicknameBottomSheetRef}
+        onNicknameSet={async () => {
+          // Refresh user data
+          const apiClient = await getApiClient();
+          if (apiClient) {
+            const updatedUser = await apiClient.getCurrentUser();
+            await updateUser(updatedUser);
+          }
+        }}
       />
     </Container>
   );

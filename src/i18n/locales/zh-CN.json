@@ -54,6 +54,7 @@
     "title": "待办事项",
     "subtitle": "您的任务清单",
     "addTodo": "添加新的待办事项...",
+    "addNote": "添加备注（可选）...",
     "pending": "待处理",
     "completed": "已完成",
     "deleteTodo": {
@@ -67,7 +68,8 @@
       "subtitle": "更新您的待办事项",
       "submit": "保存修改",
       "placeholders": {
-        "text": "输入待办内容..."
+        "text": "输入待办内容...",
+        "note": "输入备注（可选）..."
       },
       "errors": {
         "title": "错误",
@@ -288,6 +290,8 @@
     "noUserData": "没有可用的用户数据",
     "userId": "用户ID",
     "email": "邮箱",
+    "nickname": "昵称",
+    "editNickname": "编辑昵称",
     "memberSince": "注册时间",
     "lastUpdated": "最后更新",
     "auth": {
@@ -479,6 +483,19 @@
     "loginSuccess": "登录成功",
     "logoutSuccess": "登出成功",
     "signupSuccess": "账户创建成功"
+  },
+  "setupNickname": {
+    "title": "设置个人资料",
+    "subtitle": "只差最后一步了",
+    "nicknameLabel": "给自己起个响亮的名字",
+    "nicknameHelper": "这是其他用户看到的您的名字",
+    "submit": "进入我的家",
+    "logoutLink": "不是您的账号?退出登录",
+    "errors": {
+      "title": "错误",
+      "enterNickname": "请输入昵称",
+      "updateFailed": "更新昵称失败，请重试"
+    }
   }
 }
 
