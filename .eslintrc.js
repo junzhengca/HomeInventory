@@ -9,6 +9,9 @@
 module.exports = {
   root: true,
   extends: [
+    'eslint:recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
     'expo',
     'plugin:@typescript-eslint/recommended',
   ],
@@ -29,13 +32,13 @@ module.exports = {
     // Prevent using undefined variables (catches missing imports like View)
     // Example error: "Property 'View' doesn't exist" when View is not imported
     'no-undef': 'error',
-    
+
     // Disable base rule as it conflicts with TypeScript version
     'no-use-before-define': 'off',
-    
+
     // Disable ban-types rule that doesn't exist in current version
     '@typescript-eslint/ban-types': 'off',
-    
+
     // TypeScript-specific: prevent using variables before they're defined
     // This catches forward references in styled components (e.g., AddCategoryButton using CategoryButton before it's defined)
     '@typescript-eslint/no-use-before-define': ['error', {
@@ -46,16 +49,16 @@ module.exports = {
       enums: true,
       ignoreTypeReferences: false,
     }],
-    
+
     // Ensure all imports are used
     '@typescript-eslint/no-unused-vars': ['warn', {
       argsIgnorePattern: '^_',
       varsIgnorePattern: '^_',
     }],
-    
+
     // Prevent accidental use of undefined
     '@typescript-eslint/no-explicit-any': 'error',
-    
+
     // Prevent implicit any types (catches untyped parameters in styled components)
     // Note: TypeScript's noImplicitAny (enabled via strict: true) will catch these at compile time
     // For styled-components template literals, always use StyledProps or StyledPropsWith<T>
@@ -65,14 +68,17 @@ module.exports = {
     '@typescript-eslint/no-unsafe-call': 'off', // Too strict for styled-components
     '@typescript-eslint/no-unsafe-argument': 'off', // Too strict for styled-components
     '@typescript-eslint/no-unsafe-return': 'off', // Too strict for styled-components
-    
+
     // Ensure React is in scope when using JSX
     'react/react-in-jsx-scope': 'off', // Not needed in React 17+
     'react/jsx-uses-react': 'off', // Not needed in React 17+
-    
+
+    // Disable prop-types validation (TypeScript handles this better)
+    'react/prop-types': 'off', // TypeScript provides type checking, prop-types is redundant
+
     // Prevent duplicate imports from the same module
     'no-duplicate-imports': 'error',
-    
+
     // Prevent implicit any in styled-components template literals
     // This catches patterns like ${({ theme, isSelected }) => ...} without type annotations
     // Only matches ObjectPattern parameters that don't have a type annotation
