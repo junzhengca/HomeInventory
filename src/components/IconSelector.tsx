@@ -44,6 +44,7 @@ interface IconSelectorProps {
   selectedIcon?: keyof typeof Ionicons.glyphMap;
   iconColor?: string;
   onIconSelect: (icon: keyof typeof Ionicons.glyphMap) => void;
+  showLabel?: boolean;
 }
 
 const NUM_COLUMNS = 5;
@@ -52,13 +53,14 @@ export const IconSelector: React.FC<IconSelectorProps> = ({
   selectedIcon,
   iconColor,
   onIconSelect,
+  showLabel = true,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
 
   return (
     <Container>
-      <Label>{t('iconSelector.label')}</Label>
+      {showLabel && <Label>{t('iconSelector.label')}</Label>}
       <IconGrid>
         {categoryIcons.map((icon, index) => {
           const isSelected = selectedIcon === icon;

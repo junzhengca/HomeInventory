@@ -51,15 +51,5 @@ export const selectItemById = createSelector(
   (items, itemId) => items.find((item) => item.id === itemId) || null
 );
 
-export const selectItemsByCategory = createSelector(
-  [selectItems, (_state: { inventory: InventoryState }, categoryId: string) => categoryId],
-  (items, categoryId) => {
-    if (categoryId === 'all') {
-      return items;
-    }
-    return items.filter((item) => item.category === categoryId);
-  }
-);
-
 export default inventorySlice.reducer;
 

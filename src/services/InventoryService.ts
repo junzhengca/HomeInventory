@@ -141,17 +141,11 @@ export const deleteItem = async (id: string): Promise<boolean> => {
 export const searchItems = async (
   query?: string,
   filters?: {
-    category?: string;
     tags?: string[];
     expiringSoon?: boolean; // Items expiring within 7 days
   }
 ): Promise<InventoryItem[]> => {
   let items = await getAllItems(); // Already filters out deleted items
-  
-  // Filter by category
-  if (filters?.category && filters.category !== 'all') {
-    items = items.filter((item) => item.category === filters.category);
-  }
   
   // Filter by tags
   if (filters?.tags && filters.tags.length > 0) {

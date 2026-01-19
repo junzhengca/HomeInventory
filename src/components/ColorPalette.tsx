@@ -46,17 +46,19 @@ const ColorButton = styled(TouchableOpacity)<{ isSelected: boolean; color: strin
 interface ColorPaletteProps {
   selectedColor?: string;
   onColorSelect: (color: string) => void;
+  showLabel?: boolean;
 }
 
 export const ColorPalette: React.FC<ColorPaletteProps> = ({
   selectedColor,
   onColorSelect,
+  showLabel = true,
 }) => {
   const { t } = useTranslation();
 
   return (
     <Container>
-      <Label>{t('colorPalette.label')}</Label>
+      {showLabel && <Label>{t('colorPalette.label')}</Label>}
       <ColorScroll>
         <ColorContainer>
           {categoryColors.map((color) => {

@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import { Alert, ScrollView, TextInput, Keyboard, Text } from 'react-native';
+import { Alert, ScrollView, TextInput, Keyboard } from 'react-native';
 import { locations } from '../data/locations';
 import styled from 'styled-components/native';
 import {
@@ -18,12 +18,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
-import { Category } from '../types/inventory';
-import { useInventory, useCategory, useSelectedCategory } from '../store/hooks';
+import { useInventory } from '../store/hooks';
 import { useKeyboardVisibility } from '../hooks';
 import { BottomSheetHeader, FormSection, MemoizedInput } from './ui';
-import { CategoryField, LocationField } from './form';
-import { CategoryManagerBottomSheet } from './CategoryManagerBottomSheet';
+import { LocationField } from './form';
+import { IconSelector } from './IconSelector';
+import { ColorPalette } from './ColorPalette';
 import { BottomActionBar } from './BottomActionBar';
 
 const Backdrop = styled(BottomSheetBackdrop)`
@@ -53,26 +53,6 @@ const HalfInput = styled(MemoizedInput)`
   flex: 1;
 `;
 
-const CategorySection = styled.View``;
-
-const CategoryHeader = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
-
-const ManageCategoriesButton = styled.TouchableOpacity`
-  flex-direction: row;
-  align-items: center;
-`;
-
-const ManageCategoriesText = styled.Text`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  color: ${({ theme }: StyledProps) => theme.colors.primary};
-  margin-left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-`;
-
 interface CreateItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal>;
   onItemCreated?: () => void;
@@ -93,11 +73,8 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { createItem } = useInventory();
-  const { registerRefreshCallback } = useCategory();
-  const { homeCategory } = useSelectedCategory();
   const { isKeyboardVisible } = useKeyboardVisibility();
 
-  const categoryManagerRef = useRef<BottomSheetModal>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const nameInputRef = useRef<TextInput>(null);
 
@@ -106,80 +83,14 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const priceValueRef = useRef('0');
   const detailedLocationValueRef = useRef('');
 
-  // Regular state for category/location (doesn't affect IME)
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  // Regular state for icon/color/location (doesn't affect IME)
+  const [selectedIcon, setSelectedIcon] = useState<keyof typeof Ionicons.glyphMap>('cube-outline');
+  const [selectedColor, setSelectedColor] = useState<string>('#95A5A6');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
-  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [formKey, setFormKey] = useState(0); // Force remount on reset
 
-  // Load categories
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const { getAllCategories } =
-          await import('../services/CategoryService');
-        const allCategories = await getAllCategories();
-        setCategories(allCategories);
-      } catch (error) {
-        console.error('Error loading categories:', error);
-      }
-    };
-    loadCategories();
-  }, []);
-
-  // Register category refresh callback
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const { getAllCategories } =
-          await import('../services/CategoryService');
-        const allCategories = await getAllCategories();
-        setCategories(allCategories);
-      } catch (error) {
-        console.error('Error loading categories:', error);
-      }
-    };
-
-    const unregister = registerRefreshCallback(loadCategories);
-    return unregister;
-  }, [registerRefreshCallback]);
-
-  // Helper to determine which category to select based on active tab
-  const getCategoryToSelect = useCallback(() => {
-    const itemTypeCategories = categories.filter(
-      (cat) => cat.type !== 'location'
-    );
-
-    if (itemTypeCategories.length === 0) {
-      return '';
-    }
-
-    let categoryToSelect = '';
-
-    if (homeCategory && homeCategory !== 'all') {
-      const categoryExists = itemTypeCategories.some(
-        (cat) => cat.id === homeCategory
-      );
-      if (categoryExists) {
-        categoryToSelect = homeCategory;
-      }
-    }
-
-    // Fall back to "Other" if no category selected
-    if (!categoryToSelect) {
-      const otherCategory = itemTypeCategories.find(
-        (cat) => cat.id === 'other'
-      );
-      if (otherCategory) {
-        categoryToSelect = otherCategory.id;
-      }
-    }
-
-    return categoryToSelect;
-  }, [categories, homeCategory]);
-
-  // Auto-select category when sheet opens
+  // Auto-select icon/color when sheet opens
   const handleSheetChange = useCallback(
     (index: number) => {
       if (index === -1) {
@@ -188,18 +99,13 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
       }
 
       if (index === 0) {
-        const categoryToSelect = getCategoryToSelect();
-        if (categoryToSelect) {
-          setSelectedCategory(categoryToSelect);
-        }
-
         // Focus name input
         if (nameInputRef.current) {
           nameInputRef.current.focus();
         }
       }
     },
-    [getCategoryToSelect]
+    []
   );
 
   // Auto-select first location if none selected
@@ -219,7 +125,8 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     nameValueRef.current = '';
     priceValueRef.current = '0';
     detailedLocationValueRef.current = '';
-    setSelectedCategory('');
+    setSelectedIcon('cube-outline');
+    setSelectedColor('#95A5A6');
     setFormKey((prev) => prev + 1);
   }, [bottomSheetRef]);
 
@@ -236,13 +143,6 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
       );
       return;
     }
-    if (!selectedCategory) {
-      Alert.alert(
-        t('createItem.errors.title'),
-        t('createItem.errors.selectCategory')
-      );
-      return;
-    }
     if (!selectedLocation) {
       Alert.alert(
         t('createItem.errors.title'),
@@ -253,17 +153,15 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
     setIsLoading(true);
     try {
-      const category = categories.find((cat) => cat.id === selectedCategory);
       const priceNum = parseFloat(currentPrice) || 0;
 
       createItem({
         name: currentName.trim(),
-        category: selectedCategory,
         location: selectedLocation,
         detailedLocation: currentDetailedLocation.trim(),
         price: priceNum,
-        icon: category?.icon || 'cube-outline',
-        iconColor: category?.iconColor || theme.colors.textSecondary,
+        icon: selectedIcon,
+        iconColor: selectedColor,
         tags: [],
       });
 
@@ -279,19 +177,14 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
       setIsLoading(false);
     }
   }, [
-    selectedCategory,
+    selectedIcon,
+    selectedColor,
     selectedLocation,
-    categories,
-    theme,
     handleClose,
     onItemCreated,
     createItem,
     t,
   ]);
-
-  const handleCategoriesChanged = useCallback(() => {
-    // Categories will be refreshed via callback
-  }, []);
 
   const snapPoints = useMemo(() => ['100%'], []);
   const keyboardBehavior = useMemo(() => 'extend' as const, []);
@@ -383,41 +276,21 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
               />
             </FormSection>
 
-            <FormSection label={t('createItem.fields.category')}>
-              <CategorySection>
-                <CategoryHeader>
-                  <Text
-                    style={{
-                      fontSize: theme.typography.fontSize.md,
-                      fontWeight: theme.typography.fontWeight.medium,
-                      color: theme.colors.text,
-                    }}
-                  >
-                    {t('createItem.fields.category')}
-                  </Text>
-                  <ManageCategoriesButton
-                    onPress={() => categoryManagerRef.current?.present()}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name="create-outline"
-                      size={16}
-                      color={theme.colors.primary}
-                    />
-                    <ManageCategoriesText>
-                      {t('createItem.manageCategories')}
-                    </ManageCategoriesText>
-                  </ManageCategoriesButton>
-                </CategoryHeader>
-                <CategoryField
-                  categories={categories}
-                  selectedId={selectedCategory}
-                  onSelect={setSelectedCategory}
-                  onManageCategories={() =>
-                    categoryManagerRef.current?.present()
-                  }
-                />
-              </CategorySection>
+            <FormSection label={t('createItem.fields.icon')}>
+              <IconSelector
+                selectedIcon={selectedIcon}
+                iconColor={selectedColor}
+                onIconSelect={setSelectedIcon}
+                showLabel={false}
+              />
+            </FormSection>
+
+            <FormSection label={t('createItem.fields.color')}>
+              <ColorPalette
+                selectedColor={selectedColor}
+                onColorSelect={setSelectedColor}
+                showLabel={false}
+              />
             </FormSection>
 
             <FormSection label={t('createItem.fields.location')}>
@@ -459,11 +332,6 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
           </FormContainer>
         </BottomSheetScrollView>
       </ContentContainer>
-
-      <CategoryManagerBottomSheet
-        bottomSheetRef={categoryManagerRef}
-        onCategoriesChanged={handleCategoriesChanged}
-      />
     </BottomSheetModal>
   );
 };

@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import type { InventoryItem, Category } from '../types/inventory';
+import { Ionicons } from '@expo/vector-icons';
+import type { InventoryItem } from '../types/inventory';
 import { getItemById } from '../services/InventoryService';
-import { getAllCategories } from '../services/CategoryService';
-import { useInventory, useCategory, useAppSelector } from '../store/hooks';
+import { useInventory, useAppSelector } from '../store/hooks';
 import { selectItemById } from '../store/slices/inventorySlice';
 
 /**
@@ -12,7 +12,8 @@ import { selectItemById } from '../store/slices/inventorySlice';
  */
 export interface ItemFormData {
   name: string;
-  categoryId: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
   locationId: string;
   price: string;
   detailedLocation: string;
@@ -27,7 +28,6 @@ export interface ItemFormData {
  */
 export interface ItemFormErrors {
   name?: string;
-  categoryId?: string;
   locationId?: string;
 }
 
@@ -40,7 +40,6 @@ interface UseItemFormReturn {
   // State
   item: InventoryItem | null;
   formData: ItemFormData;
-  categories: Category[];
   isLoading: boolean;
   isSaving: boolean;
   errors: ItemFormErrors;
@@ -59,7 +58,8 @@ interface UseItemFormReturn {
 
 const INITIAL_FORM_DATA: ItemFormData = {
   name: '',
-  categoryId: '',
+  icon: 'cube-outline',
+  iconColor: '#95A5A6',
   locationId: '',
   price: '0',
   detailedLocation: '',
@@ -91,7 +91,6 @@ export const useItemForm = ({
 }: UseItemFormOptions = {}): UseItemFormReturn => {
   const { t } = useTranslation();
   const { loading: itemsLoading } = useInventory();
-  useCategory();
 
   // Get item from Redux store if itemId is provided
   const itemFromRedux = useAppSelector((state) =>
@@ -100,27 +99,12 @@ export const useItemForm = ({
 
   const [item, setItem] = useState<InventoryItem | null>(itemFromRedux);
   const [formData, setFormData] = useState<ItemFormData>(INITIAL_FORM_DATA);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving] = useState(false);
   const [errors, setErrors] = useState<ItemFormErrors>({});
 
   // Track if form was initialized to prevent re-initialization during edits
   const isInitializedRef = useRef(false);
-
-  // Load categories on mount
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const allCategories = await getAllCategories();
-        setCategories(allCategories);
-      } catch (error) {
-        console.error('Error loading categories:', error);
-      }
-    };
-
-    loadCategories();
-  }, []);
 
   // Load item data if itemId is provided
   useEffect(() => {
@@ -160,7 +144,8 @@ export const useItemForm = ({
     (itemData: InventoryItem) => {
       setFormData({
         name: itemData.name,
-        categoryId: itemData.category,
+        icon: itemData.icon,
+        iconColor: itemData.iconColor,
         locationId: itemData.location,
         price: itemData.price.toString(),
         detailedLocation: itemData.detailedLocation || '',
@@ -222,9 +207,6 @@ export const useItemForm = ({
     if (!formData.name.trim()) {
       newErrors.name = t('editItem.errors.enterName');
     }
-    if (!formData.categoryId) {
-      newErrors.categoryId = t('editItem.errors.selectCategory');
-    }
     if (!formData.locationId) {
       newErrors.locationId = t('editItem.errors.selectLocation');
     }
@@ -251,7 +233,6 @@ export const useItemForm = ({
   return {
     item,
     formData,
-    categories,
     isLoading,
     isSaving,
     errors,

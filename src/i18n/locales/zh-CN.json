@@ -142,7 +142,8 @@
     "subtitle": "记下来就不会忘啦",
     "fields": {
       "name": "名字",
-      "category": "分类",
+      "icon": "图标",
+      "color": "颜色",
       "location": "位置",
       "price": "价格",
       "detailedLocation": "具体位置",
@@ -175,7 +176,8 @@
     "subtitle": "更新物品信息",
     "fields": {
       "name": "名字",
-      "category": "分类",
+      "icon": "图标",
+      "color": "颜色",
       "location": "位置",
       "price": "价格",
       "detailedLocation": "具体位置",

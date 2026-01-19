@@ -1,6 +1,5 @@
 import { Category } from '../types/inventory';
 import { readFile, writeFile } from './FileSystemService';
-import { getAllItems } from './InventoryService';
 import { generateCategoryId } from '../utils/idGenerator';
 import { syncCallbackRegistry } from './SyncCallbackRegistry';
 
@@ -37,10 +36,11 @@ export const getCategoryById = async (id: string): Promise<Category | null> => {
 
 /**
  * Check if a category is in use by any items
+ * Note: Items no longer have categories, so this always returns false
  */
-export const isCategoryInUse = async (categoryId: string): Promise<boolean> => {
-  const items = await getAllItems();
-  return items.some((item) => item.category === categoryId);
+export const isCategoryInUse = async (_categoryId: string): Promise<boolean> => {
+  // Items no longer have categories, so categories are never in use by items
+  return false;
 };
 
 /**

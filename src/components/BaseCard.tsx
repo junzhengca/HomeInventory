@@ -6,11 +6,11 @@ import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
 const CardContainer = styled(View)<{ compact?: boolean; square?: boolean }>`
   flex-direction: ${({ square }: { square?: boolean }) => (square ? 'column' : 'row')};
   align-items: ${({ square }: { square?: boolean }) => (square ? 'stretch' : 'center')};
-  ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 0.85;' : '')}
+  ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 1;' : '')}
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
   padding: ${({ theme, compact }: StyledPropsWith<{ compact?: boolean }>) =>
-    compact ? 12 : theme.spacing.md}px;
+    compact ? 14 : theme.spacing.md}px;
   position: relative;
   
   /* Subtle shadow for the card */
@@ -24,11 +24,11 @@ const CardContainer = styled(View)<{ compact?: boolean; square?: boolean }>`
 const TouchableCardContainer = styled(TouchableOpacity)<{ compact?: boolean; square?: boolean }>`
   flex-direction: ${({ square }: { square?: boolean }) => (square ? 'column' : 'row')};
   align-items: ${({ square }: { square?: boolean }) => (square ? 'stretch' : 'center')};
-  ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 0.85;' : '')}
+  ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 1;' : '')}
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
   padding: ${({ theme, compact }: StyledPropsWith<{ compact?: boolean }>) =>
-    compact ? 12 : theme.spacing.md}px;
+    compact ? 14 : theme.spacing.md}px;
   position: relative;
   
   /* Subtle shadow for the card */
@@ -52,7 +52,7 @@ interface BaseCardProps {
  * BaseCard - A reusable card component with consistent styling
  * Used across the app for items, categories, and other card-based UI elements
  * @param compact - If true, uses smaller padding for a more compact appearance
- * @param square - If true, makes the card square (aspect ratio 1:1) and removes row layout
+ * @param square - If true, makes the card more vertical (aspect ratio 0.9) and removes row layout
  */
 export const BaseCard: React.FC<BaseCardProps> = ({ 
   children, 

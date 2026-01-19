@@ -142,7 +142,8 @@
     "subtitle": "Remember it, so you won't forget",
     "fields": {
       "name": "Name",
-      "category": "Category",
+      "icon": "Icon",
+      "color": "Color",
       "location": "Location",
       "price": "Price",
       "detailedLocation": "Detailed Location",
@@ -175,7 +176,8 @@
     "subtitle": "Update item information",
     "fields": {
       "name": "Name",
-      "category": "Category",
+      "icon": "Icon",
+      "color": "Color",
       "location": "Location",
       "price": "Price",
       "detailedLocation": "Detailed Location",

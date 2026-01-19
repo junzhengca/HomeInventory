@@ -10,7 +10,6 @@ import type { StyledProps } from '../utils/styledComponents';
 
 import { PageHeader } from '../components/PageHeader';
 import { SearchInput } from '../components/SearchInput';
-import { CategorySelector } from '../components/CategorySelector';
 import { ItemCard } from '../components/ItemCard';
 import { EmptyState } from '../components/EmptyState';
 import { LoginBottomSheet } from '../components/LoginBottomSheet';
@@ -20,7 +19,7 @@ import { FloatingActionButton } from '../components/FloatingActionButton';
 import { CreateItemBottomSheet } from '../components/CreateItemBottomSheet';
 import { InventoryItem } from '../types/inventory';
 import { RootStackParamList } from '../navigation/types';
-import { useInventory, useSelectedCategory, useSync, useAuth } from '../store/hooks';
+import { useInventory, useSync, useAuth } from '../store/hooks';
 import { calculateBottomPadding } from '../utils/layout';
 import * as SecureStore from 'expo-secure-store';
 
@@ -48,12 +47,10 @@ const LoadingContainer = styled(View)`
 
 export const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { items, loading: isLoading, loadItems } = useInventory();
-  const { homeCategory, setHomeCategory } = useSelectedCategory();
   const { isSyncEnabled } = useSync();
   const { user } = useAuth();
   const loginBottomSheetRef = useRef<BottomSheetModal>(null);
@@ -72,13 +69,6 @@ export const HomeScreen: React.FC = () => {
   useEffect(() => {
     loadItems();
   }, [loadItems]);
-
-  // Initialize and sync selectedCategory from context
-  useEffect(() => {
-    if (homeCategory) {
-      setSelectedCategory(homeCategory);
-    }
-  }, [homeCategory]);
 
   const handleLoginSuccess = async () => {
     // Always show the enable sync prompt after login
@@ -111,16 +101,9 @@ export const HomeScreen: React.FC = () => {
     await SecureStore.setItemAsync('has_shown_sync_prompt', 'true');
   };
 
-  // Filter items based on selected category and search query
+  // Filter items based on search query
   const filteredItems = useMemo(() => {
     let filtered = items;
-
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(
-        (item) => item.category === selectedCategory
-      );
-    }
 
     // Filter by search query
     if (searchQuery.trim()) {
@@ -135,17 +118,7 @@ export const HomeScreen: React.FC = () => {
     }
 
     return filtered;
-  }, [selectedCategory, searchQuery, items]);
-
-  const handleCategoryChange = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    setHomeCategory(categoryId);
-  };
-
-  // Sync context when component mounts or selectedCategory changes
-  useEffect(() => {
-    setHomeCategory(selectedCategory);
-  }, [selectedCategory, setHomeCategory]);
+  }, [searchQuery, items]);
 
   const handleItemPress = (item: InventoryItem) => {
     const rootNavigation = navigation.getParent();
@@ -232,16 +205,12 @@ export const HomeScreen: React.FC = () => {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <CategorySelector
-          selectedCategory={selectedCategory}
-          onCategoryChange={handleCategoryChange}
-        />
         <ListContainer>
           {filteredItems.length === 0 ? (
             <EmptyState
               icon="list-outline"
               title={t('inventory.empty.title')}
-              description={searchQuery.trim() || selectedCategory !== 'all'
+              description={searchQuery.trim()
                 ? t('inventory.empty.filtered')
                 : t('inventory.empty.description')}
             />

@@ -29,7 +29,6 @@ export interface InventoryItem {
   iconColor: string;
   price: number;
   amount?: number; // Optional quantity
-  category: string; // Category ID
   tags: string[]; // Array of tag strings
   expiryDate?: string; // ISO date string (optional)
   purchaseDate?: string; // ISO date string (optional)

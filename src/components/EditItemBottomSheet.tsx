@@ -1,5 +1,5 @@
-import React, { useRef, useCallback, useMemo, useEffect } from 'react';
-import { Alert, ScrollView, Text } from 'react-native';
+import React, { useRef, useCallback, useMemo } from 'react';
+import { Alert, ScrollView } from 'react-native';
 import styled from 'styled-components/native';
 import {
   BottomSheetModal,
@@ -11,11 +11,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
-import { useInventory, useCategory } from '../store/hooks';
+import { useInventory } from '../store/hooks';
 import { useItemForm, useKeyboardVisibility } from '../hooks';
 import { BottomSheetHeader, FormSection, MemoizedInput } from './ui';
-import { CategoryField, LocationField, TagsField } from './form';
-import { CategoryManagerBottomSheet } from './CategoryManagerBottomSheet';
+import { LocationField, TagsField } from './form';
+import { IconSelector } from './IconSelector';
+import { ColorPalette } from './ColorPalette';
 import { BottomActionBar } from './BottomActionBar';
 import { DatePicker } from './DatePicker';
 
@@ -46,26 +47,6 @@ const HalfInput = styled(MemoizedInput)`
   flex: 1;
 `;
 
-const CategorySection = styled.View``;
-
-const CategoryHeader = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  gap: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
-
-const ManageCategoriesButton = styled.TouchableOpacity`
-  flex-direction: row;
-  align-items: center;
-`;
-
-const ManageCategoriesText = styled.Text`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  color: ${({ theme }: StyledProps) => theme.colors.primary};
-  margin-left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-`;
-
 interface EditItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
   itemId: string;
@@ -88,17 +69,14 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { updateItem } = useInventory();
-  const { refreshCategories, registerRefreshCallback } = useCategory();
   const { isKeyboardVisible, dismissKeyboard } = useKeyboardVisibility();
 
-  const categoryManagerRef = useRef<BottomSheetModal>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const isModalOpenRef = useRef<boolean>(false);
 
   const {
     item,
     formData,
-    categories,
     isLoading,
     updateField,
     addTag,
@@ -112,22 +90,6 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
       isModalOpenRef.current = false;
     },
   });
-
-  // Register category refresh callback
-  useEffect(() => {
-    const loadCategories = async () => {
-      // Categories are loaded by useItemForm, this is just a callback placeholder
-    };
-
-    const unregister = registerRefreshCallback(loadCategories);
-    return unregister;
-  }, [registerRefreshCallback]);
-
-  // Reload categories when changed
-  const handleCategoriesChanged = useCallback(() => {
-    // Triggered when categories are modified
-    refreshCategories();
-  }, [refreshCategories]);
 
   // Handle sheet open/close - initialize form when opening
   const handleSheetChanges = useCallback(
@@ -155,7 +117,6 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     }
 
     try {
-      const category = categories.find((cat) => cat.id === formData.categoryId);
       const priceNum = parseFloat(formData.price) || 0;
       const amountNum = formData.amount
         ? parseInt(formData.amount, 10)
@@ -163,7 +124,6 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
 
       const updates = {
         name: formData.name.trim(),
-        category: formData.categoryId,
         location: formData.locationId,
         detailedLocation: formData.detailedLocation.trim(),
         price: priceNum,
@@ -171,20 +131,13 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
         tags: formData.tags,
         purchaseDate: formData.purchaseDate?.toISOString(),
         expiryDate: formData.expiryDate?.toISOString(),
-        icon: category?.icon || item?.icon || 'cube-outline',
-        iconColor:
-          category?.iconColor || item?.iconColor || theme.colors.textSecondary,
+        icon: formData.icon,
+        iconColor: formData.iconColor,
       };
 
       updateItem(itemId, updates);
 
       handleClose();
-
-      // Refresh categories if category was changed
-      if (formData.categoryId !== item?.category) {
-        refreshCategories();
-      }
-
       onItemUpdated?.();
     } catch (error) {
       console.error('Error updating item:', error);
@@ -195,15 +148,11 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     }
   }, [
     formData,
-    categories,
-    item,
     itemId,
-    theme,
     validate,
     updateItem,
     handleClose,
     onItemUpdated,
-    refreshCategories,
     t,
   ]);
 
@@ -288,41 +237,21 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
               />
             </FormSection>
 
-            <FormSection label={t('editItem.fields.category')}>
-              <CategorySection>
-                <CategoryHeader>
-                  <Text
-                    style={{
-                      fontSize: theme.typography.fontSize.md,
-                      fontWeight: theme.typography.fontWeight.medium,
-                      color: theme.colors.text,
-                    }}
-                  >
-                    {t('editItem.fields.category')}
-                  </Text>
-                  <ManageCategoriesButton
-                    onPress={() => categoryManagerRef.current?.present()}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name="create-outline"
-                      size={16}
-                      color={theme.colors.primary}
-                    />
-                    <ManageCategoriesText>
-                      {t('editItem.manageCategories')}
-                    </ManageCategoriesText>
-                  </ManageCategoriesButton>
-                </CategoryHeader>
-                <CategoryField
-                  categories={categories}
-                  selectedId={formData.categoryId}
-                  onSelect={(id) => updateField('categoryId', id)}
-                  onManageCategories={() =>
-                    categoryManagerRef.current?.present()
-                  }
-                />
-              </CategorySection>
+            <FormSection label={t('editItem.fields.icon')}>
+              <IconSelector
+                selectedIcon={formData.icon}
+                iconColor={formData.iconColor}
+                onIconSelect={(icon) => updateField('icon', icon)}
+                showLabel={false}
+              />
+            </FormSection>
+
+            <FormSection label={t('editItem.fields.color')}>
+              <ColorPalette
+                selectedColor={formData.iconColor}
+                onColorSelect={(color) => updateField('iconColor', color)}
+                showLabel={false}
+              />
             </FormSection>
 
             <FormSection label={t('editItem.fields.location')}>
@@ -401,11 +330,6 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
           </FormContainer>
         </BottomSheetScrollView>
       </ContentContainer>
-
-      <CategoryManagerBottomSheet
-        bottomSheetRef={categoryManagerRef}
-        onCategoriesChanged={handleCategoriesChanged}
-      />
     </BottomSheetModal>
   );
 };

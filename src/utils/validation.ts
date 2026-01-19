@@ -19,11 +19,6 @@ export const validateItemForm = (
   if (!data.name.trim()) {
     errors.name = t ? t('editItem.errors.enterName') : 'Name is required';
   }
-  if (!data.categoryId) {
-    errors.categoryId = t
-      ? t('editItem.errors.selectCategory')
-      : 'Category is required';
-  }
   if (!data.locationId) {
     errors.locationId = t
       ? t('editItem.errors.selectLocation')

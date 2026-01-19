@@ -14,30 +14,30 @@ import { BaseCard } from './BaseCard';
 const CardContent = styled(View)`
   flex: 1;
   position: relative;
-  padding: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  padding: 0px;
 `;
 
 const IconContainer = styled(View)<{ backgroundColor: string }>`
-  width: 44px;
-  height: 44px;
-  border-radius: 22px;
+  width: 38px;
+  height: 38px;
+  border-radius: 19px;
   background-color: ${({ backgroundColor }: { backgroundColor: string }) => backgroundColor};
   align-items: center;
   justify-content: center;
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 0px;
+  left: 0px;
 `;
 
 const TopRightContainer = styled(View)`
   position: absolute;
-  top: 4px;
-  right: 2px;
+  top: 0px;
+  right: 0px;
   align-items: flex-end;
 `;
 
 const QuantityBadge = styled(View)`
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 `;
 
 const QuantityText = styled(Text)`
@@ -66,7 +66,8 @@ const MiddleContainer = styled(View)`
   flex: 1;
   justify-content: center;
   align-items: flex-start;
-  margin-top: 52px;
+  margin-top: 30px;
+  margin-bottom: 14px;
 `;
 
 const ItemName = styled(Text)`
@@ -74,7 +75,7 @@ const ItemName = styled(Text)`
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   color: ${({ theme }: StyledProps) => theme.colors.text};
   text-align: left;
-  margin-bottom: 4px;
+  margin-bottom: 1px;
   line-height: 20px;
 `;
 
@@ -82,20 +83,23 @@ const LocationText = styled(Text)`
   font-size: 12px;
   color: ${({ theme }: StyledProps) => theme.colors.textLight};
   text-align: left;
-  margin-bottom: 4px;
+  margin-bottom: 1px;
 `;
 
 const PriceText = styled(Text)`
-  font-size: 16px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
+  font-size: 12px;
+  color: ${({ theme }: StyledProps) => theme.colors.textLight};
   text-align: left;
 `;
 
-const BottomRightContainer = styled(View)`
+const BottomContainer = styled(View)`
   position: absolute;
-  bottom: 2px;
-  right: 2px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const UsageButton = styled(View)`
@@ -103,8 +107,8 @@ const UsageButton = styled(View)`
   border-width: 1px;
   border-color: ${({ theme }: StyledProps) => theme.colors.borderLight};
   border-radius: 20px;
-  padding-horizontal: 12px;
-  padding-vertical: 6px;
+  padding-horizontal: 8px;
+  padding-vertical: 4px;
   
   /* Subtle shadow for the button */
   shadow-color: #000;
@@ -115,7 +119,7 @@ const UsageButton = styled(View)`
 `;
 
 const UsageText = styled(Text)`
-  font-size: 12px;
+  font-size: 11px;
   color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
 `;
@@ -169,23 +173,25 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
           )}
         </TopRightContainer>
 
-        {/* Middle: Item name, location, and price */}
+        {/* Middle: Item name and location */}
         <MiddleContainer>
           <ItemName numberOfLines={2}>{item.name}</ItemName>
           <LocationText numberOfLines={1}>{locationText}</LocationText>
-          {item.price > 0 && (
-            <PriceText>{formatPrice(item.price, currencySymbol)}</PriceText>
-          )}
         </MiddleContainer>
 
-        {/* Bottom-right: usage status button */}
-        <BottomRightContainer>
+        {/* Bottom: price and usage status */}
+        <BottomContainer>
+          {item.price > 0 ? (
+            <PriceText>{formatPrice(item.price, currencySymbol)}</PriceText>
+          ) : (
+            <View /> // Spacer to keep usage button on the right
+          )}
           {inUse && (
             <UsageButton>
               <UsageText>{item.amount === 0 ? '缺货' : '使用中'}</UsageText>
             </UsageButton>
           )}
-        </BottomRightContainer>
+        </BottomContainer>
       </CardContent>
     </BaseCard>
   );

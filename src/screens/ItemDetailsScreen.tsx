@@ -11,8 +11,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { useInventory, useSettings, useAppSelector } from '../store/hooks';
 import { selectItemById } from '../store/slices/inventorySlice';
 import { RootStackParamList } from '../navigation/types';
-import { Category, InventoryItem } from '../types/inventory';
-import { getCategoryById } from '../services/CategoryService';
+import { InventoryItem } from '../types/inventory';
 import { getItemById } from '../services/InventoryService';
 import { locations } from '../data/locations';
 import { getCurrencySymbol } from '../components/CurrencySelector';
@@ -67,12 +66,6 @@ const HeaderSection = styled(View)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xl}px;
 `;
 
-const CategoryText = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  color: ${({ theme }: StyledProps) => theme.colors.textLight};
-  text-align: center;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
 
 const Section = styled(View)`
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
@@ -184,7 +177,6 @@ export const ItemDetailsScreen: React.FC = () => {
   const [item, setItem] = useState<InventoryItem | null>(itemFromRedux);
   const [isLoading, setIsLoading] = useState(!itemFromRedux && itemsLoading);
   const [locationName, setLocationName] = useState<string>('');
-  const [category, setCategory] = useState<Category | null>(null);
   const editBottomSheetRef = useRef<BottomSheetModal | null>(null);
 
   const currencySymbol = getCurrencySymbol(settings.currency);
@@ -232,19 +224,12 @@ export const ItemDetailsScreen: React.FC = () => {
     loadItem();
   }, [itemFromRedux, itemId, itemsLoading, loadItems, navigation, t]);
 
-  // Load location and category when item changes
+  // Load location when item changes
   useEffect(() => {
     if (item) {
       const location = locations.find((loc) => loc.id === item.location);
       // Use i18n translation for location name
       setLocationName(location ? t(`locations.${location.id}`) : item.location);
-
-      // Load category
-      getCategoryById(item.category).then((categoryData) => {
-        setCategory(categoryData);
-      }).catch((error) => {
-        console.error('Error loading category:', error);
-      });
     }
   }, [item, t]);
 
@@ -337,9 +322,6 @@ export const ItemDetailsScreen: React.FC = () => {
           <IconContainer backgroundColor={getLightColor(item.iconColor)}>
             <Ionicons name={item.icon} size={48} color={item.iconColor} />
           </IconContainer>
-          <CategoryText>
-            {category ? (category.isCustom ? category.label : t(`categories.${category.name}`)) : t('categories.other')}
-          </CategoryText>
         </HeaderSection>
 
         {/* Value Information Section */}
