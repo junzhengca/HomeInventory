@@ -479,6 +479,35 @@
     "comingSoon": {
       "title": "Coming Soon",
       "description": "Share functionality will be available in a future update"
+    },
+    "loginRequired": {
+      "title": "Login Required",
+      "description": "Please login to configure sharing settings and manage permissions"
+    },
+    "permissions": {
+      "title": "Sharing Scope",
+      "itemLibrary": {
+        "label": "Item Library",
+        "shared": "Visible to all members",
+        "unshared": "Visible only to myself"
+      },
+      "shoppingList": {
+        "label": "Shopping List",
+        "shared": "Visible to all members",
+        "unshared": "Visible only to myself"
+      },
+      "confirm": {
+        "enableTitle": "Enable Sharing",
+        "enableMessage": "Are you sure you want to enable sharing for {{item}}? All members will be able to access this data.",
+        "disableTitle": "Disable Sharing",
+        "disableMessage": "Are you sure you want to disable sharing for {{item}}? Members will no longer be able to access this data.",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "toast": {
+        "updateSuccess": "Sharing settings updated successfully",
+        "updateError": "Failed to update sharing settings"
+      }
     }
   },
   "toast": {

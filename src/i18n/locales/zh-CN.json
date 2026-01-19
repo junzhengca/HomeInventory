@@ -479,6 +479,35 @@
     "comingSoon": {
       "title": "即将推出",
       "description": "分享功能将在未来的更新中提供"
+    },
+    "loginRequired": {
+      "title": "需要登录",
+      "description": "请登录以配置共享设置和管理权限"
+    },
+    "permissions": {
+      "title": "共享范围",
+      "itemLibrary": {
+        "label": "物品库",
+        "shared": "全员可见",
+        "unshared": "仅自己可见"
+      },
+      "shoppingList": {
+        "label": "购物清单",
+        "shared": "全员可见",
+        "unshared": "仅自己可见"
+      },
+      "confirm": {
+        "enableTitle": "启用共享",
+        "enableMessage": "确定要启用 {{item}} 的共享吗？所有成员都可以访问此数据。",
+        "disableTitle": "禁用共享",
+        "disableMessage": "确定要禁用 {{item}} 的共享吗？成员将无法再访问此数据。",
+        "cancel": "取消",
+        "confirm": "确认"
+      },
+      "toast": {
+        "updateSuccess": "共享设置更新成功",
+        "updateError": "更新共享设置失败"
+      }
     }
   },
   "toast": {

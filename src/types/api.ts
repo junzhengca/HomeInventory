@@ -31,6 +31,11 @@ export interface UpdateNicknameRequest {
   nickname: string;
 }
 
+export interface UpdateAccountSettingsRequest {
+  canShareInventory?: boolean;
+  canShareTodos?: boolean;
+}
+
 // Response types
 export interface AuthResponse {
   accessToken: string;
@@ -49,6 +54,22 @@ export interface User {
 export interface UploadImageResponse {
   url: string;
   imageId?: string;
+}
+
+export interface InvitationResponse {
+  invitationCode: string;
+  settings: {
+    canShareInventory: boolean;
+    canShareTodos: boolean;
+  };
+  memberCount: number;
+}
+
+export interface UpdateAccountSettingsResponse {
+  settings: {
+    canShareInventory: boolean;
+    canShareTodos: boolean;
+  };
 }
 
 export interface ApiError {

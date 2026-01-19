@@ -6,9 +6,12 @@ import {
   UpdatePasswordRequest,
   UpdateAvatarUrlRequest,
   UpdateNicknameRequest,
+  UpdateAccountSettingsRequest,
   AuthResponse,
   User,
   UploadImageResponse,
+  InvitationResponse,
+  UpdateAccountSettingsResponse,
   ErrorDetails,
   RetryAttempt,
 } from '../types/api';
@@ -485,6 +488,29 @@ export class ApiClient {
     return this.request<User>('/api/auth/me', {
       method: 'PATCH',
       body: request,
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Get invitation code and account settings
+   */
+  async getInvitationCode(): Promise<InvitationResponse> {
+    return this.request<InvitationResponse>('/api/invitations', {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Update account settings (sharing permissions)
+   */
+  async updateAccountSettings(
+    settings: UpdateAccountSettingsRequest
+  ): Promise<UpdateAccountSettingsResponse> {
+    return this.request<UpdateAccountSettingsResponse>('/api/accounts/settings', {
+      method: 'PATCH',
+      body: settings,
       requiresAuth: true,
     });
   }
