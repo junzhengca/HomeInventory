@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -10,20 +11,24 @@ import { PageHeader } from '../components/PageHeader';
 import { PermissionConfigPanel } from '../components/PermissionConfigPanel';
 import { EmptyState } from '../components/EmptyState';
 import { Button } from '../components/ui/Button';
+import { MemberList } from '../components/MemberList';
+import { InviteMenuBottomSheet } from '../components/InviteMenuBottomSheet';
 import { calculateBottomPadding } from '../utils/layout';
 import { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../store/hooks';
 import { useToast } from '../hooks/useToast';
 import { ApiClient } from '../services/ApiClient';
 import { getAuthTokens } from '../services/AuthService';
+import { Member } from '../types/api';
 
 const Container = styled(View)`
   flex: 1;
   background-color: ${({ theme }: StyledProps) => theme.colors.background};
 `;
 
-const Content = styled(View)`
+const Content = styled(ScrollView)`
   flex: 1;
+  padding: ${({ theme }: StyledProps) => theme.spacing.lg}px;
 `;
 
 const LoadingContainer = styled(View)`
@@ -53,10 +58,16 @@ export const ShareScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
+  const inviteMenuBottomSheetRef = useRef<BottomSheetModal>(null);
+  
   const [canShareInventory, setCanShareInventory] = useState(false);
   const [canShareTodos, setCanShareTodos] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [invitationCode, setInvitationCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
 
   const getApiClient = useCallback(async (): Promise<ApiClient | null> => {
     const API_BASE_URL =
@@ -84,6 +95,7 @@ export const ShareScreen: React.FC = () => {
       const response = await apiClient.getInvitationCode();
       setCanShareInventory(response.settings.canShareInventory);
       setCanShareTodos(response.settings.canShareTodos);
+      setInvitationCode(response.invitationCode);
     } catch (error) {
       console.error('Error loading settings:', error);
       showToast(t('share.permissions.toast.updateError'), 'error');
@@ -92,13 +104,71 @@ export const ShareScreen: React.FC = () => {
     }
   }, [getApiClient, showToast, t]);
 
+  const loadMembers = useCallback(async () => {
+    setMembersLoading(true);
+    setMembersError(null);
+    try {
+      const apiClient = await getApiClient();
+      if (!apiClient) {
+        console.error('Failed to get API client');
+        setMembersError(t('share.members.loadError'));
+        setMembersLoading(false);
+        return;
+      }
+
+      const response = await apiClient.listMembers();
+      setMembers(response.members);
+    } catch (error) {
+      console.error('Error loading members:', error);
+      setMembersError(t('share.members.loadError'));
+    } finally {
+      setMembersLoading(false);
+    }
+  }, [getApiClient, t]);
+
+  const handleRemoveMember = useCallback(
+    async (memberId: string) => {
+      try {
+        const apiClient = await getApiClient();
+        if (!apiClient) {
+          throw new Error('Failed to get API client');
+        }
+
+        await apiClient.removeMember(memberId);
+        showToast(t('share.members.removeSuccess'), 'success');
+        // Reload members after removal
+        await loadMembers();
+      } catch (error) {
+        console.error('Error removing member:', error);
+        showToast(t('share.members.removeError'), 'error');
+      }
+    },
+    [getApiClient, loadMembers, showToast, t]
+  );
+
+  const handleInvitePress = useCallback(() => {
+    if (!invitationCode) {
+      showToast(t('share.invite.loadingError'), 'error');
+      return;
+    }
+    inviteMenuBottomSheetRef.current?.present();
+  }, [invitationCode, showToast, t]);
+
+  const getInvitationLink = useCallback(() => {
+    // Generate invitation link - using a placeholder domain for now
+    // In production, this should come from app configuration
+    const baseUrl = process.env.EXPO_PUBLIC_INVITE_BASE_URL || 'https://homeinventory.app/invite';
+    return `${baseUrl}/${invitationCode}`;
+  }, [invitationCode]);
+
   useEffect(() => {
     if (isAuthenticated) {
       loadSettings();
+      loadMembers();
     } else {
       setIsLoading(false);
     }
-  }, [loadSettings, isAuthenticated]);
+  }, [loadSettings, loadMembers, isAuthenticated]);
 
   const handleToggleInventory = useCallback(() => {
     const newValue = !canShareInventory;
@@ -242,21 +312,39 @@ export const ShareScreen: React.FC = () => {
         avatarUrl={user?.avatarUrl}
         onAvatarPress={handleAvatarPress}
       />
-      <Content style={{ paddingBottom: calculateBottomPadding(insets.bottom) }}>
+      <Content
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: calculateBottomPadding(insets.bottom) }}
+      >
         {isLoading ? (
           <LoadingContainer>
             <ActivityIndicator size="large" />
           </LoadingContainer>
         ) : (
-          <PermissionConfigPanel
-            canShareInventory={canShareInventory}
-            canShareTodos={canShareTodos}
-            onToggleInventory={handleToggleInventory}
-            onToggleTodos={handleToggleTodos}
-            isLoading={isUpdating}
-          />
+          <>
+            <MemberList
+              owner={user}
+              members={members}
+              isLoading={membersLoading}
+              error={membersError}
+              onRemoveMember={handleRemoveMember}
+              onInvitePress={handleInvitePress}
+            />
+            <PermissionConfigPanel
+              canShareInventory={canShareInventory}
+              canShareTodos={canShareTodos}
+              onToggleInventory={handleToggleInventory}
+              onToggleTodos={handleToggleTodos}
+              isLoading={isUpdating}
+            />
+          </>
         )}
       </Content>
+      <InviteMenuBottomSheet
+        bottomSheetRef={inviteMenuBottomSheetRef}
+        invitationCode={invitationCode || ''}
+        invitationLink={invitationCode ? getInvitationLink() : ''}
+      />
     </Container>
   );
 };

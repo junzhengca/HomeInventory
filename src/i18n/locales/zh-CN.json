@@ -508,6 +508,42 @@
         "updateSuccess": "共享设置更新成功",
         "updateError": "更新共享设置失败"
       }
+    },
+    "members": {
+      "title": "家庭成员",
+      "ownerBadge": "(户主)",
+      "invite": "邀请家庭成员加入",
+      "unknownMember": "未知成员",
+      "loadError": "加载成员列表失败",
+      "removeSuccess": "成员移除成功",
+      "removeError": "移除成员失败",
+      "removeConfirm": {
+        "title": "移除成员",
+        "message": "确定要移除 {{name}} 吗？他们将失去访问共享数据的权限。",
+        "cancel": "取消",
+        "confirm": "移除"
+      },
+      "empty": {
+        "title": "暂无成员",
+        "description": "邀请家庭成员来分享您的库存"
+      }
+    },
+    "invite": {
+      "title": "邀请成员",
+      "subtitle": "分享您的邀请码",
+      "loadingError": "邀请码正在加载中，请稍后再试。",
+      "showQRCode": "显示二维码",
+      "showQRCodeDescription": "显示二维码以便扫描",
+      "shareLink": "分享链接",
+      "shareLinkDescription": "通过消息或邮件分享邀请链接",
+      "shareTitle": "加入我的家庭库存",
+      "qrCode": {
+        "title": "邀请二维码",
+        "subtitle": "扫描加入",
+        "copy": "复制链接",
+        "copied": "已复制！",
+        "copyError": "复制失败"
+      }
     }
   },
   "toast": {

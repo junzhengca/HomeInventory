@@ -12,6 +12,8 @@ import {
   UploadImageResponse,
   InvitationResponse,
   UpdateAccountSettingsResponse,
+  ListMembersResponse,
+  RegenerateInvitationResponse,
   ErrorDetails,
   RetryAttempt,
 } from '../types/api';
@@ -511,6 +513,39 @@ export class ApiClient {
     return this.request<UpdateAccountSettingsResponse>('/api/accounts/settings', {
       method: 'PATCH',
       body: settings,
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * List members of the current user's account
+   */
+  async listMembers(): Promise<ListMembersResponse> {
+    return this.request<ListMembersResponse>('/api/accounts/members', {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Remove a member from the current user's account
+   */
+  async removeMember(memberId: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(
+      `/api/accounts/members/${memberId}`,
+      {
+        method: 'DELETE',
+        requiresAuth: true,
+      }
+    );
+  }
+
+  /**
+   * Regenerate invitation code for the current user's account
+   */
+  async regenerateInvitationCode(): Promise<RegenerateInvitationResponse> {
+    return this.request<RegenerateInvitationResponse>('/api/invitations/regenerate', {
+      method: 'POST',
       requiresAuth: true,
     });
   }

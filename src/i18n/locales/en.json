@@ -508,6 +508,42 @@
         "updateSuccess": "Sharing settings updated successfully",
         "updateError": "Failed to update sharing settings"
       }
+    },
+    "members": {
+      "title": "Family Members",
+      "ownerBadge": "(Owner)",
+      "invite": "Invite family members to join",
+      "unknownMember": "Unknown member",
+      "loadError": "Failed to load members",
+      "removeSuccess": "Member removed successfully",
+      "removeError": "Failed to remove member",
+      "removeConfirm": {
+        "title": "Remove Member",
+        "message": "Are you sure you want to remove {{name}}? They will lose access to shared data.",
+        "cancel": "Cancel",
+        "confirm": "Remove"
+      },
+      "empty": {
+        "title": "No Members",
+        "description": "Invite family members to share your inventory"
+      }
+    },
+    "invite": {
+      "title": "Invite Members",
+      "subtitle": "Share your invitation code",
+      "loadingError": "Invitation code is loading. Please try again in a moment.",
+      "showQRCode": "Show QR Code",
+      "showQRCodeDescription": "Display QR code for easy scanning",
+      "shareLink": "Share Link",
+      "shareLinkDescription": "Share invitation link via message or email",
+      "shareTitle": "Join my Home Inventory",
+      "qrCode": {
+        "title": "Invitation QR Code",
+        "subtitle": "Scan to join",
+        "copy": "Copy Link",
+        "copied": "Copied!",
+        "copyError": "Failed to copy"
+      }
     }
   },
   "toast": {

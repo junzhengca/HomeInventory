@@ -222,6 +222,43 @@ Each user account represents a household and has the following sharing-related p
 
 **Implementation**: `src/handlers/accounts/update_account_settings.ts`
 
+#### List Members
+
+**Endpoint**: `GET /accounts/members`
+
+**Authentication**: Required
+
+**Description**: Returns a list of all members who have joined the current user's account. Only the account owner can list members. The account owner is not included in the list.
+
+**Response**:
+```json
+{
+  "members": [
+    {
+      "id": "member-user-id",
+      "email": "member@example.com",
+      "nickname": "John Doe",
+      "avatarUrl": "https://example.com/avatar.jpg",
+      "joinedAt": "2024-01-15T10:30:00.000Z",
+      "isOwner": false
+    }
+  ]
+}
+```
+
+**Notes**:
+- Members are sorted by `joinedAt` timestamp (oldest first)
+- The `isOwner` field is always `false` for members
+- Returns empty array if no members exist
+- All date fields are returned as ISO 8601 strings
+
+**Error Responses**:
+- `401`: Unauthorized - Missing or invalid authentication token
+- `404`: Account owner not found
+- `500`: Internal server error
+
+**Implementation**: `src/handlers/accounts/list_members.ts`
+
 #### Remove Member
 
 **Endpoint**: `DELETE /accounts/members/:memberId`
@@ -395,6 +432,7 @@ All endpoints follow consistent error response patterns:
 - `src/handlers/invitations/validate_invitation.ts`
 - `src/handlers/invitations/accept_invitation.ts`
 - `src/handlers/accounts/list_accessible_accounts.ts`
+- `src/handlers/accounts/list_members.ts`
 - `src/handlers/accounts/get_account_permissions.ts`
 - `src/handlers/accounts/update_account_settings.ts`
 - `src/handlers/accounts/remove_member.ts`

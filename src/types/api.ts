@@ -72,6 +72,23 @@ export interface UpdateAccountSettingsResponse {
   };
 }
 
+export interface Member {
+  id: string;
+  email: string;
+  nickname?: string;
+  avatarUrl?: string;
+  joinedAt: string;
+  isOwner: boolean;
+}
+
+export interface ListMembersResponse {
+  members: Member[];
+}
+
+export interface RegenerateInvitationResponse {
+  invitationCode: string;
+}
+
 export interface ApiError {
   message: string;
   code?: string;
