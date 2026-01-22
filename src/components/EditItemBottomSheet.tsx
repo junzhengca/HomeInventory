@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useMemo } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { Alert } from 'react-native';
 import styled from 'styled-components/native';
 import {
   BottomSheetModal,
@@ -13,10 +13,9 @@ import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
 import { useInventory } from '../store/hooks';
 import { useItemForm, useKeyboardVisibility } from '../hooks';
-import { BottomSheetHeader, FormSection, MemoizedInput } from './ui';
-import { LocationField, TagsField } from './form';
-import { IconSelector } from './IconSelector';
-import { ColorPalette } from './ColorPalette';
+import { BottomSheetHeader, FormSection, MemoizedInput, NumberInput } from './ui';
+import { LocationField, StatusField } from './form';
+import { IconColorPicker } from './IconColorPicker';
 import { BottomActionBar } from './BottomActionBar';
 import { DatePicker } from './DatePicker';
 
@@ -31,11 +30,17 @@ const ContentContainer = styled.View`
 
 const FormContainer = styled.View`
   flex-direction: column;
-  gap: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  gap: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 const Row = styled.View`
   flex-direction: row;
+  gap: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
+const NameRow = styled.View`
+  flex-direction: row;
+  align-items: center;
   gap: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
@@ -71,7 +76,6 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
   const { updateItem } = useInventory();
   const { isKeyboardVisible, dismissKeyboard } = useKeyboardVisibility();
 
-  const scrollViewRef = useRef<ScrollView>(null);
   const isModalOpenRef = useRef<boolean>(false);
 
   const {
@@ -79,8 +83,6 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
     formData,
     isLoading,
     updateField,
-    addTag,
-    removeTag,
     validate,
     initializeFromItem,
   } = useItemForm({
@@ -121,14 +123,16 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
       const amountNum = formData.amount
         ? parseInt(formData.amount, 10)
         : undefined;
+      const warningThresholdNum = parseInt(formData.warningThreshold, 10) || 0;
 
       const updates = {
         name: formData.name.trim(),
         location: formData.locationId,
         detailedLocation: formData.detailedLocation.trim(),
+        status: formData.status,
         price: priceNum,
         amount: amountNum,
-        tags: formData.tags,
+        warningThreshold: warningThresholdNum,
         purchaseDate: formData.purchaseDate?.toISOString(),
         expiryDate: formData.expiryDate?.toISOString(),
         icon: formData.icon,
@@ -203,6 +207,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
       keyboardBlurBehavior={keyboardBlurBehavior}
       android_keyboardInputMode="adjustResize"
       enableHandlePanningGesture={false}
+      handleComponent={null}
       topInset={insets.top}
       index={0}
       footerComponent={renderFooter}
@@ -210,48 +215,38 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
       onChange={handleSheetChanges}
     >
       <ContentContainer>
+        <BottomSheetHeader
+          title={t('editItem.title')}
+          subtitle={t('editItem.subtitle')}
+          onClose={handleClose}
+        />
         <BottomSheetScrollView
-          ref={scrollViewRef}
           style={{ flex: 1 }}
           contentContainerStyle={{
-            padding: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.lg,
             paddingBottom: theme.spacing.lg,
           }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           enableOnPanDownToDismiss={false}
         >
-          <BottomSheetHeader
-            title={t('editItem.title')}
-            subtitle={t('editItem.subtitle')}
-            onClose={handleClose}
-          />
-
           <FormContainer>
             <FormSection label={t('editItem.fields.name')}>
-              <MemoizedInput
-                value={formData.name}
-                onChangeText={(text) => updateField('name', text)}
-                placeholder={t('editItem.placeholders.name')}
-                placeholderTextColor={theme.colors.textLight}
-              />
-            </FormSection>
-
-            <FormSection label={t('editItem.fields.icon')}>
-              <IconSelector
-                selectedIcon={formData.icon}
-                iconColor={formData.iconColor}
-                onIconSelect={(icon) => updateField('icon', icon)}
-                showLabel={false}
-              />
-            </FormSection>
-
-            <FormSection label={t('editItem.fields.color')}>
-              <ColorPalette
-                selectedColor={formData.iconColor}
-                onColorSelect={(color) => updateField('iconColor', color)}
-                showLabel={false}
-              />
+              <NameRow>
+                <IconColorPicker
+                  icon={formData.icon}
+                  color={formData.iconColor}
+                  onIconSelect={(icon) => updateField('icon', icon)}
+                  onColorSelect={(color) => updateField('iconColor', color)}
+                />
+                <MemoizedInput
+                  value={formData.name}
+                  onChangeText={(text) => updateField('name', text)}
+                  placeholder={t('editItem.placeholders.name')}
+                  placeholderTextColor={theme.colors.textLight}
+                  style={{ flex: 1 }}
+                />
+              </NameRow>
             </FormSection>
 
             <FormSection label={t('editItem.fields.location')}>
@@ -261,11 +256,18 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
               />
             </FormSection>
 
+            <FormSection label={t('editItem.fields.status')}>
+              <StatusField
+                selectedId={formData.status}
+                onSelect={(id) => updateField('status', id)}
+              />
+            </FormSection>
+
             <Row>
               <HalfContainer>
                 <FormSection
                   label={t('editItem.fields.price')}
-                  style={{ marginBottom: theme.spacing.lg }}
+                  style={{ marginBottom: theme.spacing.sm }}
                 >
                   <HalfInput
                     value={formData.price}
@@ -279,7 +281,7 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
               <HalfContainer>
                 <FormSection
                   label={t('editItem.fields.detailedLocation')}
-                  style={{ marginBottom: theme.spacing.lg }}
+                  style={{ marginBottom: theme.spacing.sm }}
                 >
                   <HalfInput
                     value={formData.detailedLocation}
@@ -293,40 +295,65 @@ export const EditItemBottomSheet: React.FC<EditItemBottomSheetProps> = ({
               </HalfContainer>
             </Row>
 
-            <FormSection label={t('editItem.fields.amount')}>
-              <MemoizedInput
-                value={formData.amount}
-                onChangeText={(text) => updateField('amount', text)}
-                placeholder={t('editItem.placeholders.amount')}
-                placeholderTextColor={theme.colors.textLight}
-                keyboardType="numeric"
-              />
-            </FormSection>
+            <Row>
+              <HalfContainer>
+                <FormSection
+                  label={t('editItem.fields.amount')}
+                  style={{ marginBottom: theme.spacing.sm }}
+                >
+                  <NumberInput
+                    value={formData.amount}
+                    onChangeText={(text) => updateField('amount', text)}
+                    placeholder={t('editItem.placeholders.amount')}
+                    placeholderTextColor={theme.colors.textLight}
+                    keyboardType="numeric"
+                    min={0}
+                  />
+                </FormSection>
+              </HalfContainer>
+              <HalfContainer>
+                <FormSection
+                  label={t('editItem.fields.warningThreshold')}
+                  style={{ marginBottom: theme.spacing.sm }}
+                >
+                  <NumberInput
+                    value={formData.warningThreshold}
+                    onChangeText={(text) => updateField('warningThreshold', text)}
+                    placeholder={t('editItem.placeholders.warningThreshold')}
+                    placeholderTextColor={theme.colors.textLight}
+                    keyboardType="numeric"
+                    min={0}
+                  />
+                </FormSection>
+              </HalfContainer>
+            </Row>
 
-            <FormSection label={t('editItem.fields.tags')}>
-              <TagsField
-                tags={formData.tags}
-                onAddTag={addTag}
-                onRemoveTag={removeTag}
-                placeholder={t('editItem.placeholders.addTag')}
-              />
-            </FormSection>
-
-            <FormSection label={t('editItem.fields.purchaseDate')}>
-              <DatePicker
-                value={formData.purchaseDate}
-                onChange={(date) => updateField('purchaseDate', date)}
-                maximumDate={new Date()}
-              />
-            </FormSection>
-
-            <FormSection label={t('editItem.fields.expiryDate')}>
-              <DatePicker
-                value={formData.expiryDate}
-                onChange={(date) => updateField('expiryDate', date)}
-                minimumDate={new Date()}
-              />
-            </FormSection>
+            <Row>
+              <HalfContainer>
+                <FormSection
+                  label={t('editItem.fields.purchaseDate')}
+                  style={{ marginBottom: theme.spacing.sm }}
+                >
+                  <DatePicker
+                    value={formData.purchaseDate}
+                    onChange={(date) => updateField('purchaseDate', date)}
+                    maximumDate={new Date()}
+                  />
+                </FormSection>
+              </HalfContainer>
+              <HalfContainer>
+                <FormSection
+                  label={t('editItem.fields.expiryDate')}
+                  style={{ marginBottom: theme.spacing.sm }}
+                >
+                  <DatePicker
+                    value={formData.expiryDate}
+                    onChange={(date) => updateField('expiryDate', date)}
+                    minimumDate={new Date()}
+                  />
+                </FormSection>
+              </HalfContainer>
+            </Row>
           </FormContainer>
         </BottomSheetScrollView>
       </ContentContainer>

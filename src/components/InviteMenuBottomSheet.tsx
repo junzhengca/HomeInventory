@@ -134,22 +134,25 @@ export const InviteMenuBottomSheet: React.FC<InviteMenuBottomSheetProps> = ({
       enableDynamicSizing={false}
     >
       <ContentContainer>
+        <BottomSheetHeader
+          title={showQRCode ? t('share.invite.qrCode.title') : t('share.invite.title')}
+          subtitle={
+            showQRCode
+              ? t('share.invite.qrCode.subtitle')
+              : t('share.invite.subtitle')
+          }
+          onClose={handleClose}
+        />
         <BottomSheetScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
-            padding: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.lg,
             paddingBottom: theme.spacing.lg,
           }}
           showsVerticalScrollIndicator={false}
         >
           {!showQRCode ? (
             <>
-              <BottomSheetHeader
-                title={t('share.invite.title')}
-                subtitle={t('share.invite.subtitle')}
-                onClose={handleClose}
-              />
-
               <OptionContainer onPress={handleShowQRCode} activeOpacity={0.8}>
                 <IconContainer>
                   <Ionicons name="qr-code-outline" size={24} color={theme.colors.primary} />
@@ -173,16 +176,9 @@ export const InviteMenuBottomSheet: React.FC<InviteMenuBottomSheetProps> = ({
               </OptionContainer>
             </>
           ) : (
-            <>
-              <BottomSheetHeader
-                title={t('share.invite.qrCode.title')}
-                subtitle={t('share.invite.qrCode.subtitle')}
-                onClose={handleClose}
-              />
-              <QRCodeViewContainer>
-                <QRCodeDisplay invitationCode={invitationCode} invitationLink={invitationLink} />
-              </QRCodeViewContainer>
-            </>
+            <QRCodeViewContainer>
+              <QRCodeDisplay invitationCode={invitationCode} invitationLink={invitationLink} />
+            </QRCodeViewContainer>
           )}
         </BottomSheetScrollView>
       </ContentContainer>

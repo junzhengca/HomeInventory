@@ -40,10 +40,20 @@
     "study": "Study",
     "storage": "Storage"
   },
+  "statuses": {
+    "using": "Using",
+    "new": "New",
+    "out-of-stock": "Out of Stock"
+  },
   "inventory": {
     "title": "All Items",
     "loading": "Loading...",
     "itemsCount": "{{count}} item(s)",
+    "filterBy": "Filter: {{type}}",
+    "filterType": {
+      "location": "Location",
+      "status": "Status"
+    },
     "empty": {
       "title": "No Items Found",
       "description": "Start by adding your first item to manage your home assets!",
@@ -145,10 +155,11 @@
       "icon": "Icon",
       "color": "Color",
       "location": "Location",
+      "status": "Status",
       "price": "Price",
       "detailedLocation": "Detailed Location",
       "amount": "Quantity",
-      "tags": "Tags",
+      "warningThreshold": "Warning Threshold",
       "purchaseDate": "Purchase Date",
       "expiryDate": "Expiry Date"
     },
@@ -157,7 +168,7 @@
       "detailedLocation": "e.g., Shoe Cabinet by Entrance",
       "price": "0",
       "amount": "1",
-      "addTag": "Add Tag"
+      "warningThreshold": "0"
     },
     "manageCategories": "Manage Categories",
     "add": "Add",
@@ -179,10 +190,11 @@
       "icon": "Icon",
       "color": "Color",
       "location": "Location",
+      "status": "Status",
       "price": "Price",
       "detailedLocation": "Detailed Location",
       "amount": "Quantity",
-      "tags": "Tags",
+      "warningThreshold": "Warning Threshold",
       "purchaseDate": "Purchase Date",
       "expiryDate": "Expiry Date"
     },
@@ -191,7 +203,7 @@
       "detailedLocation": "e.g., Shoe Cabinet by Entrance",
       "price": "0",
       "amount": "1",
-      "addTag": "Add Tag"
+      "warningThreshold": "0"
     },
     "manageCategories": "Manage Categories",
     "add": "Add",
@@ -229,25 +241,25 @@
       "confirm": "Delete"
     },
     "sections": {
-      "value": "Value Information",
-      "location": "Location Information",
-      "quantity": "Quantity Information",
-      "expiry": "Expiry Information",
-      "tags": "Tags"
+      "general": "General Information",
+      "inventory": "Inventory & Dates"
     },
     "fields": {
       "valuation": "Valuation",
       "purchaseDate": "Purchase Date",
       "location": "Location",
       "detailedLocation": "Detailed Location",
+      "status": "Status",
       "quantity": "Quantity",
+      "warningThreshold": "Warning Threshold",
       "expiryDate": "Expiry Date"
     },
     "notSet": "Not set",
     "actions": {
       "delete": "Delete",
       "modify": "Modify"
-    }
+    },
+    "needsRestocking": "Restock"
   },
   "categoryManager": {
     "title": "Manage Categories",
@@ -285,6 +297,13 @@
   },
   "colorPalette": {
     "label": "Select Color"
+  },
+  "iconColorPicker": {
+    "label": "Icon & Color",
+    "value": "Change appearance",
+    "title": "Select Icon & Color",
+    "colorLabel": "Color",
+    "iconLabel": "Icon"
   },
   "profile": {
     "title": "Profile",

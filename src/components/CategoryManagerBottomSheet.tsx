@@ -353,22 +353,21 @@ export const CategoryManagerBottomSheet: React.FC<
       enableDynamicSizing={false}
     >
       <ContentContainer>
+        <BottomSheetHeader
+          title={getHeaderText()}
+          subtitle={getSubtitleText()}
+          onClose={handleClose}
+        />
         <BottomSheetScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
-            padding: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.lg,
             paddingBottom: theme.spacing.lg,
           }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           enableOnPanDownToDismiss={false}
         >
-          <BottomSheetHeader
-            title={getHeaderText()}
-            subtitle={getSubtitleText()}
-            onClose={handleClose}
-          />
-
           {mode === 'list' ? (
             <FormSection label={t('categoryManager.customCategories')}>
               {categories.length === 0 ? (

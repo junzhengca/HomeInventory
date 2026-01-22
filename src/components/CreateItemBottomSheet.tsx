@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import { Alert, ScrollView, TextInput, Keyboard } from 'react-native';
+import { Alert, TextInput, Keyboard } from 'react-native';
 import { locations } from '../data/locations';
 import styled from 'styled-components/native';
 import {
@@ -20,11 +20,11 @@ import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
 import { useInventory } from '../store/hooks';
 import { useKeyboardVisibility } from '../hooks';
-import { BottomSheetHeader, FormSection, MemoizedInput } from './ui';
-import { LocationField } from './form';
-import { IconSelector } from './IconSelector';
-import { ColorPalette } from './ColorPalette';
+import { BottomSheetHeader, FormSection, UncontrolledInput, NumberInput } from './ui';
+import { LocationField, StatusField } from './form';
+import { IconColorPicker } from './IconColorPicker';
 import { BottomActionBar } from './BottomActionBar';
+import { DatePicker } from './DatePicker';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -37,7 +37,7 @@ const ContentContainer = styled.View`
 
 const FormContainer = styled.View`
   flex-direction: column;
-  gap: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  gap: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 const Row = styled.View`
@@ -45,11 +45,17 @@ const Row = styled.View`
   gap: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
+const NameRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
 const HalfContainer = styled.View`
   flex: 1;
 `;
 
-const HalfInput = styled(MemoizedInput)`
+const HalfInput = styled(UncontrolledInput)`
   flex: 1;
 `;
 
@@ -75,18 +81,26 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const { createItem } = useInventory();
   const { isKeyboardVisible } = useKeyboardVisibility();
 
-  const scrollViewRef = useRef<ScrollView>(null);
   const nameInputRef = useRef<TextInput>(null);
+  const priceInputRef = useRef<TextInput>(null);
+  const detailedLocationInputRef = useRef<TextInput>(null);
+  const amountInputRef = useRef<TextInput>(null);
+  const warningThresholdInputRef = useRef<TextInput>(null);
 
   // Form state using refs to prevent IME interruption
   const nameValueRef = useRef('');
   const priceValueRef = useRef('0');
   const detailedLocationValueRef = useRef('');
+  const amountValueRef = useRef('1');
+  const warningThresholdValueRef = useRef('0');
 
-  // Regular state for icon/color/location (doesn't affect IME)
+  // Regular state for icon/color/location/status/dates (doesn't affect IME)
   const [selectedIcon, setSelectedIcon] = useState<keyof typeof Ionicons.glyphMap>('cube-outline');
   const [selectedColor, setSelectedColor] = useState<string>('#95A5A6');
   const [selectedLocation, setSelectedLocation] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('using');
+  const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
+  const [expiryDate, setExpiryDate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formKey, setFormKey] = useState(0); // Force remount on reset
 
@@ -125,8 +139,13 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     nameValueRef.current = '';
     priceValueRef.current = '0';
     detailedLocationValueRef.current = '';
+    amountValueRef.current = '1';
+    warningThresholdValueRef.current = '0';
     setSelectedIcon('cube-outline');
     setSelectedColor('#95A5A6');
+    setSelectedStatus('using');
+    setPurchaseDate(null);
+    setExpiryDate(null);
     setFormKey((prev) => prev + 1);
   }, [bottomSheetRef]);
 
@@ -134,6 +153,8 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     const currentName = nameValueRef.current;
     const currentPrice = priceValueRef.current;
     const currentDetailedLocation = detailedLocationValueRef.current;
+    const currentAmount = amountValueRef.current;
+    const currentWarningThreshold = warningThresholdValueRef.current;
 
     // Validation
     if (!currentName.trim()) {
@@ -154,15 +175,21 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     setIsLoading(true);
     try {
       const priceNum = parseFloat(currentPrice) || 0;
+      const amountNum = currentAmount ? parseInt(currentAmount, 10) : undefined;
+      const warningThresholdNum = parseInt(currentWarningThreshold, 10) || 0;
 
       createItem({
         name: currentName.trim(),
         location: selectedLocation,
         detailedLocation: currentDetailedLocation.trim(),
+        status: selectedStatus,
         price: priceNum,
+        amount: amountNum,
+        warningThreshold: warningThresholdNum,
         icon: selectedIcon,
         iconColor: selectedColor,
-        tags: [],
+        purchaseDate: purchaseDate?.toISOString(),
+        expiryDate: expiryDate?.toISOString(),
       });
 
       handleClose();
@@ -180,6 +207,9 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     selectedIcon,
     selectedColor,
     selectedLocation,
+    selectedStatus,
+    purchaseDate,
+    expiryDate,
     handleClose,
     onItemCreated,
     createItem,
@@ -231,6 +261,57 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     detailedLocationValueRef.current = text;
   }, []);
 
+  // onBlur handlers (sync refs if needed, though we're not using state here)
+  const handleNameBlur = useCallback(() => {
+    // No state to sync, ref is already updated
+  }, []);
+
+  const handlePriceBlur = useCallback(() => {
+    // No state to sync, ref is already updated
+  }, []);
+
+  const handleDetailedLocationBlur = useCallback(() => {
+    // No state to sync, ref is already updated
+  }, []);
+
+  const handleAmountChangeText = useCallback((text: string) => {
+    amountValueRef.current = text;
+  }, []);
+
+  const handleAmountBlur = useCallback(() => {
+    // No state to sync, ref is already updated
+  }, []);
+
+  const handleWarningThresholdChangeText = useCallback((text: string) => {
+    warningThresholdValueRef.current = text;
+  }, []);
+
+  const handleWarningThresholdBlur = useCallback(() => {
+    // No state to sync, ref is already updated
+  }, []);
+
+  // Memoize placeholder strings to prevent re-renders
+  const namePlaceholder = useMemo(
+    () => t('createItem.placeholders.name'),
+    [t]
+  );
+  const pricePlaceholder = useMemo(
+    () => t('createItem.placeholders.price'),
+    [t]
+  );
+  const detailedLocationPlaceholder = useMemo(
+    () => t('createItem.placeholders.detailedLocation'),
+    [t]
+  );
+  const amountPlaceholder = useMemo(
+    () => t('createItem.placeholders.amount'),
+    [t]
+  );
+  const warningThresholdPlaceholder = useMemo(
+    () => t('createItem.placeholders.warningThreshold'),
+    [t]
+  );
+
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
@@ -242,6 +323,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
       keyboardBlurBehavior={keyboardBlurBehavior}
       android_keyboardInputMode="adjustResize"
       enableHandlePanningGesture={false}
+      handleComponent={null}
       topInset={insets.top}
       index={0}
       footerComponent={renderFooter}
@@ -249,48 +331,40 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
       onChange={handleSheetChange}
     >
       <ContentContainer>
+        <BottomSheetHeader
+          title={t('createItem.title')}
+          subtitle={t('createItem.subtitle')}
+          onClose={handleClose}
+        />
         <BottomSheetScrollView
-          ref={scrollViewRef}
           style={{ flex: 1 }}
           contentContainerStyle={{
-            padding: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.lg,
             paddingBottom: theme.spacing.lg,
           }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           enableOnPanDownToDismiss={false}
         >
-          <BottomSheetHeader
-            title={t('createItem.title')}
-            subtitle={t('createItem.subtitle')}
-            onClose={handleClose}
-          />
-
           <FormContainer key={formKey}>
             <FormSection label={t('createItem.fields.name')}>
-              <MemoizedInput
-                value={nameValueRef.current}
-                onChangeText={handleNameChangeText}
-                placeholder={t('createItem.placeholders.name')}
-                placeholderTextColor={theme.colors.textLight}
-              />
-            </FormSection>
-
-            <FormSection label={t('createItem.fields.icon')}>
-              <IconSelector
-                selectedIcon={selectedIcon}
-                iconColor={selectedColor}
-                onIconSelect={setSelectedIcon}
-                showLabel={false}
-              />
-            </FormSection>
-
-            <FormSection label={t('createItem.fields.color')}>
-              <ColorPalette
-                selectedColor={selectedColor}
-                onColorSelect={setSelectedColor}
-                showLabel={false}
-              />
+              <NameRow>
+                <IconColorPicker
+                  icon={selectedIcon}
+                  color={selectedColor}
+                  onIconSelect={setSelectedIcon}
+                  onColorSelect={setSelectedColor}
+                />
+                <UncontrolledInput
+                  ref={nameInputRef}
+                  defaultValue={nameValueRef.current}
+                  onChangeText={handleNameChangeText}
+                  onBlur={handleNameBlur}
+                  placeholder={namePlaceholder}
+                  placeholderTextColor={theme.colors.textLight}
+                  style={{ flex: 1 }}
+                />
+              </NameRow>
             </FormSection>
 
             <FormSection label={t('createItem.fields.location')}>
@@ -300,16 +374,25 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
               />
             </FormSection>
 
+            <FormSection label={t('createItem.fields.status')}>
+              <StatusField
+                selectedId={selectedStatus}
+                onSelect={setSelectedStatus}
+              />
+            </FormSection>
+
             <Row>
               <HalfContainer>
                 <FormSection
                   label={t('createItem.fields.price')}
-                  style={{ marginBottom: theme.spacing.lg }}
+                  style={{ marginBottom: theme.spacing.sm }}
                 >
                   <HalfInput
-                    value={priceValueRef.current}
+                    ref={priceInputRef}
+                    defaultValue={priceValueRef.current}
                     onChangeText={handlePriceChangeText}
-                    placeholder={t('createItem.placeholders.price')}
+                    onBlur={handlePriceBlur}
+                    placeholder={pricePlaceholder}
                     placeholderTextColor={theme.colors.textLight}
                     keyboardType="numeric"
                   />
@@ -318,13 +401,79 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
               <HalfContainer>
                 <FormSection
                   label={t('createItem.fields.detailedLocation')}
-                  style={{ marginBottom: theme.spacing.lg }}
+                  style={{ marginBottom: theme.spacing.sm }}
                 >
                   <HalfInput
-                    value={detailedLocationValueRef.current}
+                    ref={detailedLocationInputRef}
+                    defaultValue={detailedLocationValueRef.current}
                     onChangeText={handleDetailedLocationChangeText}
-                    placeholder={t('createItem.placeholders.detailedLocation')}
+                    onBlur={handleDetailedLocationBlur}
+                    placeholder={detailedLocationPlaceholder}
                     placeholderTextColor={theme.colors.textLight}
+                  />
+                </FormSection>
+              </HalfContainer>
+            </Row>
+
+            <Row>
+              <HalfContainer>
+                <FormSection
+                  label={t('createItem.fields.amount')}
+                  style={{ marginBottom: theme.spacing.sm }}
+                >
+                  <NumberInput
+                    ref={amountInputRef}
+                    defaultValue={amountValueRef.current}
+                    onChangeText={handleAmountChangeText}
+                    onBlur={handleAmountBlur}
+                    placeholder={amountPlaceholder}
+                    placeholderTextColor={theme.colors.textLight}
+                    keyboardType="numeric"
+                    min={0}
+                  />
+                </FormSection>
+              </HalfContainer>
+              <HalfContainer>
+                <FormSection
+                  label={t('createItem.fields.warningThreshold')}
+                  style={{ marginBottom: theme.spacing.sm }}
+                >
+                  <NumberInput
+                    ref={warningThresholdInputRef}
+                    defaultValue={warningThresholdValueRef.current}
+                    onChangeText={handleWarningThresholdChangeText}
+                    onBlur={handleWarningThresholdBlur}
+                    placeholder={warningThresholdPlaceholder}
+                    placeholderTextColor={theme.colors.textLight}
+                    keyboardType="numeric"
+                    min={0}
+                  />
+                </FormSection>
+              </HalfContainer>
+            </Row>
+
+            <Row>
+              <HalfContainer>
+                <FormSection
+                  label={t('createItem.fields.purchaseDate')}
+                  style={{ marginBottom: theme.spacing.sm }}
+                >
+                  <DatePicker
+                    value={purchaseDate}
+                    onChange={setPurchaseDate}
+                    maximumDate={new Date()}
+                  />
+                </FormSection>
+              </HalfContainer>
+              <HalfContainer>
+                <FormSection
+                  label={t('createItem.fields.expiryDate')}
+                  style={{ marginBottom: theme.spacing.sm }}
+                >
+                  <DatePicker
+                    value={expiryDate}
+                    onChange={setExpiryDate}
+                    minimumDate={new Date()}
                   />
                 </FormSection>
               </HalfContainer>

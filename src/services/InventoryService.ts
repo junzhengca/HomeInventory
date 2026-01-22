@@ -44,8 +44,8 @@ export const createItem = async (item: Omit<InventoryItem, 'id'>): Promise<Inven
     const now = new Date().toISOString();
     const newItem: InventoryItem = {
       ...item,
+      status: item.status || 'using', // Default to 'using' if not provided
       id: generateItemId(),
-      tags: item.tags || [],
       createdAt: now,
       updatedAt: now,
     };
@@ -141,18 +141,10 @@ export const deleteItem = async (id: string): Promise<boolean> => {
 export const searchItems = async (
   query?: string,
   filters?: {
-    tags?: string[];
     expiringSoon?: boolean; // Items expiring within 7 days
   }
 ): Promise<InventoryItem[]> => {
   let items = await getAllItems(); // Already filters out deleted items
-  
-  // Filter by tags
-  if (filters?.tags && filters.tags.length > 0) {
-    items = items.filter((item) =>
-      filters.tags!.some((tag) => item.tags?.includes(tag))
-    );
-  }
   
   // Filter by expiring soon
   if (filters?.expiringSoon) {
@@ -166,8 +158,7 @@ export const searchItems = async (
       (item) =>
         item.name.toLowerCase().includes(lowerQuery) ||
         item.location.toLowerCase().includes(lowerQuery) ||
-        item.detailedLocation.toLowerCase().includes(lowerQuery) ||
-        item.tags?.some((tag) => tag.toLowerCase().includes(lowerQuery))
+        item.detailedLocation.toLowerCase().includes(lowerQuery)
     );
   }
   

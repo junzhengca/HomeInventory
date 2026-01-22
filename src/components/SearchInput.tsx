@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { TextInput, View } from 'react-native';
+import { TextInput, View, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
@@ -32,6 +32,14 @@ const Input = styled(TextInput)`
   padding-vertical: 0;
 `;
 
+const ClearButton = styled(TouchableOpacity)`
+  padding: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+`;
+
+const ClearIcon = styled(Ionicons)`
+  color: ${({ theme }: StyledProps) => theme.colors.textLight};
+`;
+
 interface SearchInputProps {
   placeholder?: string;
   value?: string;
@@ -57,6 +65,12 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     }
   }, [onChangeText]);
 
+  const handleClear = useCallback(() => {
+    if (onChangeText) {
+      onChangeText('');
+    }
+  }, [onChangeText]);
+
   return (
     <Container isFocused={isFocused}>
       <SearchIcon name="search-outline" size={22} />
@@ -72,6 +86,11 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         textContentType="none"
         autoComplete="off"
       />
+      {value && value.length > 0 && (
+        <ClearButton onPress={handleClear} activeOpacity={0.7}>
+          <ClearIcon name="close-circle" size={20} />
+        </ClearButton>
+      )}
     </Container>
   );
 };

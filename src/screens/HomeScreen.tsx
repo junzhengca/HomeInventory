@@ -1,15 +1,19 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { FlatList, ActivityIndicator, View, Dimensions } from 'react-native';
+import { FlatList, ActivityIndicator, View, Dimensions, TouchableOpacity, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
 
 import { PageHeader } from '../components/PageHeader';
 import { SearchInput } from '../components/SearchInput';
+import { LocationFilter } from '../components/LocationFilter';
+import { StatusFilter } from '../components/StatusFilter';
 import { ItemCard } from '../components/ItemCard';
 import { EmptyState } from '../components/EmptyState';
 import { LoginBottomSheet } from '../components/LoginBottomSheet';
@@ -39,6 +43,32 @@ const ListContainer = styled(View)`
   flex: 1;
 `;
 
+const FilterRow = styled(View)`
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+`;
+
+const FilterToggleBtn = styled(TouchableOpacity)`
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
+  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
+  flex-direction: row;
+  align-items: center;
+  margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  border-width: 1px;
+  border-color: ${({ theme }: StyledProps) => theme.colors.border};
+`;
+
+const FilterToggleText = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+  color: ${({ theme }: StyledProps) => theme.colors.text};
+  margin-left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
+`;
+
 const LoadingContainer = styled(View)`
   flex: 1;
   justify-content: center;
@@ -48,11 +78,15 @@ const LoadingContainer = styled(View)`
 export const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+  const [selectedStatusId, setSelectedStatusId] = useState<string | null>(null);
+  const [filterMode, setFilterMode] = useState<'location' | 'status'>('location');
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { items, loading: isLoading, loadItems } = useInventory();
   const { isSyncEnabled } = useSync();
   const { user } = useAuth();
+  const theme = useTheme();
   const loginBottomSheetRef = useRef<BottomSheetModal>(null);
   const signupBottomSheetRef = useRef<BottomSheetModal>(null);
   const enableSyncBottomSheetRef = useRef<BottomSheetModal>(null);
@@ -101,9 +135,36 @@ export const HomeScreen: React.FC = () => {
     await SecureStore.setItemAsync('has_shown_sync_prompt', 'true');
   };
 
-  // Filter items based on search query
+  // Calculate counts for locations and statuses
+  const locationCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    items.forEach(item => {
+      counts[item.location] = (counts[item.location] || 0) + 1;
+    });
+    return counts;
+  }, [items]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    items.forEach(item => {
+      counts[item.status] = (counts[item.status] || 0) + 1;
+    });
+    return counts;
+  }, [items]);
+
+  // Filter items based on location and search query
   const filteredItems = useMemo(() => {
     let filtered = items;
+
+    // Filter by location first
+    if (selectedLocationId !== null) {
+      filtered = filtered.filter((item) => item.location === selectedLocationId);
+    }
+
+    // Filter by status
+    if (selectedStatusId !== null) {
+      filtered = filtered.filter((item) => item.status === selectedStatusId);
+    }
 
     // Filter by search query
     if (searchQuery.trim()) {
@@ -112,13 +173,12 @@ export const HomeScreen: React.FC = () => {
         (item) =>
           item.name.toLowerCase().includes(lowerQuery) ||
           item.location.toLowerCase().includes(lowerQuery) ||
-          item.detailedLocation.toLowerCase().includes(lowerQuery) ||
-          item.tags?.some((tag) => tag.toLowerCase().includes(lowerQuery))
+          item.detailedLocation.toLowerCase().includes(lowerQuery)
       );
     }
 
     return filtered;
-  }, [searchQuery, items]);
+  }, [searchQuery, selectedLocationId, selectedStatusId, items]);
 
   const handleItemPress = (item: InventoryItem) => {
     const rootNavigation = navigation.getParent();
@@ -205,12 +265,40 @@ export const HomeScreen: React.FC = () => {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        <FilterRow>
+          <FilterToggleBtn
+            onPress={() => setFilterMode(prev => prev === 'location' ? 'status' : 'location')}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={filterMode === 'location' ? 'location-outline' : 'pricetag-outline'}
+              size={18}
+              color={theme.colors.primary}
+            />
+            <FilterToggleText>
+              {t(`inventory.filterType.${filterMode}`)}
+            </FilterToggleText>
+          </FilterToggleBtn>
+          {filterMode === 'location' ? (
+            <LocationFilter
+              selectedLocationId={selectedLocationId}
+              onSelect={setSelectedLocationId}
+              counts={locationCounts}
+            />
+          ) : (
+            <StatusFilter
+              selectedStatusId={selectedStatusId}
+              onSelect={setSelectedStatusId}
+              counts={statusCounts}
+            />
+          )}
+        </FilterRow>
         <ListContainer>
           {filteredItems.length === 0 ? (
             <EmptyState
               icon="list-outline"
               title={t('inventory.empty.title')}
-              description={searchQuery.trim()
+              description={searchQuery.trim() || selectedLocationId !== null || selectedStatusId !== null
                 ? t('inventory.empty.filtered')
                 : t('inventory.empty.description')}
             />

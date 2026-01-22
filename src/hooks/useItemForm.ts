@@ -15,10 +15,11 @@ export interface ItemFormData {
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   locationId: string;
+  status: string;
   price: string;
   detailedLocation: string;
   amount: string;
-  tags: string[];
+  warningThreshold: string;
   purchaseDate: Date | null;
   expiryDate: Date | null;
 }
@@ -49,8 +50,6 @@ interface UseItemFormReturn {
     field: K,
     value: ItemFormData[K]
   ) => void;
-  addTag: (tag: string) => void;
-  removeTag: (tag: string) => void;
   validate: () => boolean;
   reset: () => void;
   initializeFromItem: (item: InventoryItem) => void;
@@ -61,10 +60,11 @@ const INITIAL_FORM_DATA: ItemFormData = {
   icon: 'cube-outline',
   iconColor: '#95A5A6',
   locationId: '',
+  status: 'using',
   price: '0',
   detailedLocation: '',
   amount: '',
-  tags: [],
+  warningThreshold: '0',
   purchaseDate: null,
   expiryDate: null,
 };
@@ -81,7 +81,6 @@ const INITIAL_FORM_DATA: ItemFormData = {
  *   formData,
  *   categories,
  *   updateField,
- *   addTag,
  *   validate
  * } = useItemForm({ itemId: '123' });
  */
@@ -147,10 +146,11 @@ export const useItemForm = ({
         icon: itemData.icon,
         iconColor: itemData.iconColor,
         locationId: itemData.location,
+        status: itemData.status || 'using',
         price: itemData.price.toString(),
         detailedLocation: itemData.detailedLocation || '',
-        amount: itemData.amount?.toString() || '',
-        tags: itemData.tags || [],
+        amount: itemData.amount?.toString() ?? '',
+        warningThreshold: itemData.warningThreshold?.toString() || '0',
         purchaseDate: itemData.purchaseDate
           ? new Date(itemData.purchaseDate)
           : null,
@@ -183,23 +183,6 @@ export const useItemForm = ({
     },
     [errors]
   );
-
-  const addTag = useCallback(
-    (tag: string) => {
-      const trimmed = tag.trim();
-      if (trimmed && !formData.tags.includes(trimmed)) {
-        setFormData((prev) => ({ ...prev, tags: [...prev.tags, trimmed] }));
-      }
-    },
-    [formData.tags]
-  );
-
-  const removeTag = useCallback((tag: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((t) => t !== tag),
-    }));
-  }, []);
 
   const validate = useCallback((): boolean => {
     const newErrors: ItemFormErrors = {};
@@ -237,8 +220,6 @@ export const useItemForm = ({
     isSaving,
     errors,
     updateField,
-    addTag,
-    removeTag,
     validate,
     reset,
     initializeFromItem,

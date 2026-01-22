@@ -17,7 +17,7 @@ const CardContent = styled(View)`
   padding: 0px;
 `;
 
-const IconContainer = styled(View)<{ backgroundColor: string }>`
+const IconContainer = styled(View) <{ backgroundColor: string }>`
   width: 38px;
   height: 38px;
   border-radius: 19px;
@@ -143,10 +143,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
   // Get formatted location text
   const locationText = formatLocation(item.location, item.detailedLocation, t);
 
-  // Placeholder logic for status indicators
-  // TODO: Replace with actual status fields from InventoryItem
-  const needsRestock = item.amount !== undefined && item.amount <= 1;
-  const inUse = true; // Placeholder - always show "使用中" for now
+  // Status indicators
+  const needsRestock =
+    item.amount !== undefined &&
+    item.amount <= (item.warningThreshold ?? 0);
+  // Get status from item, default to 'using' for backward compatibility
+  const itemStatus = item.status || 'using';
 
   return (
     <BaseCard onPress={handlePress} activeOpacity={0.8} square compact>
@@ -158,7 +160,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
 
         {/* Top-right: Quantity and Status */}
         <TopRightContainer>
-          {item.amount && item.amount > 0 && (
+          {item.amount !== undefined && (
             <QuantityBadge>
               <QuantityText>x{item.amount}</QuantityText>
             </QuantityBadge>
@@ -166,9 +168,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
           {needsRestock && (
             <StatusBadge>
               <StatusIcon>
-                <Ionicons name="alert-circle-outline" size={14} color="#ff8a80" />
+                <Ionicons name="alert-circle" size={14} color="#FF5252" />
               </StatusIcon>
-              <StatusText>需补货</StatusText>
+              <StatusText style={{ color: '#FF5252' }}>{t('itemDetails.needsRestocking')}</StatusText>
             </StatusBadge>
           )}
         </TopRightContainer>
@@ -179,18 +181,16 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
           <LocationText numberOfLines={1}>{locationText}</LocationText>
         </MiddleContainer>
 
-        {/* Bottom: price and usage status */}
+        {/* Bottom: price and status */}
         <BottomContainer>
           {item.price > 0 ? (
             <PriceText>{formatPrice(item.price, currencySymbol)}</PriceText>
           ) : (
-            <View /> // Spacer to keep usage button on the right
+            <View /> // Spacer to keep status button on the right
           )}
-          {inUse && (
-            <UsageButton>
-              <UsageText>{item.amount === 0 ? '缺货' : '使用中'}</UsageText>
-            </UsageButton>
-          )}
+          <UsageButton>
+            <UsageText>{t(`statuses.${itemStatus}`)}</UsageText>
+          </UsageButton>
         </BottomContainer>
       </CardContent>
     </BaseCard>

@@ -40,10 +40,20 @@
     "study": "书房",
     "storage": "储物"
   },
+  "statuses": {
+    "using": "使用中",
+    "new": "全新",
+    "out-of-stock": "缺货"
+  },
   "inventory": {
     "title": "所有物品",
     "loading": "加载中...",
     "itemsCount": "{{count}}个宝贝",
+    "filterBy": "筛选：{{type}}",
+    "filterType": {
+      "location": "按位置",
+      "status": "按状态"
+    },
     "empty": {
       "title": "没有找到物品",
       "description": "开始添加您的第一个物品来管理您的家庭资产吧！",
@@ -145,10 +155,11 @@
       "icon": "图标",
       "color": "颜色",
       "location": "位置",
+      "status": "状态",
       "price": "价格",
       "detailedLocation": "具体位置",
       "amount": "数量",
-      "tags": "标签",
+      "warningThreshold": "警告阈值",
       "purchaseDate": "购买时间",
       "expiryDate": "过期时间"
     },
@@ -157,7 +168,7 @@
       "detailedLocation": "比如:门口鞋柜",
       "price": "0",
       "amount": "1",
-      "addTag": "添加标签"
+      "warningThreshold": "0"
     },
     "manageCategories": "管理分类",
     "add": "添加",
@@ -179,10 +190,11 @@
       "icon": "图标",
       "color": "颜色",
       "location": "位置",
+      "status": "状态",
       "price": "价格",
       "detailedLocation": "具体位置",
       "amount": "数量",
-      "tags": "标签",
+      "warningThreshold": "警告阈值",
       "purchaseDate": "购买时间",
       "expiryDate": "过期时间"
     },
@@ -191,7 +203,7 @@
       "detailedLocation": "比如:门口鞋柜",
       "price": "0",
       "amount": "1",
-      "addTag": "添加标签"
+      "warningThreshold": "0"
     },
     "manageCategories": "管理分类",
     "add": "添加",
@@ -229,25 +241,25 @@
       "confirm": "删除"
     },
     "sections": {
-      "value": "价值信息",
-      "location": "位置信息",
-      "quantity": "数量信息",
-      "expiry": "过期信息",
-      "tags": "标签"
+      "general": "基本信息",
+      "inventory": "库存与日期"
     },
     "fields": {
       "valuation": "估值",
       "purchaseDate": "购买时间",
       "location": "所在位置",
       "detailedLocation": "详细位置",
+      "status": "状态",
       "quantity": "数量",
+      "warningThreshold": "警告阈值",
       "expiryDate": "过期日期"
     },
     "notSet": "未设置",
     "actions": {
       "delete": "删除",
       "modify": "修改"
-    }
+    },
+    "needsRestocking": "需补货"
   },
   "categoryManager": {
     "title": "管理分类",
@@ -285,6 +297,13 @@
   },
   "colorPalette": {
     "label": "选择颜色"
+  },
+  "iconColorPicker": {
+    "label": "图标与颜色",
+    "value": "修改外观",
+    "title": "选择图标与颜色",
+    "colorLabel": "颜色",
+    "iconLabel": "图标"
   },
   "profile": {
     "title": "个人资料",

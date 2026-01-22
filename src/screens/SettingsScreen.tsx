@@ -118,7 +118,7 @@ export const SettingsScreen: React.FC = () => {
         icon="settings"
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}
-        showBackButton={true}
+        showBackButton={false}
         showRightButtons={true}
         avatarUrl={user?.avatarUrl}
         onAvatarPress={handleAvatarPress}

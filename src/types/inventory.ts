@@ -25,11 +25,12 @@ export interface InventoryItem {
   name: string;
   location: string; // Location ID (e.g., "living-room")
   detailedLocation: string; // e.g., "梳妆台"
+  status: string; // Status ID (e.g., "using", "new", "out-of-stock")
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   price: number;
   amount?: number; // Optional quantity
-  tags: string[]; // Array of tag strings
+  warningThreshold?: number; // Warning threshold for restocking badge (defaults to 0)
   expiryDate?: string; // ISO date string (optional)
   purchaseDate?: string; // ISO date string (optional)
   createdAt?: string; // ISO date string
