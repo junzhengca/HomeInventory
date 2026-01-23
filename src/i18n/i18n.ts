@@ -18,8 +18,8 @@ i18n
         translation: zhCN,
       },
     },
-    lng: 'zh-CN', // Default language
-    fallbackLng: 'zh-CN', // Fallback language if translation is missing
+    lng: 'en', // Default language
+    fallbackLng: 'en', // Fallback language if translation is missing
     interpolation: {
       escapeValue: false, // React already does escaping
     },

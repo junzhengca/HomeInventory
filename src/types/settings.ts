@@ -10,6 +10,6 @@ export interface Settings {
 export const defaultSettings: Omit<Settings, 'createdAt' | 'updatedAt'> = {
   theme: 'forest',
   currency: 'cny',
-  language: 'zh-cn',
+  language: 'en',
 };
 

@@ -90,7 +90,7 @@ const defaultLanguages: LanguageOption[] = [
 ];
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
-  selectedLanguageId = 'zh-cn',
+  selectedLanguageId = 'en',
   onLanguageSelect,
 }) => {
   const { t } = useTranslation();
