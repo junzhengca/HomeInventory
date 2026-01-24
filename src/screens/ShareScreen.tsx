@@ -17,8 +17,6 @@ import { calculateBottomPadding } from '../utils/layout';
 import { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../store/hooks';
 import { useToast } from '../hooks/useToast';
-import { ApiClient } from '../services/ApiClient';
-import { getAuthTokens } from '../services/AuthService';
 import { Member } from '../types/api';
 
 const Container = styled(View)`
@@ -56,7 +54,7 @@ export const ShareScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, getApiClient } = useAuth();
   const { showToast } = useToast();
   const inviteMenuBottomSheetRef = useRef<BottomSheetModal>(null);
   
@@ -69,23 +67,10 @@ export const ShareScreen: React.FC = () => {
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
 
-  const getApiClient = useCallback(async (): Promise<ApiClient | null> => {
-    const API_BASE_URL =
-      process.env.EXPO_PUBLIC_API_BASE_URL ||
-      'https://home-inventory-api.logiccore.digital';
-    const apiClient = new ApiClient(API_BASE_URL);
-    const tokens = await getAuthTokens();
-    if (tokens) {
-      apiClient.setAuthToken(tokens.accessToken);
-      return apiClient;
-    }
-    return null;
-  }, []);
-
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const apiClient = await getApiClient();
+      const apiClient = getApiClient();
       if (!apiClient) {
         console.error('Failed to get API client');
         setIsLoading(false);
@@ -108,7 +93,7 @@ export const ShareScreen: React.FC = () => {
     setMembersLoading(true);
     setMembersError(null);
     try {
-      const apiClient = await getApiClient();
+      const apiClient = getApiClient();
       if (!apiClient) {
         console.error('Failed to get API client');
         setMembersError(t('share.members.loadError'));
@@ -129,7 +114,7 @@ export const ShareScreen: React.FC = () => {
   const handleRemoveMember = useCallback(
     async (memberId: string) => {
       try {
-        const apiClient = await getApiClient();
+        const apiClient = getApiClient();
         if (!apiClient) {
           throw new Error('Failed to get API client');
         }
@@ -190,7 +175,7 @@ export const ShareScreen: React.FC = () => {
         onPress: async () => {
           setIsUpdating(true);
           try {
-            const apiClient = await getApiClient();
+            const apiClient = getApiClient();
             if (!apiClient) {
               throw new Error('Failed to get API client');
             }
@@ -232,7 +217,7 @@ export const ShareScreen: React.FC = () => {
         onPress: async () => {
           setIsUpdating(true);
           try {
-            const apiClient = await getApiClient();
+            const apiClient = getApiClient();
             if (!apiClient) {
               throw new Error('Failed to get API client');
             }

@@ -2,6 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Category, Location, InventoryItem, TodoItem } from '../types/inventory';
 import { Settings } from '../types/settings';
 import { syncCallbackRegistry } from './SyncCallbackRegistry';
+import { syncLogger, storageLogger } from '../utils/Logger';
 
 // File types that can be synced
 export type SyncFileType = 'categories' | 'locations' | 'inventoryItems' | 'todoItems' | 'settings';
@@ -81,16 +82,16 @@ class SyncService {
    * Initialize sync service
    */
   async initialize(deviceName?: string): Promise<void> {
-    console.log('[SyncService] *** INITIALIZING SYNC SERVICE ***');
+    syncLogger.header('INITIALIZING SYNC SERVICE');
 
     // Get or create device ID
     this.deviceId = await SecureStore.getItemAsync('device_id');
     if (!this.deviceId) {
       this.deviceId = this.generateDeviceId();
       await SecureStore.setItemAsync('device_id', this.deviceId);
-      console.log('[SyncService] Generated new device ID:', this.deviceId);
+      syncLogger.info(`Generated new device ID: ${this.deviceId}`);
     } else {
-      console.log('[SyncService] Using existing device ID:', this.deviceId);
+      syncLogger.info(`Using existing device ID: ${this.deviceId}`);
     }
 
     // Load sync metadata
@@ -109,12 +110,12 @@ class SyncService {
     const syncEnabledStr = await SecureStore.getItemAsync('sync_enabled');
     if (syncEnabledStr === null) {
       await SecureStore.setItemAsync('sync_enabled', 'false');
-      console.log('[SyncService] *** NO SYNC STATE FOUND - Initialized to disabled (default) ***');
+      syncLogger.warn('No sync state found - initialized to disabled (default)');
     } else {
-      console.log('[SyncService] *** SYNC PERSISTED STATE FOUND: "' + syncEnabledStr + '" ***');
+      syncLogger.info(`Sync persisted state found: "${syncEnabledStr}"`);
     }
 
-    console.log('[SyncService] *** SYNC SERVICE INITIALIZATION COMPLETE ***');
+    syncLogger.end('SYNC SERVICE INITIALIZATION');
   }
 
   /**
@@ -143,7 +144,7 @@ class SyncService {
           todoItems: { ...parsed.todoItems },
           settings: { ...parsed.settings },
         };
-        console.log('[SyncService] Loaded sync metadata:', this.syncMetadata);
+        syncLogger.debug('Loaded sync metadata', this.syncMetadata);
       } else {
         // Initialize default metadata
         this.syncMetadata = {
@@ -156,10 +157,10 @@ class SyncService {
           settings: this.createDefaultSyncState(),
         };
         await this.saveSyncMetadata();
-        console.log('[SyncService] Created default sync metadata');
+        syncLogger.info('Created default sync metadata');
       }
     } catch (error) {
-      console.error('[SyncService] Error loading sync metadata:', error);
+      syncLogger.error('Error loading sync metadata', error);
     }
   }
 
@@ -182,10 +183,10 @@ class SyncService {
     try {
       if (this.syncMetadata) {
         await SecureStore.setItemAsync('sync_metadata', JSON.stringify(this.syncMetadata));
-        console.log('[SyncService] Saved sync metadata');
+        storageLogger.debug('Saved sync metadata', { metadata: this.syncMetadata });
       }
     } catch (error) {
-      console.error('[SyncService] Error saving sync metadata:', error);
+      storageLogger.error('Error saving sync metadata', error);
     }
   }
 
@@ -195,11 +196,11 @@ class SyncService {
    * This method is idempotent - calling it multiple times is safe
    */
   async enable(): Promise<void> {
-    console.log('[SyncService] Enabling sync...');
+    syncLogger.info('Enabling sync...');
 
     // Check if sync is already enabled and running
     if (this.syncInterval !== null) {
-      console.log('[SyncService] Sync is already enabled and running (interval exists), skipping enable');
+      syncLogger.info('Sync is already enabled and running (interval exists), skipping enable');
       return;
     }
 
@@ -209,10 +210,10 @@ class SyncService {
 
     // Verify it was persisted
     const persisted = await SecureStore.getItemAsync('sync_enabled');
-    console.log('[SyncService] Sync enabled state persisted. Verification: persisted =', persisted);
+    syncLogger.debug(`Sync enabled state persisted. Verification: persisted = ${persisted}`);
 
     try {
-      console.log('[SyncService] Starting initial sync...');
+      syncLogger.info('Starting initial sync...');
 
       // Perform initial full sync FIRST (before starting periodic sync)
       await this.performInitialSync();
@@ -222,9 +223,9 @@ class SyncService {
         this.syncAll();
       }, 5000);
 
-      console.log('[SyncService] Sync fully enabled - initial sync completed, periodic sync started');
+      syncLogger.end('SYNC ENABLED - initial sync completed, periodic sync started');
     } catch (error) {
-      console.error('[SyncService] Error during sync enable (state already persisted):', error);
+      syncLogger.fail('Sync enable', error);
       // State is already persisted, so sync will be restored on next app start
       // Re-throw to let caller handle the error
       throw error;
@@ -236,36 +237,36 @@ class SyncService {
    * State is persisted atomically before stopping operations
    */
   async disable(): Promise<void> {
-    console.log('[SyncService] Disabling sync...');
+    syncLogger.info('Disabling sync...');
 
     // Persist disabled state FIRST (atomic operation)
     // This ensures state is saved immediately
     await SecureStore.setItemAsync('sync_enabled', 'false');
-    console.log('[SyncService] Sync disabled state persisted');
+    storageLogger.debug('Sync disabled state persisted');
 
     // Stop periodic sync immediately
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
-      console.log('[SyncService] Periodic sync interval cleared');
+      syncLogger.debug('Periodic sync interval cleared');
     }
 
     // Clear queue to prevent new syncs
     this.syncQueue = [];
-    console.log('[SyncService] Sync queue cleared');
+    syncLogger.debug('Sync queue cleared');
 
     // Wait for any in-flight syncs to complete (with timeout)
     const promises = Array.from(this.inFlightSyncs.values());
     if (promises.length > 0) {
-      console.log(`[SyncService] Waiting for ${promises.length} in-flight sync(s) to complete before disabling...`);
+      syncLogger.info(`Waiting for ${promises.length} in-flight sync(s) to complete before disabling...`);
       try {
         await Promise.race([
           Promise.all(promises),
           new Promise(resolve => setTimeout(resolve, 5000)) // 5 second timeout
         ]);
-        console.log('[SyncService] All in-flight syncs completed or timed out');
+        syncLogger.info('All in-flight syncs completed or timed out');
       } catch (error) {
-        console.error('[SyncService] Error waiting for in-flight syncs:', error);
+        syncLogger.error('Error waiting for in-flight syncs', error);
       }
     }
 
@@ -274,7 +275,7 @@ class SyncService {
     this.lastSyncTime.clear();
     this.isInitialSyncRunning = false;
 
-    console.log('[SyncService] Sync fully disabled - all operations stopped and state cleared');
+    syncLogger.end('SYNC DISABLED - all operations stopped and state cleared');
   }
 
   /**
@@ -286,10 +287,7 @@ class SyncService {
     const syncEnabledStr = await SecureStore.getItemAsync('sync_enabled');
     const persistedEnabled = syncEnabledStr === 'true';
 
-    console.log('[SyncService] *** CHECKING SYNC ENABLED STATE ***', {
-      persisted: syncEnabledStr ?? 'null',
-      persistedEnabled
-    });
+    syncLogger.debug(`Checking sync enabled state: persisted=${syncEnabledStr ?? 'null'}, enabled=${persistedEnabled}`);
 
     return persistedEnabled;
   }
@@ -298,7 +296,7 @@ class SyncService {
    * Perform initial full sync for all file types
    */
   private async performInitialSync(): Promise<void> {
-    console.log('[SyncService] Performing initial full sync...');
+    syncLogger.start('INITIAL FULL SYNC');
     this.isInitialSyncRunning = true;
 
     try {
@@ -313,9 +311,9 @@ class SyncService {
       // Wait for all queued syncs to complete
       await this.waitForQueueToComplete();
 
-      console.log('[SyncService] Initial full sync completed');
+      syncLogger.end('Initial full sync completed');
     } catch (error) {
-      console.error('[SyncService] Error during initial sync:', error);
+      syncLogger.error('Error during initial sync', error);
     } finally {
       this.isInitialSyncRunning = false;
     }
@@ -333,7 +331,7 @@ class SyncService {
     // Wait for any remaining in-flight syncs
     const promises = Array.from(this.inFlightSyncs.values());
     if (promises.length > 0) {
-      console.log(`[SyncService] Waiting for ${promises.length} in-flight syncs to complete...`);
+      syncLogger.info(`Waiting for ${promises.length} in-flight syncs to complete...`);
       await Promise.all(promises);
     }
   }
@@ -344,17 +342,17 @@ class SyncService {
   async syncAll(): Promise<void> {
     const enabled = await this.isEnabled();
     if (!enabled) {
-      console.log('[SyncService] Sync is disabled, skipping sync all');
+      syncLogger.info('Sync is disabled, skipping sync all');
       return;
     }
 
     // Skip periodic sync if initial sync is running
     if (this.isInitialSyncRunning) {
-      console.log('[SyncService] Initial sync is running, skipping periodic sync');
+      syncLogger.info('Initial sync is running, skipping periodic sync');
       return;
     }
 
-    console.log('[SyncService] Syncing all file types...');
+    syncLogger.info('Syncing all file types...');
 
     const fileTypes: SyncFileType[] = ['categories', 'locations', 'inventoryItems', 'todoItems', 'settings'];
 
@@ -370,7 +368,7 @@ class SyncService {
   async queueSync(fileType: SyncFileType, operation: 'pull' | 'push' | 'full', priority: 'high' | 'normal' | 'low' = 'normal'): Promise<void> {
     const enabled = await this.isEnabled();
     if (!enabled) {
-      console.log(`[SyncService] Sync is disabled, ignoring ${operation} queue for ${fileType}`);
+      syncLogger.info(`Sync is disabled, ignoring ${operation} queue for ${fileType}`);
       return;
     }
 
@@ -378,7 +376,7 @@ class SyncService {
 
     // Check if there's already an in-flight sync for this fileType+operation
     if (this.inFlightSyncs.has(taskKey)) {
-      console.log(`[SyncService] Sync already in-flight for ${taskKey}, skipping duplicate request`);
+      syncLogger.debug(`Sync already in-flight for ${taskKey}, skipping duplicate request`);
       return;
     }
 
@@ -386,7 +384,7 @@ class SyncService {
     if (operation !== 'full') {
       const fullSyncKey = `${fileType}-full`;
       if (this.inFlightSyncs.has(fullSyncKey)) {
-        console.log(`[SyncService] Full sync in progress for ${fileType}, skipping ${operation} request`);
+        syncLogger.debug(`Full sync in progress for ${fileType}, skipping ${operation} request`);
         return;
       }
     }
@@ -396,7 +394,7 @@ class SyncService {
       const pullKey = `${fileType}-pull`;
       const pushKey = `${fileType}-push`;
       if (this.inFlightSyncs.has(pullKey) || this.inFlightSyncs.has(pushKey)) {
-        console.log(`[SyncService] Pull or push in progress for ${fileType}, skipping full sync request`);
+        syncLogger.debug(`Pull or push in progress for ${fileType}, skipping full sync request`);
         return;
       }
     }
@@ -405,7 +403,7 @@ class SyncService {
     const lastSync = this.lastSyncTime.get(fileType);
     const now = Date.now();
     if (lastSync && (now - lastSync) < this.SYNC_DEBOUNCE_MS) {
-      console.log(`[SyncService] Debouncing sync for ${fileType}, last sync was ${now - lastSync}ms ago`);
+      syncLogger.debug(`Debouncing sync for ${fileType}, last sync was ${now - lastSync}ms ago`);
       return;
     }
 
@@ -418,10 +416,10 @@ class SyncService {
       // Replace existing task if new one has higher priority, otherwise skip
       const existingTask = this.syncQueue[existingTaskIndex];
       if (priority === 'high' && existingTask.priority !== 'high') {
-        console.log(`[SyncService] Replacing existing ${existingTask.priority} priority task with high priority for ${taskKey}`);
+        syncLogger.info(`Replacing existing ${existingTask.priority} priority task with high priority for ${taskKey}`);
         this.syncQueue.splice(existingTaskIndex, 1);
       } else {
-        console.log(`[SyncService] Task already queued for ${taskKey}, skipping duplicate`);
+        syncLogger.debug(`Task already queued for ${taskKey}, skipping duplicate`);
         return;
       }
     }
@@ -436,7 +434,7 @@ class SyncService {
       maxRetries: 3,
     };
 
-    console.log(`[SyncService] Queuing sync task:`, task);
+    syncLogger.debug('Queuing sync task', task);
 
     // Insert task based on priority
     if (priority === 'high') {
@@ -448,10 +446,10 @@ class SyncService {
 
     // Start processing if not already processing
     if (!this.isProcessing) {
-      console.log(`[SyncService] Starting queue processing (queue length: ${this.syncQueue.length})`);
+      syncLogger.info(`Starting queue processing (queue length: ${this.syncQueue.length})`);
       this.processQueue();
     } else {
-      console.log(`[SyncService] Queue already processing, task added to queue (queue length: ${this.syncQueue.length})`);
+      syncLogger.debug(`Queue already processing, task added to queue (queue length: ${this.syncQueue.length})`);
     }
   }
 
@@ -461,37 +459,37 @@ class SyncService {
   private async processQueue(): Promise<void> {
     if (this.isProcessing || this.syncQueue.length === 0) {
       if (this.isProcessing) {
-        console.log(`[SyncService] Queue already processing, skipping (queue length: ${this.syncQueue.length})`);
+        syncLogger.debug(`Queue already processing, skipping (queue length: ${this.syncQueue.length})`);
       } else {
-        console.log(`[SyncService] Queue is empty, nothing to process`);
+        syncLogger.debug(`Queue is empty, nothing to process`);
       }
       return;
     }
 
     this.isProcessing = true;
-    console.log(`[SyncService] ========== PROCESSING SYNC QUEUE ==========`);
-    console.log(`[SyncService] Queue length: ${this.syncQueue.length}`);
-    console.log(`[SyncService] Tasks:`, JSON.stringify(this.syncQueue.map(t => ({ id: t.id, fileType: t.fileType, operation: t.operation, priority: t.priority })), null, 2));
+    syncLogger.header('PROCESSING SYNC QUEUE');
+    syncLogger.info(`Queue length: ${this.syncQueue.length}`);
+    syncLogger.debug('Tasks', this.syncQueue.map(t => ({ id: t.id, fileType: t.fileType, operation: t.operation, priority: t.priority })));
 
     while (this.syncQueue.length > 0) {
       const task = this.syncQueue.shift()!;
       const remainingTasks = this.syncQueue.length;
-      console.log(`[SyncService] Processing task ${task.id} (${remainingTasks} tasks remaining)`);
+      syncLogger.info(`Processing task ${task.id} (${remainingTasks} tasks remaining)`);
 
       try {
         await this.executeTask(task);
-        console.log(`[SyncService] Task ${task.id} completed successfully`);
+        syncLogger.info(`Task ${task.id} completed successfully`);
       } catch (error) {
-        console.error(`[SyncService] Error executing task:`, task, error);
+        syncLogger.error('Error executing task', { task, error });
 
         // Retry if max retries not reached
         if (task.retries < task.maxRetries) {
           task.retries++;
-          console.log(`[SyncService] Retrying task (${task.retries}/${task.maxRetries}):`, task);
+          syncLogger.warn(`Retrying task (${task.retries}/${task.maxRetries})`, task);
           this.syncQueue.unshift(task); // Add to front for retry
           await this.delay(1000 * task.retries); // Exponential backoff
         } else {
-          console.error(`[SyncService] Task failed after ${task.maxRetries} retries:`, task);
+          syncLogger.error(`Task failed after ${task.maxRetries} retries`, task);
           this.notifyListeners({
             type: 'error',
             fileType: task.fileType,
@@ -502,7 +500,7 @@ class SyncService {
     }
 
     this.isProcessing = false;
-    console.log('[SyncService] ========== SYNC QUEUE PROCESSING COMPLETE ==========');
+    syncLogger.end('SYNC QUEUE PROCESSING COMPLETE');
   }
 
   /**
@@ -513,11 +511,11 @@ class SyncService {
     
     // Check if already in-flight (shouldn't happen due to queueSync checks, but double-check)
     if (this.inFlightSyncs.has(taskKey)) {
-      console.log(`[SyncService] Task ${taskKey} already in-flight, skipping`);
+      syncLogger.debug(`Task ${taskKey} already in-flight, skipping`);
       return;
     }
 
-    console.log(`[SyncService] Executing task:`, task);
+    syncLogger.debug('Executing task', task);
 
     // Create a promise for this sync operation
     const syncPromise = (async () => {
@@ -549,7 +547,7 @@ class SyncService {
    * Sync a single file type with pull-merge-push
    */
   async syncFile(fileType: SyncFileType, mode: 'pull' | 'push' | 'full'): Promise<void> {
-    console.log(`[SyncService] Syncing ${fileType} in ${mode} mode...`);
+    syncLogger.info(`Syncing ${fileType} in ${mode} mode...`);
 
     if (mode === 'pull') {
       await this.pullFile(fileType);
@@ -567,9 +565,8 @@ class SyncService {
    */
   private async pullFile(fileType: SyncFileType): Promise<void> {
     const pullStartTime = Date.now();
-    console.log(`[SyncService] ========== PULL FILE START ==========`);
-    console.log(`[SyncService] File Type: ${fileType}`);
-    console.log(`[SyncService] Timestamp: ${new Date().toISOString()}`);
+    syncLogger.header(`PULL FILE START - ${fileType}`);
+    syncLogger.verbose(`Timestamp: ${new Date().toISOString()}`);
 
     const endpoint = `/api/sync/${fileType}/pull`;
     const requestDetails = {
@@ -581,12 +578,14 @@ class SyncService {
     };
 
     // Log request details
-    console.log(`[SyncService] Pull request details:`, JSON.stringify(requestDetails, null, 2));
+    syncLogger.debug('Pull request details', requestDetails);
     if (this.syncMetadata) {
-      console.log(`[SyncService] Last sync time: ${this.syncMetadata[fileType].lastSyncTime}`);
-      console.log(`[SyncService] Last server timestamp: ${this.syncMetadata[fileType].lastServerTimestamp}`);
-      console.log(`[SyncService] Sync count: ${this.syncMetadata[fileType].syncCount}`);
-      console.log(`[SyncService] Last sync status: ${this.syncMetadata[fileType].lastSyncStatus}`);
+      syncLogger.verbose('Sync metadata', {
+        lastSyncTime: this.syncMetadata[fileType].lastSyncTime,
+        lastServerTimestamp: this.syncMetadata[fileType].lastServerTimestamp,
+        syncCount: this.syncMetadata[fileType].syncCount,
+        lastSyncStatus: this.syncMetadata[fileType].lastSyncStatus,
+      });
     }
 
     try {
@@ -601,22 +600,21 @@ class SyncService {
       });
 
       const pullDuration = Date.now() - pullStartTime;
-      console.log(`[SyncService] ========== PULL RESPONSE RECEIVED ==========`);
-      console.log(`[SyncService] File Type: ${fileType}`);
-      console.log(`[SyncService] Duration: ${pullDuration}ms`);
-      console.log(`[SyncService] Response Success: ${response.success}`);
-      console.log(`[SyncService] Server Timestamp: ${response.serverTimestamp}`);
-      console.log(`[SyncService] Last Sync Time: ${response.lastSyncTime}`);
-      
+      syncLogger.header(`PULL RESPONSE RECEIVED - ${fileType}`);
+      syncLogger.info(`Duration: ${pullDuration}ms`);
+      syncLogger.info(`Response Success: ${response.success}`);
+      syncLogger.info(`Server Timestamp: ${response.serverTimestamp}`);
+      syncLogger.info(`Last Sync Time: ${response.lastSyncTime}`);
+
       if (response.data !== undefined) {
         const dataStr = JSON.stringify(response.data);
         const dataSize = new Blob([dataStr]).size;
         const dataLength = Array.isArray(response.data) ? response.data.length : 1;
-        console.log(`[SyncService] Response Data Size: ${dataSize} bytes`);
-        console.log(`[SyncService] Response Data Length: ${dataLength} items`);
-        console.log(`[SyncService] Response Data:`, JSON.stringify(response.data, null, 2));
+        syncLogger.verbose(`Response Data Size: ${dataSize} bytes`);
+        syncLogger.verbose(`Response Data Length: ${dataLength} items`);
+        syncLogger.verbose('Response Data', response.data);
       } else {
-        console.log(`[SyncService] Response Data: (undefined)`);
+        syncLogger.verbose('Response Data: (undefined)');
       }
 
       if (response.success && response.data !== undefined) {
@@ -650,11 +648,10 @@ class SyncService {
           timestamp: response.serverTimestamp,
         });
 
-        console.log(`[SyncService] Pull completed successfully for ${fileType}`);
-        console.log(`[SyncService] ========== PULL FILE COMPLETE ==========`);
+        syncLogger.end(`Pull completed successfully for ${fileType}`);
       } else {
-        console.warn(`[SyncService] Pull response indicates failure or no data for ${fileType}`);
-        console.log(`[SyncService] ========== PULL FILE COMPLETE (NO DATA) ==========`);
+        syncLogger.warn(`Pull response indicates failure or no data for ${fileType}`);
+        syncLogger.end('PULL FILE COMPLETE (NO DATA)');
       }
     } catch (error) {
       // Verbose error logging
@@ -682,12 +679,9 @@ class SyncService {
       }
 
       const pullDuration = Date.now() - pullStartTime;
-      console.error(`[SyncService] ========== PULL FILE FAILED ==========`);
-      console.error(`[SyncService] File Type: ${fileType}`);
-      console.error(`[SyncService] Duration: ${pullDuration}ms`);
-      console.error(`[SyncService] Error Details:`, JSON.stringify(errorDetails, null, 2));
-      console.error(`[SyncService] Full error object:`, error);
-      console.error(`[SyncService] =====================================`);
+      syncLogger.fail(`PULL FILE FAILED - ${fileType}`, errorDetails);
+      syncLogger.verbose(`Duration: ${pullDuration}ms`);
+      syncLogger.verbose('Full error object', error);
 
       if (this.syncMetadata) {
         // Update sync metadata (create new object to avoid read-only property issues)
@@ -716,9 +710,8 @@ class SyncService {
    */
   private async pushFile(fileType: SyncFileType): Promise<void> {
     const pushStartTime = Date.now();
-    console.log(`[SyncService] ========== PUSH FILE START ==========`);
-    console.log(`[SyncService] File Type: ${fileType}`);
-    console.log(`[SyncService] Timestamp: ${new Date().toISOString()}`);
+    syncLogger.header(`PUSH FILE START - ${fileType}`);
+    syncLogger.verbose(`Timestamp: ${new Date().toISOString()}`);
 
     let requestBody: SyncFileData<unknown> | null = null;
     const endpoint = `/api/sync/${fileType}/push`;
@@ -747,15 +740,17 @@ class SyncService {
       const dataStr = JSON.stringify(data);
       const dataSize = new Blob([dataStr]).size;
       const dataLength = Array.isArray(data) ? data.length : 1;
-      console.log(`[SyncService] Local data size: ${dataSize} bytes`);
-      console.log(`[SyncService] Local data length: ${dataLength} items`);
-      console.log(`[SyncService] Local data for ${fileType}:`, JSON.stringify(data, null, 2));
-      
+      syncLogger.verbose(`Local data size: ${dataSize} bytes`);
+      syncLogger.verbose(`Local data length: ${dataLength} items`);
+      syncLogger.verbose(`Local data for ${fileType}`, data);
+
       if (this.syncMetadata) {
-        console.log(`[SyncService] Last sync time: ${this.syncMetadata[fileType].lastSyncTime}`);
-        console.log(`[SyncService] Last server timestamp: ${this.syncMetadata[fileType].lastServerTimestamp}`);
-        console.log(`[SyncService] Sync count: ${this.syncMetadata[fileType].syncCount}`);
-        console.log(`[SyncService] Last sync status: ${this.syncMetadata[fileType].lastSyncStatus}`);
+        syncLogger.verbose('Sync metadata', {
+          lastSyncTime: this.syncMetadata[fileType].lastSyncTime,
+          lastServerTimestamp: this.syncMetadata[fileType].lastServerTimestamp,
+          syncCount: this.syncMetadata[fileType].syncCount,
+          lastSyncStatus: this.syncMetadata[fileType].lastSyncStatus,
+        });
       }
 
       // Prepare push request
@@ -780,8 +775,8 @@ class SyncService {
       };
 
       // Log request details
-      console.log(`[SyncService] Push request details:`, JSON.stringify(requestDetails, null, 2));
-      console.log(`[SyncService] Full request body:`, JSON.stringify(requestBody, null, 2));
+      syncLogger.debug('Push request details', requestDetails);
+      syncLogger.verbose('Full request body', requestBody);
 
       const response = await this.apiClient.request<{
         success: boolean;
@@ -796,17 +791,16 @@ class SyncService {
       });
 
       const pushDuration = Date.now() - pushStartTime;
-      console.log(`[SyncService] ========== PUSH RESPONSE RECEIVED ==========`);
-      console.log(`[SyncService] File Type: ${fileType}`);
-      console.log(`[SyncService] Duration: ${pushDuration}ms`);
-      console.log(`[SyncService] Response Success: ${response.success}`);
-      console.log(`[SyncService] Server Timestamp: ${response.serverTimestamp}`);
-      console.log(`[SyncService] Last Sync Time: ${response.lastSyncTime}`);
-      console.log(`[SyncService] Entries Count: ${response.entriesCount}`);
+      syncLogger.header(`PUSH RESPONSE RECEIVED - ${fileType}`);
+      syncLogger.info(`Duration: ${pushDuration}ms`);
+      syncLogger.info(`Response Success: ${response.success}`);
+      syncLogger.info(`Server Timestamp: ${response.serverTimestamp}`);
+      syncLogger.info(`Last Sync Time: ${response.lastSyncTime}`);
+      syncLogger.info(`Entries Count: ${response.entriesCount}`);
       if (response.message) {
-        console.log(`[SyncService] Response Message: ${response.message}`);
+        syncLogger.info(`Response Message: ${response.message}`);
       }
-      console.log(`[SyncService] Full Response:`, JSON.stringify(response, null, 2));
+      syncLogger.verbose('Full Response', response);
 
       if (response.success) {
         // Update sync metadata (create new object to avoid read-only property issues)
@@ -831,11 +825,10 @@ class SyncService {
           entriesCount: response.entriesCount,
         });
 
-        console.log(`[SyncService] Push completed successfully for ${fileType}`);
-        console.log(`[SyncService] ========== PUSH FILE COMPLETE ==========`);
+        syncLogger.end(`Push completed successfully for ${fileType}`);
       } else {
-        console.warn(`[SyncService] Push response indicates failure for ${fileType}`);
-        console.log(`[SyncService] ========== PUSH FILE COMPLETE (FAILED) ==========`);
+        syncLogger.warn(`Push response indicates failure for ${fileType}`);
+        syncLogger.end('PUSH FILE COMPLETE (FAILED)');
       }
     } catch (error) {
       // Verbose error logging
@@ -873,12 +866,9 @@ class SyncService {
       }
 
       const pushDuration = Date.now() - pushStartTime;
-      console.error(`[SyncService] ========== PUSH FILE FAILED ==========`);
-      console.error(`[SyncService] File Type: ${fileType}`);
-      console.error(`[SyncService] Duration: ${pushDuration}ms`);
-      console.error(`[SyncService] Error Details:`, JSON.stringify(errorDetails, null, 2));
-      console.error(`[SyncService] Full error object:`, error);
-      console.error(`[SyncService] =====================================`);
+      syncLogger.fail(`PUSH FILE FAILED - ${fileType}`, errorDetails);
+      syncLogger.verbose(`Duration: ${pushDuration}ms`);
+      syncLogger.verbose('Full error object', error);
 
       if (this.syncMetadata) {
         // Update sync metadata (create new object to avoid read-only property issues)
@@ -906,7 +896,7 @@ class SyncService {
    * Merge entries from server with local data
    */
   private async mergeEntries(fileType: SyncFileType, serverData: unknown[]): Promise<void> {
-    console.log(`[SyncService] Merging entries for ${fileType}, server data:`, serverData);
+    syncLogger.verbose(`Merging entries for ${fileType}`, serverData);
 
     // Suppress sync callbacks during merge to prevent triggering additional syncs
     this.isMergingData = true;
@@ -947,7 +937,7 @@ class SyncService {
       // Perform merge
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const merged = this.mergeByTimestamp(localData as any[], serverData as any[]);
-      console.log(`[SyncService] Merged data for ${fileType}:`, merged);
+      syncLogger.verbose(`Merged data for ${fileType}`, merged);
 
       // Save merged data (callbacks will be suppressed)
       await writeFile(merged);
@@ -962,7 +952,7 @@ class SyncService {
    * Merge settings from server with local settings
    */
   private async mergeSettings(serverSettings: Settings): Promise<void> {
-    console.log('[SyncService] Merging settings, server settings:', serverSettings);
+    syncLogger.verbose('Merging settings', serverSettings);
 
     // Suppress sync callbacks during merge to prevent triggering additional syncs
     this.isMergingData = true;
@@ -980,7 +970,7 @@ class SyncService {
 
       const merged = serverTime > localTime ? serverSettings : localSettings;
 
-      console.log('[SyncService] Merged settings:', merged);
+      syncLogger.verbose('Merged settings', merged);
 
       // Save merged settings (callbacks will be suppressed)
       await writeFile('settings.json', merged);
@@ -998,7 +988,7 @@ class SyncService {
     local: T[],
     server: T[]
   ): T[] {
-    console.log('[SyncService] Merging by timestamp, local count:', local.length, 'server count:', server.length);
+    syncLogger.verbose(`Merging by timestamp, local count: ${local.length}, server count: ${server.length}`);
 
     const mergedMap = new Map<string, T>();
 
@@ -1013,7 +1003,7 @@ class SyncService {
 
       if (!localEntry) {
         // Entry only exists on server - add it (including if deleted)
-        console.log('[SyncService] Adding new server entry:', serverEntry.id, serverEntry.deletedAt ? '(deleted)' : '');
+        syncLogger.verbose(`Adding new server entry: ${serverEntry.id}${serverEntry.deletedAt ? ' (deleted)' : ''}`);
         mergedMap.set(serverEntry.id, serverEntry);
       } else {
         // Entry exists on both - need to handle deletion state
@@ -1025,47 +1015,47 @@ class SyncService {
         // Both deleted - use later deletion timestamp
         if (localDeletedAt > 0 && serverDeletedAt > 0) {
           if (serverDeletedAt > localDeletedAt) {
-            console.log('[SyncService] Both deleted, using server deletion (later):', serverEntry.id);
+            syncLogger.verbose(`Both deleted, using server deletion (later): ${serverEntry.id}`);
             mergedMap.set(serverEntry.id, serverEntry);
           } else {
-            console.log('[SyncService] Both deleted, keeping local deletion (later):', serverEntry.id);
+            syncLogger.verbose(`Both deleted, keeping local deletion (later): ${serverEntry.id}`);
           }
         }
         // Server deleted, local not deleted
         else if (serverDeletedAt > 0 && localDeletedAt === 0) {
           // If deletion is more recent than local update, apply deletion
           if (serverDeletedAt > localUpdatedAt) {
-            console.log('[SyncService] Server deleted (more recent than local update), applying deletion:', serverEntry.id);
+            syncLogger.verbose(`Server deleted (more recent than local update), applying deletion: ${serverEntry.id}`);
             mergedMap.set(serverEntry.id, serverEntry);
           } else {
-            console.log('[SyncService] Server deleted but local update is more recent, keeping local:', serverEntry.id);
+            syncLogger.verbose(`Server deleted but local update is more recent, keeping local: ${serverEntry.id}`);
           }
         }
         // Local deleted, server not deleted
         else if (localDeletedAt > 0 && serverDeletedAt === 0) {
           // If deletion is more recent than server update, keep deletion
           if (localDeletedAt > serverUpdatedAt) {
-            console.log('[SyncService] Local deleted (more recent than server update), keeping deletion:', serverEntry.id);
+            syncLogger.verbose(`Local deleted (more recent than server update), keeping deletion: ${serverEntry.id}`);
           } else {
             // Server update is more recent than deletion - restore from server
-            console.log('[SyncService] Local deleted but server update is more recent, restoring from server:', serverEntry.id);
+            syncLogger.verbose(`Local deleted but server update is more recent, restoring from server: ${serverEntry.id}`);
             mergedMap.set(serverEntry.id, serverEntry);
           }
         }
         // Neither deleted - use normal timestamp-based merge
         else {
           if (serverUpdatedAt > localUpdatedAt) {
-            console.log('[SyncService] Using server version for entry:', serverEntry.id, 'server time:', new Date(serverUpdatedAt).toISOString(), 'local time:', new Date(localUpdatedAt).toISOString());
+            syncLogger.verbose(`Using server version for entry: ${serverEntry.id}, server time: ${new Date(serverUpdatedAt).toISOString()}, local time: ${new Date(localUpdatedAt).toISOString()}`);
             mergedMap.set(serverEntry.id, serverEntry);
           } else {
-            console.log('[SyncService] Keeping local version for entry:', serverEntry.id, 'local time:', new Date(localUpdatedAt).toISOString(), 'server time:', new Date(serverUpdatedAt).toISOString());
+            syncLogger.verbose(`Keeping local version for entry: ${serverEntry.id}, local time: ${new Date(localUpdatedAt).toISOString()}, server time: ${new Date(serverUpdatedAt).toISOString()}`);
           }
         }
       }
     });
 
     const result = Array.from(mergedMap.values());
-    console.log('[SyncService] Merge completed, result count:', result.length);
+    syncLogger.verbose(`Merge completed, result count: ${result.length}`);
     return result;
   }
 
@@ -1098,12 +1088,12 @@ class SyncService {
    * Notify all listeners of a sync event
    */
   private notifyListeners(event: SyncEvent): void {
-    console.log('[SyncService] Notifying listeners:', event);
+    syncLogger.debug('Notifying listeners', event);
     this.listeners.forEach(listener => {
       try {
         listener(event);
       } catch (error) {
-        console.error('[SyncService] Error in listener:', error);
+        syncLogger.error('Error in listener', error);
       }
     });
   }
@@ -1116,11 +1106,11 @@ class SyncService {
     const lastCleanup = this.lastCleanupTime.get(fileType) || 0;
     const now = Date.now();
     if (now - lastCleanup < this.CLEANUP_INTERVAL_MS) {
-      console.log(`[SyncService] Skipping cleanup for ${fileType}, last cleanup was ${Math.round((now - lastCleanup) / (60 * 60 * 1000))} hours ago`);
+      syncLogger.debug(`Skipping cleanup for ${fileType}, last cleanup was ${Math.round((now - lastCleanup) / (60 * 60 * 1000))} hours ago`);
       return;
     }
 
-    console.log(`[SyncService] Starting cleanup for ${fileType}...`);
+    syncLogger.info(`Starting cleanup for ${fileType}...`);
 
     // Suppress sync callbacks during cleanup
     this.isMergingData = true;
@@ -1164,23 +1154,23 @@ class SyncService {
         const deletedDate = new Date(item.deletedAt);
         const shouldKeep = deletedDate > cutoffDate;
         if (!shouldKeep) {
-          console.log(`[SyncService] Removing item ${(item as { id: string }).id} deleted on ${item.deletedAt}`);
+          syncLogger.verbose(`Removing item ${(item as { id: string }).id} deleted on ${item.deletedAt}`);
         }
         return shouldKeep;
       });
 
       const removedCount = allItems.length - cleaned.length;
       if (removedCount > 0) {
-        console.log(`[SyncService] Cleanup removed ${removedCount} old deleted items from ${fileType}`);
+        syncLogger.info(`Cleanup removed ${removedCount} old deleted items from ${fileType}`);
         await writeFile(cleaned);
       } else {
-        console.log(`[SyncService] No old deleted items to remove from ${fileType}`);
+        syncLogger.debug(`No old deleted items to remove from ${fileType}`);
       }
 
       // Update last cleanup time
       this.lastCleanupTime.set(fileType, now);
     } catch (error) {
-      console.error(`[SyncService] Error during cleanup for ${fileType}:`, error);
+      syncLogger.error(`Error during cleanup for ${fileType}`, error);
     } finally {
       // Re-enable sync callbacks after cleanup completes
       this.isMergingData = false;
@@ -1200,31 +1190,31 @@ class SyncService {
    * Stops sync operations but does NOT modify persisted sync state
    */
   async cleanup(): Promise<void> {
-    console.log('[SyncService] Cleaning up (stopping sync operations)...');
+    syncLogger.info('Cleaning up (stopping sync operations)...');
 
     // Stop periodic sync immediately
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
-      console.log('[SyncService] Periodic sync interval cleared');
+      syncLogger.debug('Periodic sync interval cleared');
     }
 
     // Clear queue to prevent new syncs
     this.syncQueue = [];
-    console.log('[SyncService] Sync queue cleared');
+    syncLogger.debug('Sync queue cleared');
 
     // Wait for any in-flight syncs to complete (with timeout)
     const promises = Array.from(this.inFlightSyncs.values());
     if (promises.length > 0) {
-      console.log(`[SyncService] Waiting for ${promises.length} in-flight sync(s) to complete...`);
+      syncLogger.info(`Waiting for ${promises.length} in-flight sync(s) to complete...`);
       try {
         await Promise.race([
           Promise.all(promises),
           new Promise(resolve => setTimeout(resolve, 5000)) // 5 second timeout
         ]);
-        console.log('[SyncService] All in-flight syncs completed or timed out');
+        syncLogger.info('All in-flight syncs completed or timed out');
       } catch (error) {
-        console.error('[SyncService] Error waiting for in-flight syncs:', error);
+        syncLogger.error('Error waiting for in-flight syncs', error);
       }
     }
 
@@ -1236,7 +1226,7 @@ class SyncService {
     // Clear listeners
     this.listeners.clear();
 
-    console.log('[SyncService] Cleanup complete - sync operations stopped, persisted state NOT modified');
+    syncLogger.end('Cleanup complete - sync operations stopped, persisted state NOT modified');
   }
 }
 

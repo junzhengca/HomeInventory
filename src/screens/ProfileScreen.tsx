@@ -23,8 +23,6 @@ import { useAuth, useSync } from '../store/hooks';
 import { useTheme } from '../theme/ThemeProvider';
 import { calculateBottomPadding } from '../utils/layout';
 import { formatDate } from '../utils/formatters';
-import { ApiClient } from '../services/ApiClient';
-import { getAuthTokens } from '../services/AuthService';
 import { signInWithGoogle } from '../services/GoogleAuthService';
 
 const Container = styled(View)`
@@ -200,7 +198,7 @@ const AuthSubtitle = styled(Text)`
 `;
 
 export const ProfileScreen: React.FC = () => {
-  const { user, isAuthenticated, isLoading, error, logout, updateUser, googleLogin } = useAuth();
+  const { user, isAuthenticated, isLoading, error, logout, updateUser, googleLogin, getApiClient } = useAuth();
   const { enabled: syncEnabled, loading: syncLoading, lastSyncTime, error: syncError, enableSync, disableSync, syncAll } = useSync();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -214,17 +212,6 @@ export const ProfileScreen: React.FC = () => {
 
   const getLocale = useCallback(() => {
     return i18n.language === 'zh' || i18n.language === 'zh-CN' ? 'zh-CN' : 'en-US';
-  }, []);
-
-  const getApiClient = useCallback(async (): Promise<ApiClient | null> => {
-    const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://home-inventory-api.logiccore.digital';
-    const apiClient = new ApiClient(API_BASE_URL);
-    const tokens = await getAuthTokens();
-    if (tokens) {
-      apiClient.setAuthToken(tokens.accessToken);
-      return apiClient;
-    }
-    return null;
   }, []);
 
   const handleAvatarPress = useCallback(async () => {
@@ -274,7 +261,7 @@ export const ProfileScreen: React.FC = () => {
       });
 
       // Get API client and upload image
-      const apiClient = await getApiClient();
+      const apiClient = getApiClient();
       if (!apiClient) {
         throw new Error('Failed to initialize API client');
       }
@@ -628,7 +615,7 @@ export const ProfileScreen: React.FC = () => {
         bottomSheetRef={editNicknameBottomSheetRef}
         onNicknameSet={async () => {
           // Refresh user data
-          const apiClient = await getApiClient();
+          const apiClient = getApiClient();
           if (apiClient) {
             const updatedUser = await apiClient.getCurrentUser();
             await updateUser(updatedUser);

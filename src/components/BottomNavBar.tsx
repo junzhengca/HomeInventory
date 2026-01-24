@@ -81,7 +81,7 @@ export const BottomNavBar: React.FC<BottomTabBarProps> = ({ state, navigation })
             const isFocused = state.index === index;
             const routeName = route.name as keyof TabParamList;
 
-            let iconName: string = 'list-outline';
+            let iconName: string = 'home-outline';
             let IconComponent: typeof Ionicons | typeof MaterialCommunityIcons = Ionicons;
 
             if (routeName === 'NotesTab') {

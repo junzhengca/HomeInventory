@@ -361,127 +361,99 @@ export const HomeScreen: React.FC = () => {
   // Calculate bottom padding for scrollable content
   const bottomPadding = calculateBottomPadding(insets.bottom);
 
-  if (isLoading) {
-    return (
-      <Container>
-        <PageHeader
-          icon="list"
-          title={t('inventory.title')}
-          subtitle={t('inventory.loading')}
-          showRightButtons={true}
-          avatarUrl={user?.avatarUrl}
-          onAvatarPress={handleAvatarPress}
-        />
-        <LoadingContainer>
-          <ActivityIndicator size="large" />
-        </LoadingContainer>
-        <LoginBottomSheet
-          bottomSheetRef={loginBottomSheetRef}
-          onSignupPress={handleSignupPress}
-          onLoginSuccess={handleLoginSuccess}
-        />
-        <SignupBottomSheet
-          bottomSheetRef={signupBottomSheetRef}
-          onLoginPress={handleLoginPress}
-          onSignupSuccess={handleSignupSuccess}
-        />
-        <EnableSyncBottomSheet
-          bottomSheetRef={enableSyncBottomSheetRef}
-          onSkip={handleSyncPromptSkip}
-          onEnableSync={handleSyncPromptEnable}
-        />
-        <CreateItemBottomSheet
-          bottomSheetRef={createItemBottomSheetRef}
-          initialData={recognizedItemData}
-          onItemCreated={handleItemCreated}
-        />
-      </Container>
-    );
-  }
+  const headerSubtitle = isLoading
+    ? t('inventory.loading')
+    : t('inventory.itemsCount', { count: filteredItems.length });
 
   return (
     <Container>
       <PageHeader
-        icon="list"
+        icon="home"
         title={t('inventory.title')}
-        subtitle={t('inventory.itemsCount', { count: filteredItems.length })}
+        subtitle={headerSubtitle}
         showRightButtons={true}
         avatarUrl={user?.avatarUrl}
         onAvatarPress={handleAvatarPress}
       />
-      <Content>
-        <SearchInput value={searchQuery} onChangeText={setSearchQuery} />
-        <FilterRow>
-          <FilterToggleBtn
-            onPress={() =>
-              setFilterMode((prev) =>
-                prev === 'location' ? 'status' : 'location'
-              )
-            }
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={
-                filterMode === 'location'
-                  ? 'location-outline'
-                  : 'pricetag-outline'
+      {isLoading ? (
+        <LoadingContainer>
+          <ActivityIndicator size="large" />
+        </LoadingContainer>
+      ) : (
+        <Content>
+          <SearchInput value={searchQuery} onChangeText={setSearchQuery} />
+          <FilterRow>
+            <FilterToggleBtn
+              onPress={() =>
+                setFilterMode((prev) =>
+                  prev === 'location' ? 'status' : 'location'
+                )
               }
-              size={18}
-              color={theme.colors.primary}
-            />
-            <FilterToggleText>
-              {t(`inventory.filterType.${filterMode}`)}
-            </FilterToggleText>
-          </FilterToggleBtn>
-          {filterMode === 'location' ? (
-            <LocationFilter
-              selectedLocationId={selectedLocationId}
-              onSelect={setSelectedLocationId}
-              counts={locationCounts}
-            />
-          ) : (
-            <StatusFilter
-              selectedStatusId={selectedStatusId}
-              onSelect={setSelectedStatusId}
-              counts={statusCounts}
-            />
-          )}
-        </FilterRow>
-        <ListContainer>
-          {filteredItems.length === 0 ? (
-            <EmptyState
-              icon="list-outline"
-              title={t('inventory.empty.title')}
-              description={
-                searchQuery.trim() ||
-                  selectedLocationId !== null ||
-                  selectedStatusId !== null
-                  ? t('inventory.empty.filtered')
-                  : t('inventory.empty.description')
-              }
-            />
-          ) : (
-            <FlatList
-              data={filteredItems}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={{ width: cardWidth }}>
-                  <ItemCard item={item} onPress={handleItemPress} />
-                </View>
-              )}
-              numColumns={2}
-              columnWrapperStyle={{
-                gap: 12,
-                marginBottom: 12,
-              }}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingBottom: bottomPadding,
-              }}
-            />
-          )}
-        </ListContainer>
-      </Content>
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={
+                  filterMode === 'location'
+                    ? 'location-outline'
+                    : 'pricetag-outline'
+                }
+                size={18}
+                color={theme.colors.primary}
+              />
+              <FilterToggleText>
+                {t(`inventory.filterType.${filterMode}`)}
+              </FilterToggleText>
+            </FilterToggleBtn>
+            {filterMode === 'location' ? (
+              <LocationFilter
+                selectedLocationId={selectedLocationId}
+                onSelect={setSelectedLocationId}
+                counts={locationCounts}
+              />
+            ) : (
+              <StatusFilter
+                selectedStatusId={selectedStatusId}
+                onSelect={setSelectedStatusId}
+                counts={statusCounts}
+              />
+            )}
+          </FilterRow>
+          <ListContainer>
+            {filteredItems.length === 0 ? (
+              <EmptyState
+                icon="list-outline"
+                title={t('inventory.empty.title')}
+                description={
+                  searchQuery.trim() ||
+                    selectedLocationId !== null ||
+                    selectedStatusId !== null
+                    ? t('inventory.empty.filtered')
+                    : t('inventory.empty.description')
+                }
+              />
+            ) : (
+              <FlatList
+                data={filteredItems}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={{ width: cardWidth }}>
+                    <ItemCard item={item} onPress={handleItemPress} />
+                  </View>
+                )}
+                numColumns={2}
+                columnWrapperStyle={{
+                  gap: 12,
+                  marginBottom: 12,
+                }}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingBottom: bottomPadding,
+                }}
+              />
+            )}
+          </ListContainer>
+        </Content>
+      )}
       <LoginBottomSheet
         bottomSheetRef={loginBottomSheetRef}
         onSignupPress={handleSignupPress}
