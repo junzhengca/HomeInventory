@@ -9,7 +9,8 @@ const HeaderContainer = styled(View)`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  height: 80px;
+  padding-top: ${({ theme }: StyledProps) => theme.spacing.xl}px;
+  padding-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
 `;
@@ -48,7 +49,7 @@ export interface BottomSheetHeaderProps {
   closeIcon?: keyof typeof Ionicons.glyphMap;
 }
 
-export const HEADER_HEIGHT = 80;
+export const HEADER_HEIGHT = 96;
 
 /**
  * Simple fixed header component for bottom sheets.

@@ -26,10 +26,10 @@ import {
   FormSection,
   UncontrolledInput,
   NumberInput,
+  Button,
 } from './ui';
 import { LocationField, StatusField } from './form';
 import { IconColorPicker } from './IconColorPicker';
-import { BottomActionBar } from './BottomActionBar';
 import { DatePicker } from './DatePicker';
 
 const Backdrop = styled(BottomSheetBackdrop)`
@@ -39,6 +39,9 @@ const Backdrop = styled(BottomSheetBackdrop)`
 const ContentContainer = styled.View`
   flex: 1;
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  overflow: hidden;
 `;
 
 const FormContainer = styled.View`
@@ -63,6 +66,19 @@ const HalfContainer = styled.View`
 
 const HalfInput = styled(UncontrolledInput)`
   flex: 1;
+`;
+
+const FooterContainer = styled.View<{ bottomInset: number; showSafeArea: boolean }>`
+  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  padding-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  padding-bottom: ${({ bottomInset, showSafeArea, theme }: StyledProps & { bottomInset: number; showSafeArea: boolean }) =>
+    showSafeArea ? bottomInset + theme.spacing.md : theme.spacing.md}px;
+  shadow-color: #000;
+  shadow-offset: 0px -2px;
+  shadow-opacity: 0.03;
+  shadow-radius: 4px;
+  elevation: 2;
 `;
 
 interface CreateItemBottomSheetProps {
@@ -109,6 +125,9 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const [defaultAmount, setDefaultAmount] = useState('1');
   const [defaultWarningThreshold, setDefaultWarningThreshold] = useState('0');
 
+  // Force re-render when validity changes (for button state)
+  const [, setValidityTick] = useState(0);
+
   // Regular state for icon/color/location/status/dates (doesn't affect IME)
   const [selectedIcon, setSelectedIcon] =
     useState<keyof typeof Ionicons.glyphMap>('cube-outline');
@@ -119,6 +138,13 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const [expiryDate, setExpiryDate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formKey, setFormKey] = useState(0); // Force remount on reset
+
+  // Compute form validity synchronously from ref and location
+  const getIsFormValid = useCallback(() => {
+    const hasName = nameValueRef.current.trim().length > 0;
+    const hasLocation = selectedLocation.length > 0;
+    return hasName && hasLocation;
+  }, [selectedLocation]);
 
   // Auto-select icon/color when sheet opens
   const handleSheetChange = useCallback((index: number) => {
@@ -142,6 +168,11 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
         setSelectedLocation(locations[0].id);
       }
     }
+  }, [selectedLocation]);
+
+  // Trigger re-render when location changes (affects validity)
+  useEffect(() => {
+    setValidityTick(t => t + 1);
   }, [selectedLocation]);
 
   useEffect(() => {
@@ -294,29 +325,29 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
   const renderFooter = useCallback(
     () => (
-      <BottomActionBar
-        actions={[
-          {
-            label: t('createItem.submit'),
-            onPress: handleSubmit,
-            variant: 'filled',
-            icon: (
-              <Ionicons name="add" size={18} color={theme.colors.surface} />
-            ),
-            disabled: isLoading,
-          },
-        ]}
-        safeArea={!isKeyboardVisible}
-        inBottomSheet
-      />
+      <FooterContainer bottomInset={insets.bottom} showSafeArea={!isKeyboardVisible}>
+        <Button
+          label={t('createItem.submit')}
+          onPress={handleSubmit}
+          variant="primary"
+          icon="add"
+          disabled={!getIsFormValid() || isLoading}
+        />
+      </FooterContainer>
     ),
-    [handleSubmit, isLoading, theme, t, isKeyboardVisible]
+    [handleSubmit, isLoading, t, isKeyboardVisible, insets.bottom, getIsFormValid]
   );
 
   // Uncontrolled input handlers (update refs, no re-render)
   const handleNameChangeText = useCallback((text: string) => {
+    const wasValid = getIsFormValid();
     nameValueRef.current = text;
-  }, []);
+    const isValid = getIsFormValid();
+    // Force re-render if validity changed
+    if (wasValid !== isValid) {
+      setValidityTick(t => t + 1);
+    }
+  }, [getIsFormValid]);
 
   const handlePriceChangeText = useCallback((text: string) => {
     priceValueRef.current = text;
@@ -328,7 +359,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
   // onBlur handlers (sync refs if needed, though we're not using state here)
   const handleNameBlur = useCallback(() => {
-    // No state to sync, ref is already updated
+    // Validation is computed via useMemo
   }, []);
 
   const handlePriceBlur = useCallback(() => {
@@ -429,6 +460,37 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
               </NameRow>
             </FormSection>
 
+            <Row>
+              <HalfContainer>
+                <FormSection label={t('createItem.fields.amount')}>
+                  <NumberInput
+                    ref={amountInputRef}
+                    defaultValue={defaultAmount}
+                    onChangeText={handleAmountChangeText}
+                    onBlur={handleAmountBlur}
+                    placeholder={amountPlaceholder}
+                    placeholderTextColor={theme.colors.textLight}
+                    keyboardType="numeric"
+                    min={0}
+                  />
+                </FormSection>
+              </HalfContainer>
+              <HalfContainer>
+                <FormSection label={t('createItem.fields.warningThreshold')}>
+                  <NumberInput
+                    ref={warningThresholdInputRef}
+                    defaultValue={defaultWarningThreshold}
+                    onChangeText={handleWarningThresholdChangeText}
+                    onBlur={handleWarningThresholdBlur}
+                    placeholder={warningThresholdPlaceholder}
+                    placeholderTextColor={theme.colors.textLight}
+                    keyboardType="numeric"
+                    min={0}
+                  />
+                </FormSection>
+              </HalfContainer>
+            </Row>
+
             <FormSection label={t('createItem.fields.location')}>
               <LocationField
                 selectedId={selectedLocation}
@@ -445,10 +507,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
             <Row>
               <HalfContainer>
-                <FormSection
-                  label={t('createItem.fields.price')}
-                  style={{ marginBottom: theme.spacing.sm }}
-                >
+                <FormSection label={t('createItem.fields.price')}>
                   <HalfInput
                     ref={priceInputRef}
                     defaultValue={defaultPrice}
@@ -461,10 +520,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
                 </FormSection>
               </HalfContainer>
               <HalfContainer>
-                <FormSection
-                  label={t('createItem.fields.detailedLocation')}
-                  style={{ marginBottom: theme.spacing.sm }}
-                >
+                <FormSection label={t('createItem.fields.detailedLocation')}>
                   <HalfInput
                     ref={detailedLocationInputRef}
                     defaultValue={defaultDetailedLocation}
@@ -472,43 +528,6 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
                     onBlur={handleDetailedLocationBlur}
                     placeholder={detailedLocationPlaceholder}
                     placeholderTextColor={theme.colors.textLight}
-                  />
-                </FormSection>
-              </HalfContainer>
-            </Row>
-
-            <Row>
-              <HalfContainer>
-                <FormSection
-                  label={t('createItem.fields.amount')}
-                  style={{ marginBottom: theme.spacing.sm }}
-                >
-                  <NumberInput
-                    ref={amountInputRef}
-                    defaultValue={defaultAmount}
-                    onChangeText={handleAmountChangeText}
-                    onBlur={handleAmountBlur}
-                    placeholder={amountPlaceholder}
-                    placeholderTextColor={theme.colors.textLight}
-                    keyboardType="numeric"
-                    min={0}
-                  />
-                </FormSection>
-              </HalfContainer>
-              <HalfContainer>
-                <FormSection
-                  label={t('createItem.fields.warningThreshold')}
-                  style={{ marginBottom: theme.spacing.sm }}
-                >
-                  <NumberInput
-                    ref={warningThresholdInputRef}
-                    defaultValue={defaultWarningThreshold}
-                    onChangeText={handleWarningThresholdChangeText}
-                    onBlur={handleWarningThresholdBlur}
-                    placeholder={warningThresholdPlaceholder}
-                    placeholderTextColor={theme.colors.textLight}
-                    keyboardType="numeric"
-                    min={0}
                   />
                 </FormSection>
               </HalfContainer>
