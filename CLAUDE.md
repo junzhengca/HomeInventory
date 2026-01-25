@@ -265,6 +265,61 @@ Reference implementations:
 - `src/components/organisms/EditItemBottomSheet.tsx` - Complex form with multiple fields
 - `src/components/organisms/EditNicknameBottomSheet.tsx` - Simple single-field form
 
+### Event Handler Parameter Pattern
+
+**CRITICAL**: React Native and React event handlers pass an **event object** as the first argument. If you have a handler with optional/default parameters like `handleClose(skipDirtyCheck = false)`, the parameter will receive the event object instead of the default value.
+
+**This applies to ALL event handlers**:
+- React Native: `TouchableOpacity`, `TouchableHighlight`, `TouchableWithoutFeedback`, `Pressable`, `Button` (via `onPress`), `TextInput` (via `onChangeText`, `onSubmitEditing`), `ScrollView` (via `onScroll`)
+- React/React Native Web: `onClick`, `onChange`, `onSubmit`, `onFocus`, `onBlur`, etc.
+
+**Problem**:
+```typescript
+// WRONG - skipDirtyCheck receives the event object, not false
+const handleClose = useCallback((skipDirtyCheck = false) => {
+  if (!skipDirtyCheck && isFormDirty()) {  // Always false because event object is truthy!
+    showConfirmation();
+  }
+}, []);
+
+<TouchableOpacity onPress={handleClose}>
+  <Ionicons name="close" />
+</TouchableOpacity>
+```
+
+**Solution 1** - Check the type of the parameter:
+```typescript
+// CORRECT - Check if parameter is actually a boolean
+const handleClose = useCallback((skipDirtyCheck?: boolean | React.Event) => {
+  const shouldSkipCheck = typeof skipDirtyCheck === 'boolean' ? skipDirtyCheck : false;
+  if (!shouldSkipCheck && isFormDirty()) {
+    showConfirmation();
+  }
+}, []);
+```
+
+**Solution 2** - Use an arrow function wrapper:
+```typescript
+// ALSO CORRECT - Arrow function wrapper
+const handleClose = useCallback((skipDirtyCheck: boolean) => {
+  if (!skipDirtyCheck && isFormDirty()) {
+    showConfirmation();
+  }
+}, []);
+
+<TouchableOpacity onPress={() => handleClose(false)}>
+  <Ionicons name="close" />
+</TouchableOpacity>
+
+<Pressable onPress={() => handleClose(false)}>
+  <Ionicons name="close" />
+</Pressable>
+
+<button onClick={() => handleClose(false)}>
+  Close
+</button>
+```
+
 ### Error Handling
 
 Global error handler displays errors in a bottom sheet. Set up in `App.tsx`:
@@ -303,6 +358,7 @@ src/
 - **NEVER** suppress type errors with `as any` or `@ts-ignore`
 - **NEVER** populate modal forms after presentation - ALWAYS pre-fill before presenting via `present(data)` method
 - **NEVER** omit `backgroundStyle={{ backgroundColor: 'transparent' }}` on `BottomSheetModal` when using custom `ContentContainer` - causes double-layer visual artifact
+- **NEVER** assume handler parameters have default values when used with event handlers - ALL event handlers (`onPress`, `onClick`, `onChange`, etc.) pass an event object as first argument, always check `typeof param` or use arrow function wrapper
 
 ## Cursor Rules
 

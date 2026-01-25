@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, forwardRef, useImperativeHandle, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, forwardRef, useImperativeHandle, useRef } from 'react';
 import { Keyboard, Alert } from 'react-native';
 import styled from 'styled-components/native';
 import {
@@ -102,6 +102,8 @@ export const ItemFormBottomSheet = forwardRef<
 
   // Ref to track if we're showing a confirmation dialog (to prevent duplicate alerts)
   const isShowingConfirmationRef = useRef(false);
+  // Ref to track if we're intentionally closing the sheet (to prevent dirty check in onChange)
+  const isClosingIntentionallyRef = useRef(false);
 
   // Callback for form validity changes from the hook
   const handleFormValidChange = useCallback((isValid: boolean) => {
@@ -141,6 +143,14 @@ export const ItemFormBottomSheet = forwardRef<
     handleWarningThresholdBlur,
   } = useUncontrolledItemForm({ initialData, onFormValidChange: handleFormValidChange });
 
+  // Ref for isFormDirty to avoid stale closure in handleSheetChange
+  const isFormDirtyRef = useRef(isFormDirty);
+
+  // Keep the ref up-to-date whenever isFormDirty changes
+  useEffect(() => {
+    isFormDirtyRef.current = isFormDirty;
+  }, [isFormDirty]);
+
   // Expose populateForm via imperative handle for parent to call synchronously
   useImperativeHandle(
     ref,
@@ -152,8 +162,16 @@ export const ItemFormBottomSheet = forwardRef<
   const handleSheetChange = useCallback(
     (index: number) => {
       if (index === -1) {
+        // If closing intentionally (after save or discard), just clean up and skip dirty check
+        if (isClosingIntentionallyRef.current) {
+          isClosingIntentionallyRef.current = false;
+          Keyboard.dismiss();
+          onSheetClose?.();
+          return;
+        }
+
         // Sheet closing - check for unsaved changes
-        if (isFormDirty() && !isShowingConfirmationRef.current) {
+        if (isFormDirtyRef.current() && !isShowingConfirmationRef.current) {
           // Prevent the sheet from closing and show confirmation
           isShowingConfirmationRef.current = true;
           // Snap back to open state immediately
@@ -177,8 +195,8 @@ export const ItemFormBottomSheet = forwardRef<
                   isShowingConfirmationRef.current = false;
                   Keyboard.dismiss();
                   resetForm();
+                  isClosingIntentionallyRef.current = true; // Mark as intentional close
                   bottomSheetRef.current?.dismiss();
-                  onSheetClose?.();
                 },
               },
             ],
@@ -201,12 +219,18 @@ export const ItemFormBottomSheet = forwardRef<
         }
       }
     },
-    [refs.nameInput, onSheetOpen, onSheetClose, isFormDirty, resetForm, bottomSheetRef, t]
+    [refs.nameInput, onSheetOpen, onSheetClose, resetForm, bottomSheetRef, t]
   );
 
   // Handle close
-  const handleClose = useCallback(() => {
-    if (isFormDirty() && !isShowingConfirmationRef.current) {
+  const handleClose = useCallback((skipDirtyCheck?: boolean | Event) => {
+    // The onClose handler may be called with an event object from TouchableOpacity
+    // We need to check if skipDirtyCheck is actually a boolean
+    const shouldSkipCheck = typeof skipDirtyCheck === 'boolean' ? skipDirtyCheck : false;
+    const dirty = isFormDirtyRef.current();
+
+    if (!shouldSkipCheck && dirty && !isShowingConfirmationRef.current) {
+      // Show confirmation for unsaved changes (X button or manual close)
       isShowingConfirmationRef.current = true;
       Alert.alert(
         t('common.confirmation'),
@@ -226,8 +250,8 @@ export const ItemFormBottomSheet = forwardRef<
               isShowingConfirmationRef.current = false;
               Keyboard.dismiss();
               resetForm();
+              isClosingIntentionallyRef.current = true; // Mark as intentional close after discard
               bottomSheetRef.current?.dismiss();
-              onSheetClose?.();
             },
           },
         ],
@@ -236,9 +260,11 @@ export const ItemFormBottomSheet = forwardRef<
       return;
     }
 
+    // Close without confirmation (after successful save, or form is clean)
     Keyboard.dismiss();
+    isClosingIntentionallyRef.current = true; // Mark as intentional close
     bottomSheetRef.current?.dismiss();
-  }, [isFormDirty, resetForm, bottomSheetRef, onSheetClose, t]);
+  }, [resetForm, bottomSheetRef, t]);
 
   // Handle submit
   const handleSubmit = useCallback(async () => {
@@ -287,7 +313,7 @@ export const ItemFormBottomSheet = forwardRef<
       });
       console.log('[ItemFormBottomSheet] onSubmit completed successfully');
 
-      handleClose();
+      handleClose(true); // Skip dirty check since we just saved successfully
       resetForm();
       onSuccess?.();
     } catch (error) {
