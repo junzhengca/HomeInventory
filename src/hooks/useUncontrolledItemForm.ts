@@ -31,6 +31,20 @@ export interface UseUncontrolledItemFormOptions {
   onFormValidChange?: (isValid: boolean) => void;
 }
 
+interface FormInitialValues {
+  name: string;
+  price: string;
+  detailedLocation: string;
+  amount: string;
+  warningThreshold: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  location: string;
+  status: string;
+  purchaseDate: Date | null;
+  expiryDate: Date | null;
+}
+
 const DEFAULT_ICON: keyof typeof Ionicons.glyphMap = 'cube-outline';
 const DEFAULT_COLOR = '#95A5A6';
 const DEFAULT_STATUS = 'using';
@@ -61,6 +75,21 @@ export const useUncontrolledItemForm = (
   const detailedLocationValueRef = useRef('');
   const amountValueRef = useRef('1');
   const warningThresholdValueRef = useRef('0');
+
+  // Initial values ref (for dirty state tracking)
+  const initialValuesRef = useRef<FormInitialValues>({
+    name: '',
+    price: '0',
+    detailedLocation: '',
+    amount: '1',
+    warningThreshold: '0',
+    icon: DEFAULT_ICON,
+    iconColor: DEFAULT_COLOR,
+    location: DEFAULT_LOCATION,
+    status: DEFAULT_STATUS,
+    purchaseDate: null,
+    expiryDate: null,
+  });
 
   // Default value states (for defaultValue prop on uncontrolled inputs)
   const [defaultName, setDefaultName] = useState('');
@@ -112,6 +141,25 @@ export const useUncontrolledItemForm = (
           ? initialData.warningThreshold.toString()
           : '0';
 
+      // Store initial values for dirty state tracking
+      initialValuesRef.current = {
+        name,
+        price,
+        detailedLocation,
+        amount,
+        warningThreshold,
+        icon: initialData.icon ?? DEFAULT_ICON,
+        iconColor: initialData.iconColor ?? DEFAULT_COLOR,
+        location: initialData.location ?? DEFAULT_LOCATION,
+        status: initialData.status ?? DEFAULT_STATUS,
+        purchaseDate: initialData.purchaseDate
+          ? new Date(initialData.purchaseDate)
+          : null,
+        expiryDate: initialData.expiryDate
+          ? new Date(initialData.expiryDate)
+          : null,
+      };
+
       // Update refs for form submission
       nameValueRef.current = name;
       priceValueRef.current = price;
@@ -149,6 +197,21 @@ export const useUncontrolledItemForm = (
 
   // Reset form to defaults
   const resetForm = useCallback(() => {
+    // Reset initial values to defaults
+    initialValuesRef.current = {
+      name: '',
+      price: '0',
+      detailedLocation: '',
+      amount: '1',
+      warningThreshold: '0',
+      icon: DEFAULT_ICON,
+      iconColor: DEFAULT_COLOR,
+      location: DEFAULT_LOCATION,
+      status: DEFAULT_STATUS,
+      purchaseDate: null,
+      expiryDate: null,
+    };
+
     // Reset refs
     nameValueRef.current = '';
     priceValueRef.current = '0';
@@ -249,6 +312,25 @@ export const useUncontrolledItemForm = (
           ? data.warningThreshold.toString()
           : '0';
 
+      // Store initial values for dirty state tracking
+      initialValuesRef.current = {
+        name,
+        price,
+        detailedLocation,
+        amount,
+        warningThreshold,
+        icon: data.icon ?? DEFAULT_ICON,
+        iconColor: data.iconColor ?? DEFAULT_COLOR,
+        location: data.location ?? DEFAULT_LOCATION,
+        status: data.status ?? DEFAULT_STATUS,
+        purchaseDate: data.purchaseDate
+          ? new Date(data.purchaseDate)
+          : null,
+        expiryDate: data.expiryDate
+          ? new Date(data.expiryDate)
+          : null,
+      };
+
       // Update refs for form submission
       nameValueRef.current = name;
       priceValueRef.current = price;
@@ -280,6 +362,45 @@ export const useUncontrolledItemForm = (
     },
     [onFormValidChange]
   );
+
+  // Check if form has unsaved changes
+  const isFormDirty = useCallback((): boolean => {
+    const initial = initialValuesRef.current;
+    const currentValues = {
+      name: nameValueRef.current,
+      price: priceValueRef.current,
+      detailedLocation: detailedLocationValueRef.current,
+      amount: amountValueRef.current,
+      warningThreshold: warningThresholdValueRef.current,
+      icon: selectedIcon,
+      iconColor: selectedColor,
+      location: selectedLocation,
+      status: selectedStatus,
+      purchaseDate,
+      expiryDate,
+    };
+
+    // Compare dates properly (need to compare time for Date objects)
+    const datesEqual = (d1: Date | null, d2: Date | null): boolean => {
+      if (d1 === null && d2 === null) return true;
+      if (d1 === null || d2 === null) return false;
+      return d1.getTime() === d2.getTime();
+    };
+
+    return (
+      currentValues.name !== initial.name ||
+      currentValues.price !== initial.price ||
+      currentValues.detailedLocation !== initial.detailedLocation ||
+      currentValues.amount !== initial.amount ||
+      currentValues.warningThreshold !== initial.warningThreshold ||
+      currentValues.icon !== initial.icon ||
+      currentValues.iconColor !== initial.iconColor ||
+      currentValues.location !== initial.location ||
+      currentValues.status !== initial.status ||
+      !datesEqual(currentValues.purchaseDate, initial.purchaseDate) ||
+      !datesEqual(currentValues.expiryDate, initial.expiryDate)
+    );
+  }, [selectedIcon, selectedColor, selectedLocation, selectedStatus, purchaseDate, expiryDate]);
 
   return {
     // Refs
@@ -316,6 +437,7 @@ export const useUncontrolledItemForm = (
     // Methods
     getIsFormValid,
     getFormValues,
+    isFormDirty,
     resetForm,
     populateForm,
     // Input handlers

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useCallback, useMemo, useState, forwardRef, useImperativeHandle, useRef } from 'react';
 import { Keyboard, Alert } from 'react-native';
 import styled from 'styled-components/native';
 import {
@@ -100,6 +100,9 @@ export const ItemFormBottomSheet = forwardRef<
   const [isLoading, setIsLoading] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
 
+  // Ref to track if we're showing a confirmation dialog (to prevent duplicate alerts)
+  const isShowingConfirmationRef = useRef(false);
+
   // Callback for form validity changes from the hook
   const handleFormValidChange = useCallback((isValid: boolean) => {
     setIsFormValid(isValid);
@@ -123,6 +126,7 @@ export const ItemFormBottomSheet = forwardRef<
     setPurchaseDate,
     setExpiryDate,
     getFormValues,
+    isFormDirty,
     resetForm,
     populateForm,
     handleNameChangeText,
@@ -148,7 +152,42 @@ export const ItemFormBottomSheet = forwardRef<
   const handleSheetChange = useCallback(
     (index: number) => {
       if (index === -1) {
-        // Sheet closing
+        // Sheet closing - check for unsaved changes
+        if (isFormDirty() && !isShowingConfirmationRef.current) {
+          // Prevent the sheet from closing and show confirmation
+          isShowingConfirmationRef.current = true;
+          // Snap back to open state immediately
+          bottomSheetRef.current?.snapToIndex(0);
+
+          Alert.alert(
+            t('common.confirmation'),
+            t('common.discardChanges'),
+            [
+              {
+                text: t('common.keepEditing'),
+                style: 'cancel',
+                onPress: () => {
+                  isShowingConfirmationRef.current = false;
+                },
+              },
+              {
+                text: t('common.discard'),
+                style: 'destructive',
+                onPress: () => {
+                  isShowingConfirmationRef.current = false;
+                  Keyboard.dismiss();
+                  resetForm();
+                  bottomSheetRef.current?.dismiss();
+                  onSheetClose?.();
+                },
+              },
+            ],
+            { cancelable: true }
+          );
+          return;
+        }
+
+        // Sheet closing without unsaved changes or after discarding
         Keyboard.dismiss();
         onSheetClose?.();
         return;
@@ -162,14 +201,44 @@ export const ItemFormBottomSheet = forwardRef<
         }
       }
     },
-    [refs.nameInput, onSheetOpen, onSheetClose]
+    [refs.nameInput, onSheetOpen, onSheetClose, isFormDirty, resetForm, bottomSheetRef, t]
   );
 
   // Handle close
   const handleClose = useCallback(() => {
+    if (isFormDirty() && !isShowingConfirmationRef.current) {
+      isShowingConfirmationRef.current = true;
+      Alert.alert(
+        t('common.confirmation'),
+        t('common.discardChanges'),
+        [
+          {
+            text: t('common.keepEditing'),
+            style: 'cancel',
+            onPress: () => {
+              isShowingConfirmationRef.current = false;
+            },
+          },
+          {
+            text: t('common.discard'),
+            style: 'destructive',
+            onPress: () => {
+              isShowingConfirmationRef.current = false;
+              Keyboard.dismiss();
+              resetForm();
+              bottomSheetRef.current?.dismiss();
+              onSheetClose?.();
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+      return;
+    }
+
     Keyboard.dismiss();
     bottomSheetRef.current?.dismiss();
-  }, [bottomSheetRef]);
+  }, [isFormDirty, resetForm, bottomSheetRef, onSheetClose, t]);
 
   // Handle submit
   const handleSubmit = useCallback(async () => {

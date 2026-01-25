@@ -1,4 +1,10 @@
 {
+  "common": {
+    "confirmation": "Confirm",
+    "discardChanges": "You have unsaved changes. Do you want to discard them?",
+    "keepEditing": "Keep Editing",
+    "discard": "Discard"
+  },
   "home": {
     "title": "What's at Home",
     "subtitle": "Home Asset Management",
