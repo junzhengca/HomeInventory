@@ -28,7 +28,9 @@ const Input = styled(BottomSheetTextInput)<{ hasError: boolean; isFocused: boole
         : theme.colors.border};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
   padding: ${({ theme, textAlign }: StyledProps & { textAlign?: 'left' | 'center' | 'right' }) =>
-    textAlign === 'center' ? `${theme.spacing.md}px ${theme.spacing.md}px` : `${theme.spacing.md}px ${theme.spacing.xl}px ${theme.spacing.md}px ${theme.spacing.md}px`};
+    textAlign === 'center'
+      ? `${theme.spacing.sm}px ${theme.spacing.md}px`
+      : `${theme.spacing.sm}px ${theme.spacing.xl}px ${theme.spacing.sm}px ${theme.spacing.md}px`};
   height: 48px;
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
   color: ${({ theme }: StyledProps) => theme.colors.text};
