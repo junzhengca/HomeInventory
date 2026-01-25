@@ -73,6 +73,7 @@ export interface ItemFormBottomSheetProps {
 
 export interface ItemFormBottomSheetRef {
   populateForm: (data: Partial<InventoryItem>) => void;
+  setOpeningNestedModal: (isOpening: boolean) => void;
 }
 
 /**
@@ -104,6 +105,8 @@ export const ItemFormBottomSheet = forwardRef<
   const isShowingConfirmationRef = useRef(false);
   // Ref to track if we're intentionally closing the sheet (to prevent dirty check in onChange)
   const isClosingIntentionallyRef = useRef(false);
+  // Ref to track if we're opening a nested modal (to skip dirty check)
+  const isOpeningNestedModalRef = useRef(false);
 
   // Callback for form validity changes from the hook
   const handleFormValidChange = useCallback((isValid: boolean) => {
@@ -151,10 +154,15 @@ export const ItemFormBottomSheet = forwardRef<
     isFormDirtyRef.current = isFormDirty;
   }, [isFormDirty]);
 
-  // Expose populateForm via imperative handle for parent to call synchronously
+  // Expose populateForm and setOpeningNestedModal via imperative handle
   useImperativeHandle(
     ref,
-    () => ({ populateForm }),
+    () => ({
+      populateForm,
+      setOpeningNestedModal: (isOpening: boolean) => {
+        isOpeningNestedModalRef.current = isOpening;
+      },
+    }),
     [populateForm]
   );
 
@@ -167,6 +175,12 @@ export const ItemFormBottomSheet = forwardRef<
           isClosingIntentionallyRef.current = false;
           Keyboard.dismiss();
           onSheetClose?.();
+          return;
+        }
+
+        // If opening a nested modal, skip dirty check
+        // The flag will be reset when the nested modal closes
+        if (isOpeningNestedModalRef.current) {
           return;
         }
 
@@ -472,6 +486,9 @@ export const ItemFormBottomSheet = forwardRef<
             onDetailedLocationBlur={handleDetailedLocationBlur}
             onAmountBlur={handleAmountBlur}
             onWarningThresholdBlur={handleWarningThresholdBlur}
+            onOpeningNestedModal={(isOpening) => {
+              isOpeningNestedModalRef.current = isOpening;
+            }}
             translations={translations}
           />
         </BottomSheetScrollView>

@@ -79,6 +79,7 @@ export interface IconColorPickerProps {
   color: string;
   onIconSelect: (icon: keyof typeof Ionicons.glyphMap) => void;
   onColorSelect: (color: string) => void;
+  onOpeningNestedModal?: (isOpening: boolean) => void;
 }
 
 export const IconColorPicker: React.FC<IconColorPickerProps> = ({
@@ -86,6 +87,7 @@ export const IconColorPicker: React.FC<IconColorPickerProps> = ({
   color,
   onIconSelect,
   onColorSelect,
+  onOpeningNestedModal,
 }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -116,26 +118,35 @@ export const IconColorPicker: React.FC<IconColorPickerProps> = ({
     // Dismiss keyboard before opening
     Keyboard.dismiss();
 
+    // Notify parent that we're opening a nested modal (to skip dirty check)
+    onOpeningNestedModal?.(true);
+
     // Reset temp state to current props values
     setTempIcon(icon);
     setTempColor(color);
     bottomSheetModalRef.current?.present();
-  }, [icon, color]);
+  }, [icon, color, onOpeningNestedModal]);
 
   const handleClose = useCallback(() => {
+    // Notify parent that nested modal is closing
+    onOpeningNestedModal?.(false);
     bottomSheetModalRef.current?.dismiss();
-  }, []);
+  }, [onOpeningNestedModal]);
 
   const handleSheetClose = useCallback(() => {
+    // Notify parent that nested modal is closing
+    onOpeningNestedModal?.(false);
+    
     // Reset temp state when modal closes without saving
     setTempIcon(icon);
     setTempColor(color);
-  }, [icon, color]);
+  }, [icon, color, onOpeningNestedModal]);
 
   const handleSave = useCallback(() => {
     // Apply the changes
     onIconSelect(tempIcon);
     onColorSelect(tempColor);
+    // handleClose will notify parent that nested modal is closing
     handleClose();
   }, [tempIcon, tempColor, onIconSelect, onColorSelect, handleClose]);
 

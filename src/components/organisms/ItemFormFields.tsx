@@ -63,6 +63,7 @@ export interface ItemFormFieldsProps {
   onStatusSelect: (status: string) => void;
   onPurchaseDateChange: (date: Date | null) => void;
   onExpiryDateChange: (date: Date | null) => void;
+  onOpeningNestedModal?: (isOpening: boolean) => void;
   // Input handlers
   onNameChangeText: (text: string) => void;
   onPriceChangeText: (text: string) => void;
@@ -126,6 +127,7 @@ export const ItemFormFields: React.FC<ItemFormFieldsProps> = ({
   onStatusSelect,
   onPurchaseDateChange,
   onExpiryDateChange,
+  onOpeningNestedModal,
   onNameChangeText,
   onPriceChangeText,
   onDetailedLocationChangeText,
@@ -149,6 +151,7 @@ export const ItemFormFields: React.FC<ItemFormFieldsProps> = ({
             color={selectedColor}
             onIconSelect={onIconSelect}
             onColorSelect={onColorSelect}
+            onOpeningNestedModal={onOpeningNestedModal}
           />
           <UncontrolledInput
             ref={nameInputRef}
