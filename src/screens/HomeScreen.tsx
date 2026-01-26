@@ -40,6 +40,7 @@ import {
   EnableSyncBottomSheet,
   FloatingActionButton,
   CreateItemBottomSheet,
+  ContextMenu,
 } from '../components';
 import { InventoryItem } from '../types/inventory';
 import { RootStackParamList } from '../navigation/types';
@@ -118,7 +119,7 @@ export const HomeScreen: React.FC = () => {
     useState<Partial<InventoryItem> | null>(null);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { items, loading: isLoading, loadItems } = useInventory();
+  const { items, loading: isLoading, loadItems, updateItem: updateInventoryItem } = useInventory();
   const { enabled: isSyncEnabled } = useSync();
   const { user, getApiClient } = useAuth();
   const theme = useTheme();
@@ -445,11 +446,34 @@ export const HomeScreen: React.FC = () => {
               <FlatList
                 data={filteredItems}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <View style={{ width: cardWidth }}>
-                    <ItemCard item={item} onPress={handleItemPress} />
-                  </View>
-                )}
+                renderItem={({ item }) => {
+                  const menuItems = [
+                    {
+                      id: 'plus',
+                      label: t('inventory.actions.plusOne'),
+                      icon: 'plus',
+                      onPress: () => {
+                        updateInventoryItem(item.id, { amount: (item.amount || 0) + 1 });
+                      },
+                    },
+                    {
+                      id: 'minus',
+                      label: t('inventory.actions.minusOne'),
+                      icon: 'minus',
+                      onPress: () => {
+                        updateInventoryItem(item.id, { amount: Math.max(0, (item.amount || 0) - 1) });
+                      },
+                    },
+                  ];
+
+                  return (
+                    <View style={{ width: cardWidth }}>
+                      <ContextMenu items={menuItems}>
+                        <ItemCard item={item} onPress={handleItemPress} />
+                      </ContextMenu>
+                    </View>
+                  );
+                }}
                 numColumns={2}
                 columnWrapperStyle={{
                   gap: 12,

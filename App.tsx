@@ -11,6 +11,7 @@ import { ThemeProvider } from './src/theme/ThemeProvider';
 import { RootStack } from './src/navigation/RootStack';
 import { initializeDataFiles } from './src/services/DataInitializationService';
 import { ErrorBottomSheet, SetupNicknameBottomSheet, ToastProvider } from './src/components';
+import { ContextMenuProvider } from './src/components/organisms/ContextMenu/ContextMenuProvider';
 import { ErrorDetails } from './src/types/api';
 import i18n from './src/i18n/i18n';
 import { store } from './src/store';
@@ -134,11 +135,13 @@ export default function App() {
           <I18nextProvider i18n={i18n}>
             <ThemeProvider>
               <ToastProvider>
-                <BottomSheetModalProvider>
-                  <NavigationContainer>
-                    <AppInner />
-                  </NavigationContainer>
-                </BottomSheetModalProvider>
+                <ContextMenuProvider>
+                  <BottomSheetModalProvider>
+                    <NavigationContainer>
+                      <AppInner />
+                    </NavigationContainer>
+                  </BottomSheetModalProvider>
+                </ContextMenuProvider>
               </ToastProvider>
             </ThemeProvider>
           </I18nextProvider>

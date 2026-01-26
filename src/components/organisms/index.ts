@@ -58,3 +58,7 @@ export type { MemberListProps } from './MemberList';
 
 export { PermissionConfigPanel } from './PermissionConfigPanel';
 export type { PermissionConfigPanelProps } from './PermissionConfigPanel';
+
+// Context menu organisms
+export { ContextMenu } from './ContextMenu/ContextMenu';
+export { ContextMenuProvider } from './ContextMenu/ContextMenuProvider';

@@ -64,6 +64,10 @@
       "title": "No Items Found",
       "description": "Start by adding your first item to manage your home assets!",
       "filtered": "Try adjusting search or selecting another category"
+    },
+    "actions": {
+      "plusOne": "+1 Quantity",
+      "minusOne": "-1 Quantity"
     }
   },
   "notes": {
@@ -607,4 +611,3 @@
     }
   }
 }
-

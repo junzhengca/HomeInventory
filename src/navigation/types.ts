@@ -29,13 +29,14 @@ export type RootStackParamList = {
   ExportData: undefined;
   ExportDataDetail: { filename: string };
   Profile: undefined;
+  ContextMenuDemo: undefined;
 };
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace ReactNavigation {
     // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends RootStackParamList { }
   }
 }
 
