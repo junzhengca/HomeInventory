@@ -37,10 +37,25 @@ const inventorySlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
+    upsertItems: (state, action: PayloadAction<InventoryItem[]>) => {
+      const itemsToUpsert = action.payload;
+      if (itemsToUpsert.length === 0) return;
+
+      const itemMap = new Map(state.items.map(item => [item.id, item]));
+      itemsToUpsert.forEach(item => {
+        itemMap.set(item.id, item);
+      });
+      state.items = Array.from(itemMap.values());
+    },
+    removeItems: (state, action: PayloadAction<string[]>) => {
+      const idsToRemove = new Set(action.payload);
+      if (idsToRemove.size === 0) return;
+      state.items = state.items.filter(item => !idsToRemove.has(item.id));
+    },
   },
 });
 
-export const { setItems, silentSetItems, addItem, updateItem, removeItem, setLoading } =
+export const { setItems, silentSetItems, addItem, updateItem, removeItem, setLoading, upsertItems, removeItems } =
   inventorySlice.actions;
 
 // Selectors

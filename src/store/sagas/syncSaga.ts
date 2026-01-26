@@ -8,10 +8,19 @@ import {
   setSyncLastSyncTime,
   setSyncError,
 } from '../slices/syncSlice';
+import {
+  upsertItems,
+  removeItems,
+} from '../slices/inventorySlice';
+import {
+  upsertTodos,
+  removeTodos,
+} from '../slices/todoSlice';
 import { silentRefreshItems } from './inventorySaga';
 import { silentRefreshTodos } from './todoSaga';
 import { syncCallbackRegistry } from '../../services/SyncCallbackRegistry';
 import SyncService, { SyncFileType, SyncEvent } from '../../services/SyncService';
+import { InventoryItem, TodoItem } from '../../types/inventory';
 import { ApiClient } from '../../services/ApiClient';
 import type { RootState } from '../types';
 
@@ -110,16 +119,48 @@ function* watchSyncEvents(syncService: SyncService): Generator {
         yield put(setSyncStatus(status));
       }
 
-      // Trigger silent inventory refresh when inventoryItems are pulled from server
+      // Trigger silent inventory refresh or granular update when inventoryItems are pulled from server
       if (event.type === 'pull' && event.fileType === 'inventoryItems') {
-        console.log('[SyncSaga] Inventory items pulled, silently refreshing inventory state...');
-        yield put(silentRefreshItems());
+        if (event.changes) {
+          console.log('[SyncSaga] Inventory items pulled, applying granular updates:', event.changes);
+          const { added, updated, removed } = event.changes as { added: InventoryItem[], updated: InventoryItem[], removed: string[] };
+
+          // Handle added/updated items together (upsert)
+          const itemsToUpsert = [...added, ...updated];
+          if (itemsToUpsert.length > 0) {
+            yield put(upsertItems(itemsToUpsert));
+          }
+
+          // Handle removed items
+          if (removed.length > 0) {
+            yield put(removeItems(removed));
+          }
+        } else {
+          console.log('[SyncSaga] Inventory items pulled (no changes info), silently refreshing inventory state...');
+          yield put(silentRefreshItems());
+        }
       }
 
-      // Trigger silent todos refresh when todoItems are pulled from server
+      // Trigger silent todos refresh or granular update when todoItems are pulled from server
       if (event.type === 'pull' && event.fileType === 'todoItems') {
-        console.log('[SyncSaga] Todo items pulled, silently refreshing todos state...');
-        yield put(silentRefreshTodos());
+        if (event.changes) {
+          console.log('[SyncSaga] Todo items pulled, applying granular updates:', event.changes);
+          const { added, updated, removed } = event.changes as { added: TodoItem[], updated: TodoItem[], removed: string[] };
+
+          // Handle added/updated items together (upsert)
+          const todosToUpsert = [...added, ...updated];
+          if (todosToUpsert.length > 0) {
+            yield put(upsertTodos(todosToUpsert));
+          }
+
+          // Handle removed items
+          if (removed.length > 0) {
+            yield put(removeTodos(removed));
+          }
+        } else {
+          console.log('[SyncSaga] Todo items pulled (no changes info), silently refreshing todos state...');
+          yield put(silentRefreshTodos());
+        }
       }
     }
   } finally {

@@ -2,7 +2,9 @@ import React, { useRef, useCallback, useImperativeHandle, forwardRef, useState }
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import type { InventoryItem } from '../../types/inventory';
-import { useInventory } from '../../store/hooks';
+import { useAppDispatch } from '../../store/hooks';
+import type { RootState } from '../../store';
+import { useStore } from 'react-redux';
 import { ItemFormBottomSheet } from './ItemFormBottomSheet';
 
 export interface EditItemBottomSheetProps {
@@ -24,7 +26,9 @@ export const EditItemBottomSheet = forwardRef<
   EditItemBottomSheetRef,
   EditItemBottomSheetProps
 >(({ bottomSheetRef, onItemUpdated }, ref) => {
-  const { updateItem, items } = useInventory();
+  const dispatch = useAppDispatch();
+  const store = useStore();
+  // const { updateItem, items } = useInventory(); // Removed to prevent re-renders
 
   // Track which item ID is currently being edited
   const currentItemIdRef = useRef<string | null>(null);
@@ -53,12 +57,14 @@ export const EditItemBottomSheet = forwardRef<
         return;
       }
       console.log('[EditItemBottomSheet] About to call updateItem with itemId:', itemId);
-      updateItem(itemId, values);
+      // updateItem(itemId, values);
+      dispatch({ type: 'inventory/UPDATE_ITEM', payload: { id: itemId, updates: values } });
+
       // Clear the ref after update is dispatched
       currentItemIdRef.current = null;
       console.log('[EditItemBottomSheet] updateItem called');
     },
-    [updateItem]
+    [dispatch]
   );
 
   const handleSuccess = useCallback(() => {
@@ -77,7 +83,9 @@ export const EditItemBottomSheet = forwardRef<
     () => ({
       present: (itemId: string) => {
         console.log('[EditItemBottomSheet] present called with itemId:', itemId);
-        console.log('[EditItemBottomSheet] items:', items);
+        const state = store.getState() as RootState;
+        const items = state.inventory.items;
+        console.log('[EditItemBottomSheet] items length:', items.length);
 
         const item = items.find((i) => i.id === itemId);
         if (!item) {
@@ -102,7 +110,7 @@ export const EditItemBottomSheet = forwardRef<
         }, 0);
       },
     }),
-    [items, bottomSheetRef]
+    [store, bottomSheetRef]
   );
 
   return (

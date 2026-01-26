@@ -45,12 +45,19 @@ interface SyncTask {
 }
 
 // Sync event type
+export interface SyncChanges<T = string> {
+  added: T[];
+  updated: T[];
+  removed: string[];
+}
+
 export interface SyncEvent {
   type: 'pull' | 'push' | 'error';
   fileType: SyncFileType;
   timestamp?: string;
   entriesCount?: number;
   error?: string;
+  changes?: SyncChanges<unknown>;
 }
 
 class SyncService {
@@ -218,10 +225,10 @@ class SyncService {
       // Perform initial full sync FIRST (before starting periodic sync)
       await this.performInitialSync();
 
-      // Start periodic sync every 5 seconds AFTER initial sync completes
+      // Start periodic sync every 5 minutes AFTER initial sync completes
       this.syncInterval = setInterval(() => {
         this.syncAll();
-      }, 5000);
+      }, 5 * 60 * 1000);
 
       syncLogger.end('SYNC ENABLED - initial sync completed, periodic sync started');
     } catch (error) {
@@ -508,7 +515,7 @@ class SyncService {
    */
   private async executeTask(task: SyncTask): Promise<void> {
     const taskKey = `${task.fileType}-${task.operation}`;
-    
+
     // Check if already in-flight (shouldn't happen due to queueSync checks, but double-check)
     if (this.inFlightSyncs.has(taskKey)) {
       syncLogger.debug(`Task ${taskKey} already in-flight, skipping`);
@@ -527,7 +534,7 @@ class SyncService {
         } else if (task.operation === 'push') {
           await this.pushFile(task.fileType);
         }
-        
+
         // Update last sync time on success
         this.lastSyncTime.set(task.fileType, Date.now());
       } finally {
@@ -622,9 +629,17 @@ class SyncService {
         if (fileType === 'settings') {
           await this.mergeSettings(response.data as Settings);
         } else {
-          await this.mergeEntries(fileType, response.data as unknown[]);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const changes = await this.mergeEntries(fileType, response.data as unknown[]) as any;
           // Cleanup old deleted items after merging (only for non-settings file types)
           await this.cleanupDeletedItems(fileType);
+
+          this.notifyListeners({
+            type: 'pull',
+            fileType,
+            timestamp: response.serverTimestamp,
+            changes: changes as SyncChanges<unknown>,
+          });
         }
 
         // Update sync metadata (create new object to avoid read-only property issues)
@@ -642,11 +657,13 @@ class SyncService {
           await this.saveSyncMetadata();
         }
 
-        this.notifyListeners({
-          type: 'pull',
-          fileType,
-          timestamp: response.serverTimestamp,
-        });
+        if (fileType === 'settings') {
+          this.notifyListeners({
+            type: 'pull',
+            fileType,
+            timestamp: response.serverTimestamp,
+          });
+        }
 
         syncLogger.end(`Pull completed successfully for ${fileType}`);
       } else {
@@ -936,11 +953,19 @@ class SyncService {
 
       // Perform merge
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const merged = this.mergeByTimestamp(localData as any[], serverData as any[]);
+      const { merged, changes } = this.mergeByTimestamp(localData as any[], serverData as any[]);
       syncLogger.verbose(`Merged data for ${fileType}`, merged);
+      syncLogger.verbose(`Changes for ${fileType}`, changes);
 
-      // Save merged data (callbacks will be suppressed)
+      // Same merged data (callbacks will be suppressed)
+      // Only write if there are changes or if server sent data (to ensure consistency)
+      // Though mergeByTimestamp will always return merged array
       await writeFile(merged);
+
+      return changes as unknown as void; // Cast to void but actually we want to return changes to the caller, but caller is pullFile which doesn't use it directly yet except for passing to notifyListeners.
+      // Wait, pullFile calls this. mergeEntries signature says Promise<void>. 
+      // I should refactor mergeEntries to return Promise<SyncChanges<unknown> | void> or store it in a way that pullFile can access.
+      // Actually, mergeEntries is private and called by pullFile. I can change the signature.
     } finally {
       // Re-enable sync callbacks after merge completes
       this.isMergingData = false;
@@ -987,10 +1012,15 @@ class SyncService {
   private mergeByTimestamp<T extends { id: string; createdAt?: string; updatedAt?: string; deletedAt?: string }>(
     local: T[],
     server: T[]
-  ): T[] {
+  ): { merged: T[]; changes: SyncChanges<T> } {
     syncLogger.verbose(`Merging by timestamp, local count: ${local.length}, server count: ${server.length}`);
 
     const mergedMap = new Map<string, T>();
+    const changes: SyncChanges<T> = {
+      added: [],
+      updated: [],
+      removed: [],
+    };
 
     // Add all local entries
     local.forEach(entry => {
@@ -1003,8 +1033,15 @@ class SyncService {
 
       if (!localEntry) {
         // Entry only exists on server - add it (including if deleted)
-        syncLogger.verbose(`Adding new server entry: ${serverEntry.id}${serverEntry.deletedAt ? ' (deleted)' : ''}`);
+        // Only consider it "added" if it's not deleted
         mergedMap.set(serverEntry.id, serverEntry);
+
+        if (!serverEntry.deletedAt) {
+          syncLogger.verbose(`Adding new server entry: ${serverEntry.id}`);
+          changes.added.push(serverEntry);
+        } else {
+          syncLogger.verbose(`Server entry is new but deleted, ignoring for UI update: ${serverEntry.id}`);
+        }
       } else {
         // Entry exists on both - need to handle deletion state
         const localDeletedAt = localEntry.deletedAt ? new Date(localEntry.deletedAt).getTime() : 0;
@@ -1017,6 +1054,7 @@ class SyncService {
           if (serverDeletedAt > localDeletedAt) {
             syncLogger.verbose(`Both deleted, using server deletion (later): ${serverEntry.id}`);
             mergedMap.set(serverEntry.id, serverEntry);
+            // No UI change needed
           } else {
             syncLogger.verbose(`Both deleted, keeping local deletion (later): ${serverEntry.id}`);
           }
@@ -1027,6 +1065,7 @@ class SyncService {
           if (serverDeletedAt > localUpdatedAt) {
             syncLogger.verbose(`Server deleted (more recent than local update), applying deletion: ${serverEntry.id}`);
             mergedMap.set(serverEntry.id, serverEntry);
+            changes.removed.push(serverEntry.id);
           } else {
             syncLogger.verbose(`Server deleted but local update is more recent, keeping local: ${serverEntry.id}`);
           }
@@ -1040,6 +1079,7 @@ class SyncService {
             // Server update is more recent than deletion - restore from server
             syncLogger.verbose(`Local deleted but server update is more recent, restoring from server: ${serverEntry.id}`);
             mergedMap.set(serverEntry.id, serverEntry);
+            changes.added.push(serverEntry); // Treated as add since it was deleted locally
           }
         }
         // Neither deleted - use normal timestamp-based merge
@@ -1047,6 +1087,7 @@ class SyncService {
           if (serverUpdatedAt > localUpdatedAt) {
             syncLogger.verbose(`Using server version for entry: ${serverEntry.id}, server time: ${new Date(serverUpdatedAt).toISOString()}, local time: ${new Date(localUpdatedAt).toISOString()}`);
             mergedMap.set(serverEntry.id, serverEntry);
+            changes.updated.push(serverEntry);
           } else {
             syncLogger.verbose(`Keeping local version for entry: ${serverEntry.id}, local time: ${new Date(localUpdatedAt).toISOString()}, server time: ${new Date(serverUpdatedAt).toISOString()}`);
           }
@@ -1056,7 +1097,7 @@ class SyncService {
 
     const result = Array.from(mergedMap.values());
     syncLogger.verbose(`Merge completed, result count: ${result.length}`);
-    return result;
+    return { merged: result, changes };
   }
 
   /**

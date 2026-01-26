@@ -44,7 +44,10 @@
     "kitchen": "Kitchen",
     "bedroom": "Bedroom",
     "study": "Study",
-    "storage": "Storage"
+    "storage": "Storage",
+    "fridge": "Fridge",
+    "bathroom": "Bathroom",
+    "medical-cabinet": "Medical Cabinet"
   },
   "statuses": {
     "using": "Using",

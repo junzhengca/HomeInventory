@@ -44,7 +44,10 @@
     "kitchen": "厨房",
     "bedroom": "卧室",
     "study": "书房",
-    "storage": "储物"
+    "storage": "储物",
+    "fridge": "冰箱",
+    "bathroom": "卫生间",
+    "medical-cabinet": "药箱"
   },
   "statuses": {
     "using": "使用中",

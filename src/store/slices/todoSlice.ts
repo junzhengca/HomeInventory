@@ -37,10 +37,25 @@ const todoSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
+    upsertTodos: (state, action: PayloadAction<TodoItem[]>) => {
+      const todosToUpsert = action.payload;
+      if (todosToUpsert.length === 0) return;
+
+      const todoMap = new Map(state.todos.map(todo => [todo.id, todo]));
+      todosToUpsert.forEach(todo => {
+        todoMap.set(todo.id, todo);
+      });
+      state.todos = Array.from(todoMap.values());
+    },
+    removeTodos: (state, action: PayloadAction<string[]>) => {
+      const idsToRemove = new Set(action.payload);
+      if (idsToRemove.size === 0) return;
+      state.todos = state.todos.filter(todo => !idsToRemove.has(todo.id));
+    },
   },
 });
 
-export const { setTodos, silentSetTodos, addTodo, updateTodo, removeTodo, setLoading } =
+export const { setTodos, silentSetTodos, addTodo, updateTodo, removeTodo, setLoading, upsertTodos, removeTodos } =
   todoSlice.actions;
 
 // Selectors

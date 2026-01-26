@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import type { InventoryItem } from '../../types/inventory';
-import { useInventory } from '../../store/hooks';
+import { useAppDispatch } from '../../store/hooks';
 import { ItemFormBottomSheet } from './ItemFormBottomSheet';
 
 export interface CreateItemBottomSheetProps {
@@ -23,7 +23,8 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   onItemCreated,
   initialData,
 }) => {
-  const { createItem } = useInventory();
+  const dispatch = useAppDispatch();
+  // const { createItem } = useInventory(); // Removed to prevent re-renders on items change
 
   // Track initial data for form initialization
   const initialDataRef = useRef<Partial<InventoryItem> | null | undefined>(
@@ -48,9 +49,10 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
       purchaseDate?: string;
       expiryDate?: string;
     }) => {
-      createItem(values);
+      // createItem(values);
+      dispatch({ type: 'inventory/CREATE_ITEM', payload: values });
     },
-    [createItem]
+    [dispatch]
   );
 
   const handleSuccess = useCallback(() => {
