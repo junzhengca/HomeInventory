@@ -40,8 +40,11 @@ import {
   EnableSyncBottomSheet,
   FloatingActionButton,
   CreateItemBottomSheet,
+  EditItemBottomSheet,
+  type EditItemBottomSheetRef,
   ContextMenu,
 } from '../components';
+import { useItemActions } from '../hooks/useItemActions';
 import { InventoryItem } from '../types/inventory';
 import { RootStackParamList } from '../navigation/types';
 import { useInventory, useSync, useAuth } from '../store/hooks';
@@ -127,6 +130,10 @@ export const HomeScreen: React.FC = () => {
   const signupBottomSheetRef = useRef<BottomSheetModal | null>(null);
   const enableSyncBottomSheetRef = useRef<BottomSheetModal | null>(null);
   const createItemBottomSheetRef = useRef<BottomSheetModal | null>(null);
+  const editBottomSheetRef = useRef<EditItemBottomSheetRef>(null);
+  const editBottomSheetModalRef = useRef<BottomSheetModal>(null);
+
+  const { confirmDelete } = useItemActions();
 
   // Calculate card width for 2-column grid to prevent the "last row single item" expansion issue
   const cardWidth = useMemo(() => {
@@ -464,6 +471,23 @@ export const HomeScreen: React.FC = () => {
                         updateInventoryItem(item.id, { amount: Math.max(0, (item.amount || 0) - 1) });
                       },
                     },
+                    {
+                      id: 'edit',
+                      label: t('itemDetails.actions.modify'),
+                      icon: 'pencil-outline',
+                      onPress: () => {
+                        editBottomSheetRef.current?.present(item.id);
+                      },
+                    },
+                    {
+                      id: 'delete',
+                      label: t('itemDetails.actions.delete'),
+                      icon: 'trash-can-outline',
+                      onPress: () => {
+                        confirmDelete(item.id);
+                      },
+                      isDestructive: true,
+                    },
                   ];
 
                   return (
@@ -507,6 +531,10 @@ export const HomeScreen: React.FC = () => {
         bottomSheetRef={createItemBottomSheetRef}
         initialData={recognizedItemData}
         onItemCreated={handleItemCreated}
+      />
+      <EditItemBottomSheet
+        ref={editBottomSheetRef}
+        bottomSheetRef={editBottomSheetModalRef}
       />
       <FloatingActionButton
         onManualAdd={handleManualAdd}

@@ -21,6 +21,7 @@ import {
   PageHeader,
   BottomActionBar,
 } from '../components';
+import { useItemActions } from '../hooks/useItemActions';
 import { formatDate, formatPrice } from '../utils/formatters';
 import { getLightColor } from '../utils/colors';
 import { calculateBottomActionBarPadding } from '../utils/layout';
@@ -48,7 +49,7 @@ const Content = styled(ScrollView)`
   padding: ${({ theme }: StyledProps) => theme.spacing.lg}px;
 `;
 
-const IconContainer = styled(View)<{ backgroundColor: string }>`
+const IconContainer = styled(View) <{ backgroundColor: string }>`
   width: 100px;
   height: 100px;
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
@@ -163,6 +164,7 @@ const ErrorText = styled(Text)`
 export const ItemDetailsScreen: React.FC = () => {
   const theme = useTheme();
   const { settings } = useSettings();
+  const { confirmDelete } = useItemActions();
   const { deleteItem, loading: itemsLoading, loadItems } = useInventory();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
@@ -237,24 +239,9 @@ export const ItemDetailsScreen: React.FC = () => {
   }, [item, t]);
 
   const handleDelete = () => {
-    Alert.alert(
-      t('itemDetails.delete.title'),
-      t('itemDetails.delete.message'),
-      [
-        {
-          text: t('itemDetails.delete.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('itemDetails.delete.confirm'),
-          style: 'destructive',
-          onPress: () => {
-            deleteItem(itemId);
-            navigation.goBack();
-          },
-        },
-      ]
-    );
+    confirmDelete(itemId, () => {
+      navigation.goBack();
+    });
   };
 
   const handleModify = () => {
@@ -326,100 +313,100 @@ export const ItemDetailsScreen: React.FC = () => {
 
       <ScrollContainer>
         <Content contentContainerStyle={{ paddingBottom: bottomPadding }}>
-        <HeaderSection>
-          <IconContainer backgroundColor={getLightColor(item.iconColor)}>
-            <Ionicons name={item.icon} size={48} color={item.iconColor} />
-          </IconContainer>
-        </HeaderSection>
+          <HeaderSection>
+            <IconContainer backgroundColor={getLightColor(item.iconColor)}>
+              <Ionicons name={item.icon} size={48} color={item.iconColor} />
+            </IconContainer>
+          </HeaderSection>
 
-        {/* General Information Section */}
-        <Section>
-          <SectionTitle>{t('itemDetails.sections.general')}</SectionTitle>
-          <PropertyRow>
-            <PropertyIcon>
-              <Ionicons name="home" size={18} color={theme.colors.textSecondary} />
-            </PropertyIcon>
-            <PropertyContent>
-              <PropertyLabel>{t('itemDetails.fields.location')}</PropertyLabel>
-              <PropertyValue>{locationName}</PropertyValue>
-            </PropertyContent>
-          </PropertyRow>
-          <PropertyRow>
-            <PropertyIcon>
-              <Ionicons name="location" size={18} color={theme.colors.textSecondary} />
-            </PropertyIcon>
-            <PropertyContent>
-              <PropertyLabel>{t('itemDetails.fields.detailedLocation')}</PropertyLabel>
-              <PropertyValue>{item.detailedLocation || t('itemDetails.notSet')}</PropertyValue>
-            </PropertyContent>
-          </PropertyRow>
-          <PropertyRowLast>
-            <PropertyIcon>
-              <Ionicons name="information-circle" size={18} color={theme.colors.textSecondary} />
-            </PropertyIcon>
-            <PropertyContent>
-              <PropertyLabel>{t('itemDetails.fields.status')}</PropertyLabel>
-              <PropertyValue>{statusName}</PropertyValue>
-            </PropertyContent>
-          </PropertyRowLast>
-        </Section>
+          {/* General Information Section */}
+          <Section>
+            <SectionTitle>{t('itemDetails.sections.general')}</SectionTitle>
+            <PropertyRow>
+              <PropertyIcon>
+                <Ionicons name="home" size={18} color={theme.colors.textSecondary} />
+              </PropertyIcon>
+              <PropertyContent>
+                <PropertyLabel>{t('itemDetails.fields.location')}</PropertyLabel>
+                <PropertyValue>{locationName}</PropertyValue>
+              </PropertyContent>
+            </PropertyRow>
+            <PropertyRow>
+              <PropertyIcon>
+                <Ionicons name="location" size={18} color={theme.colors.textSecondary} />
+              </PropertyIcon>
+              <PropertyContent>
+                <PropertyLabel>{t('itemDetails.fields.detailedLocation')}</PropertyLabel>
+                <PropertyValue>{item.detailedLocation || t('itemDetails.notSet')}</PropertyValue>
+              </PropertyContent>
+            </PropertyRow>
+            <PropertyRowLast>
+              <PropertyIcon>
+                <Ionicons name="information-circle" size={18} color={theme.colors.textSecondary} />
+              </PropertyIcon>
+              <PropertyContent>
+                <PropertyLabel>{t('itemDetails.fields.status')}</PropertyLabel>
+                <PropertyValue>{statusName}</PropertyValue>
+              </PropertyContent>
+            </PropertyRowLast>
+          </Section>
 
-        {/* Inventory & Dates Section */}
-        <Section>
-          <SectionTitle>{t('itemDetails.sections.inventory')}</SectionTitle>
-          <PropertyRow>
-            <PropertyIcon>
-              <Ionicons name="cube" size={18} color={theme.colors.textSecondary} />
-            </PropertyIcon>
-            <PropertyContent>
-              <PropertyLabel>{t('itemDetails.fields.quantity')}</PropertyLabel>
-              <PropertyValue>{item.amount ?? 1}</PropertyValue>
-              {needsRestock && (
-                <RestockBadge>
-                  <Ionicons name="alert-circle" size={14} color="#FF5252" />
-                  <RestockText>{t('itemDetails.needsRestocking')}</RestockText>
-                </RestockBadge>
-              )}
-            </PropertyContent>
-          </PropertyRow>
-          <PropertyRow>
-            <PropertyIcon>
-              <Ionicons name="notifications" size={18} color={theme.colors.textSecondary} />
-            </PropertyIcon>
-            <PropertyContent>
-              <PropertyLabel>{t('itemDetails.fields.warningThreshold')}</PropertyLabel>
-              <PropertyValue>{item.warningThreshold || 0}</PropertyValue>
-            </PropertyContent>
-          </PropertyRow>
-          <PropertyRow>
-            <PropertyIcon>
-              <Ionicons name="pricetag" size={18} color={theme.colors.textSecondary} />
-            </PropertyIcon>
-            <PropertyContent>
-              <PropertyLabel>{t('itemDetails.fields.valuation')}</PropertyLabel>
-              <PropertyValue>{formatPrice(item.price, currencySymbol)}</PropertyValue>
-            </PropertyContent>
-          </PropertyRow>
-          <PropertyRow>
-            <PropertyIcon>
-              <Ionicons name="calendar" size={18} color={theme.colors.textSecondary} />
-            </PropertyIcon>
-            <PropertyContent>
-              <PropertyLabel>{t('itemDetails.fields.purchaseDate')}</PropertyLabel>
-              <PropertyValue>{formatDate(item.purchaseDate, getLocale(), t)}</PropertyValue>
-            </PropertyContent>
-          </PropertyRow>
-          <PropertyRowLast>
-            <PropertyIcon>
-              <Ionicons name="hourglass" size={18} color={theme.colors.textSecondary} />
-            </PropertyIcon>
-            <PropertyContent>
-              <PropertyLabel>{t('itemDetails.fields.expiryDate')}</PropertyLabel>
-              <PropertyValue>{formatDate(item.expiryDate, getLocale(), t)}</PropertyValue>
-            </PropertyContent>
-          </PropertyRowLast>
-        </Section>
-      </Content>
+          {/* Inventory & Dates Section */}
+          <Section>
+            <SectionTitle>{t('itemDetails.sections.inventory')}</SectionTitle>
+            <PropertyRow>
+              <PropertyIcon>
+                <Ionicons name="cube" size={18} color={theme.colors.textSecondary} />
+              </PropertyIcon>
+              <PropertyContent>
+                <PropertyLabel>{t('itemDetails.fields.quantity')}</PropertyLabel>
+                <PropertyValue>{item.amount ?? 1}</PropertyValue>
+                {needsRestock && (
+                  <RestockBadge>
+                    <Ionicons name="alert-circle" size={14} color="#FF5252" />
+                    <RestockText>{t('itemDetails.needsRestocking')}</RestockText>
+                  </RestockBadge>
+                )}
+              </PropertyContent>
+            </PropertyRow>
+            <PropertyRow>
+              <PropertyIcon>
+                <Ionicons name="notifications" size={18} color={theme.colors.textSecondary} />
+              </PropertyIcon>
+              <PropertyContent>
+                <PropertyLabel>{t('itemDetails.fields.warningThreshold')}</PropertyLabel>
+                <PropertyValue>{item.warningThreshold || 0}</PropertyValue>
+              </PropertyContent>
+            </PropertyRow>
+            <PropertyRow>
+              <PropertyIcon>
+                <Ionicons name="pricetag" size={18} color={theme.colors.textSecondary} />
+              </PropertyIcon>
+              <PropertyContent>
+                <PropertyLabel>{t('itemDetails.fields.valuation')}</PropertyLabel>
+                <PropertyValue>{formatPrice(item.price, currencySymbol)}</PropertyValue>
+              </PropertyContent>
+            </PropertyRow>
+            <PropertyRow>
+              <PropertyIcon>
+                <Ionicons name="calendar" size={18} color={theme.colors.textSecondary} />
+              </PropertyIcon>
+              <PropertyContent>
+                <PropertyLabel>{t('itemDetails.fields.purchaseDate')}</PropertyLabel>
+                <PropertyValue>{formatDate(item.purchaseDate, getLocale(), t)}</PropertyValue>
+              </PropertyContent>
+            </PropertyRow>
+            <PropertyRowLast>
+              <PropertyIcon>
+                <Ionicons name="hourglass" size={18} color={theme.colors.textSecondary} />
+              </PropertyIcon>
+              <PropertyContent>
+                <PropertyLabel>{t('itemDetails.fields.expiryDate')}</PropertyLabel>
+                <PropertyValue>{formatDate(item.expiryDate, getLocale(), t)}</PropertyValue>
+              </PropertyContent>
+            </PropertyRowLast>
+          </Section>
+        </Content>
       </ScrollContainer>
 
       {/* Fixed Bottom Bar */}
