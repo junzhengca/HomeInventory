@@ -401,11 +401,13 @@ export const HomeScreen: React.FC = () => {
           <SearchInput value={searchQuery} onChangeText={setSearchQuery} />
           <FilterRow>
             <FilterToggleBtn
-              onPress={() =>
+              onPress={() => {
                 setFilterMode((prev) =>
                   prev === 'location' ? 'status' : 'location'
-                )
-              }
+                );
+                setSelectedLocationId(null);
+                setSelectedStatusId(null);
+              }}
               activeOpacity={0.7}
             >
               <Ionicons
