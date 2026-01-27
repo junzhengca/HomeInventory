@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, View, Appearance } from 'react-native';
+import { ActivityIndicator, View, Appearance, Alert } from 'react-native';
+import * as Linking from 'expo-linking';
 import * as SystemUI from 'expo-system-ui';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -34,6 +35,41 @@ function AppInner() {
     const showNicknameSetup = useAppSelector((state) => state.auth.showNicknameSetup);
     const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
     const darkMode = useAppSelector((state) => state.settings.settings?.darkMode);
+
+    // Deep Link Handling for Invitations
+    useEffect(() => {
+        const handleDeepLink = (event: Linking.EventType) => {
+            try {
+                const url = event.url;
+                const parsedUrl = Linking.parse(url);
+
+                if (parsedUrl.queryParams?.inviteCode) {
+                    const code = parsedUrl.queryParams.inviteCode as string;
+                    Alert.alert(
+                        'Invitation Received',
+                        `Code: ${code}`,
+                        [{ text: 'OK' }]
+                    );
+                }
+            } catch (error) {
+                console.error('Error handling deep link:', error);
+            }
+        };
+
+        // Add listener
+        const subscription = Linking.addEventListener('url', handleDeepLink);
+
+        // Handle cold start
+        Linking.getInitialURL().then((url) => {
+            if (url) {
+                handleDeepLink({ url } as Linking.EventType);
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
 
     // Set up global error handler
     useEffect(() => {

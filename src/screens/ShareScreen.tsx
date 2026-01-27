@@ -59,7 +59,7 @@ export const ShareScreen: React.FC = () => {
   const { user, isAuthenticated, getApiClient } = useAuth();
   const { showToast } = useToast();
   const inviteMenuBottomSheetRef = useRef<BottomSheetModal | null>(null);
-  
+
   const [canShareInventory, setCanShareInventory] = useState(false);
   const [canShareTodos, setCanShareTodos] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
@@ -142,10 +142,12 @@ export const ShareScreen: React.FC = () => {
   }, [invitationCode, showToast, t]);
 
   const getInvitationLink = useCallback(() => {
-    // Generate invitation link - using a placeholder domain for now
-    // In production, this should come from app configuration
-    const baseUrl = process.env.EXPO_PUBLIC_INVITE_BASE_URL || 'https://cluttr.app/invite';
-    return `${baseUrl}/${invitationCode}`;
+    // Generate invitation link - using deep link scheme
+    // This will create a link like: com.cluttrapp.cluttr://?inviteCode=123456
+    // We use root path to avoid "Unmatched Route" error in Expo Router
+    // We use inviteCode param to avoid collision with OAuth 'code' param
+    const scheme = 'com.cluttrapp.cluttr'; // Matches app.json scheme
+    return `${scheme}://?inviteCode=${invitationCode}`;
   }, [invitationCode]);
 
   useEffect(() => {
