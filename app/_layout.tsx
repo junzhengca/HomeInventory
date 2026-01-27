@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Appearance } from 'react-native';
+import * as SystemUI from 'expo-system-ui';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -62,6 +63,14 @@ function AppInner() {
         // Load inventory items
         dispatch(loadItems());
     }, [dispatch]);
+
+    // Sync system appearance to prevent flashing
+    useEffect(() => {
+        if (darkMode !== undefined) {
+            Appearance.setColorScheme(darkMode ? 'dark' : 'light');
+            SystemUI.setBackgroundColorAsync(darkMode ? '#000000' : '#ffffff');
+        }
+    }, [darkMode]);
 
     const handleErrorDismiss = () => {
         setErrorDetails(null);

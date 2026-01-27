@@ -3,14 +3,20 @@ import { NativeTabs, Label, Icon, VectorIcon } from 'expo-router/unstable-native
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { useSettings } from '../../src/store/hooks';
 
 export default function TabLayout() {
     const theme = useTheme();
+    const { settings } = useSettings();
+    const isDark = settings?.darkMode;
 
     return (
         <NativeTabs
             minimizeBehavior="onScrollDown"
             tintColor={theme.colors.primary}
+            backgroundColor="transparent"
+            blurEffect={isDark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
+            shadowColor="transparent"
         >
             <NativeTabs.Trigger name="index">
                 <Label>Home</Label>
