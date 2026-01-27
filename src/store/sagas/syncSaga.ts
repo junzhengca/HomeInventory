@@ -55,8 +55,9 @@ function* initializeSyncSaga(action: { type: string; payload?: string }): Genera
 
   try {
     const deviceName = action.payload;
+    const userId = (yield select((state: RootState) => state.auth.user?.id)) as string | undefined;
     const newSyncService: SyncService = (yield call(() => new SyncService(apiClient))) as SyncService;
-    yield call(newSyncService.initialize.bind(newSyncService), deviceName);
+    yield call(newSyncService.initialize.bind(newSyncService), deviceName, userId);
 
     yield put(setSyncService(newSyncService));
 
@@ -239,8 +240,9 @@ function* enableSyncSaga(): Generator {
 
     try {
       console.log('[SyncSaga] Sync service not initialized, initializing now...');
+      const userId = (yield select((state: RootState) => state.auth.user?.id)) as string | undefined;
       const newSyncService: SyncService = (yield call(() => new SyncService(apiClient))) as SyncService;
-      yield call(newSyncService.initialize.bind(newSyncService));
+      yield call(newSyncService.initialize.bind(newSyncService), undefined, userId);
       yield put(setSyncService(newSyncService));
 
       // Set up event listener
@@ -321,8 +323,9 @@ function* syncAllSaga(): Generator {
 
     try {
       console.log('[SyncSaga] Sync service not initialized, initializing now...');
+      const userId = (yield select((state: RootState) => state.auth.user?.id)) as string | undefined;
       const newSyncService: SyncService = (yield call(() => new SyncService(apiClient))) as SyncService;
-      yield call(newSyncService.initialize.bind(newSyncService));
+      yield call(newSyncService.initialize.bind(newSyncService), undefined, userId);
       yield put(setSyncService(newSyncService));
 
       // Set up event listener
@@ -373,8 +376,9 @@ function* syncFileSaga(action: { type: string; payload: SyncFileType }): Generat
 
     try {
       console.log('[SyncSaga] Sync service not initialized, initializing now...');
+      const userId = (yield select((state: RootState) => state.auth.user?.id)) as string | undefined;
       const newSyncService: SyncService = (yield call(() => new SyncService(apiClient))) as SyncService;
-      yield call(newSyncService.initialize.bind(newSyncService));
+      yield call(newSyncService.initialize.bind(newSyncService), undefined, userId);
       yield put(setSyncService(newSyncService));
 
       // Set up event listener

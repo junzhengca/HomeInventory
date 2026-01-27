@@ -12,6 +12,9 @@ import { QRCodeDisplay } from '../molecules';
 
 const ContentContainer = styled(View)`
   flex: 1;
+  border-top-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  border-top-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  overflow: hidden;
 `;
 
 const OptionContainer = styled(TouchableOpacity)`
@@ -133,6 +136,7 @@ export const InviteMenuBottomSheet: React.FC<InviteMenuBottomSheetProps> = ({
       topInset={insets.top}
       index={0}
       enableDynamicSizing={false}
+      backgroundStyle={{ backgroundColor: theme.colors.surface }}
     >
       <ContentContainer>
         <BottomSheetHeader

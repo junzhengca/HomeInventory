@@ -13,6 +13,7 @@ export interface SyncFileData<T> {
   deviceId: string;
   syncTimestamp: string;
   deviceName?: string;
+  userId?: string;
   data: T;
 }
 
@@ -65,6 +66,7 @@ class SyncService {
     request: <T>(endpoint: string, options: { method: string; body?: unknown; requiresAuth?: boolean }) => Promise<T>;
   };
   private deviceId: string | null = null;
+  private userId: string | null = null;
   private syncQueue: SyncTask[] = [];
   private isProcessing: boolean = false;
   private syncMetadata: SyncMetadata | null = null;
@@ -88,8 +90,14 @@ class SyncService {
   /**
    * Initialize sync service
    */
-  async initialize(deviceName?: string): Promise<void> {
+  async initialize(deviceName?: string, userId?: string): Promise<void> {
     syncLogger.header('INITIALIZING SYNC SERVICE');
+
+    // Set user ID
+    if (userId) {
+      this.userId = userId;
+      syncLogger.info(`Initialized with user ID: ${userId}`);
+    }
 
     // Get or create device ID
     this.deviceId = await SecureStore.getItemAsync('device_id');
@@ -575,11 +583,12 @@ class SyncService {
     syncLogger.header(`PULL FILE START - ${fileType}`);
     syncLogger.verbose(`Timestamp: ${new Date().toISOString()}`);
 
-    const endpoint = `/api/sync/${fileType}/pull`;
+    const endpoint = `/api/sync/${fileType}/pull${this.userId ? `?userId=${this.userId}` : ''}`;
     const requestDetails = {
       method: 'GET',
       endpoint,
       fileType,
+      userId: this.userId,
       deviceId: this.deviceId,
       deviceName: this.syncMetadata?.deviceName,
     };
@@ -776,6 +785,7 @@ class SyncService {
         deviceId: this.deviceId!,
         syncTimestamp: new Date().toISOString(),
         deviceName: this.syncMetadata?.deviceName,
+        userId: this.userId || undefined,
         data: data,
       };
 

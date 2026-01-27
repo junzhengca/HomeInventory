@@ -42,6 +42,7 @@ Cluttr: React Native home inventory app with Expo, Redux Toolkit + Saga for stat
 
 - **Redux hooks pattern**: Use `useAuth()`, `useInventory()`, etc. from `src/store/hooks.ts` - NOT Context providers
 - **Uncontrolled inputs**: Bottom sheet forms use `defaultValue` + refs for IME composition (Chinese Pinyin support)
+- **Top-level BottomSheetModal styling**: ALWAYS set `backgroundStyle={{ backgroundColor: theme.colors.surface }}` and use rounded `ContentContainer` for dark mode support
 - **API client**: ALWAYS get from `useAuth().getApiClient()` - never `new ApiClient()`
 - **Styled-components**: Inject theme via `({ theme }: StyledProps) => ...`
 - **Saga pattern**: Domain sagas in `src/store/sagas/`, watchers use `takeLatest`, access API client via `select()`
