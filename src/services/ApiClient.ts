@@ -30,6 +30,7 @@ interface RequestOptions {
 }
 
 export class ApiClient {
+  private activeUserId: string | null = null;
   private baseUrl: string;
   private authToken: string | null = null;
   private onAuthError?: () => void;
@@ -40,6 +41,13 @@ export class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
+  }
+
+  /**
+   * Set the active user ID (for home switching)
+   */
+  setActiveUserId(userId: string | null): void {
+    this.activeUserId = userId;
   }
 
   /**
@@ -130,7 +138,14 @@ export class ApiClient {
     endpoint: string,
     options: RequestOptions
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Automatically append activeUserId if set and not already present
+    let finalEndpoint = endpoint;
+    if (this.activeUserId && !finalEndpoint.includes('userId=')) {
+      const separator = finalEndpoint.includes('?') ? '&' : '?';
+      finalEndpoint = `${finalEndpoint}${separator}userId=${this.activeUserId}`;
+    }
+
+    const url = `${this.baseUrl}${finalEndpoint}`;
     const isSyncRequest = endpoint.startsWith('/api/sync/');
     const requestStartTime = Date.now();
     const retryAttempts: RetryAttempt[] = [];

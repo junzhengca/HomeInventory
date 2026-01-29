@@ -10,7 +10,7 @@ import { BaseCard } from '../atoms';
 import { Member } from '../../types/api';
 
 const CardWrapper = styled(View)`
-  margin-bottom: 0;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
 const CardContent = styled(View)`

@@ -51,7 +51,7 @@ const ErrorText = styled(Text)`
 `;
 
 const InviteCard = styled(BaseCard)`
-  margin-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  margin-top: 0;
 `;
 
 const InviteCardContent = styled(View)`

@@ -7,6 +7,7 @@ import {
   setApiClient,
   setShowNicknameSetup,
   setAccessibleAccounts,
+  setActiveHomeId,
 } from '../slices/authSlice';
 import {
   setSyncEnabled,
@@ -88,6 +89,12 @@ function* initializeApiClientSaga(action: { type: string; payload: string }) {
         console.warn('[AuthSaga] Global error handler not set, cannot show error bottom sheet');
       }
     });
+
+    // Set initial active home ID from state
+    const activeHomeId: string | null = (yield select((state: RootState) => state.auth.activeHomeId)) as string | null;
+    if (activeHomeId) {
+      apiClient.setActiveUserId(activeHomeId);
+    }
 
     yield put(setApiClient(apiClient));
 
@@ -511,6 +518,15 @@ function* loadAccessibleAccountsSaga(): Generator {
   }
 }
 
+// Handle active home ID change
+function* handleActiveHomeIdChange(action: { type: string; payload: string | null }) {
+  const apiClient: ApiClient = (yield select((state: RootState) => state.auth.apiClient)) as ApiClient;
+  if (apiClient) {
+    apiClient.setActiveUserId(action.payload);
+    console.log('[AuthSaga] Updated ApiClient activeUserId:', action.payload);
+  }
+}
+
 // Watchers
 export function* authSaga() {
   yield takeLatest(INITIALIZE_API_CLIENT, initializeApiClientSaga);
@@ -521,5 +537,6 @@ export function* authSaga() {
   yield takeLatest(LOGOUT, logoutSaga);
   yield takeLatest(UPDATE_USER, updateUserSaga);
   yield takeLatest(LOAD_ACCESSIBLE_ACCOUNTS, loadAccessibleAccountsSaga);
+  yield takeLatest(setActiveHomeId.type, handleActiveHomeIdChange);
 }
 
