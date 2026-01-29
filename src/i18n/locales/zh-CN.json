@@ -587,6 +587,15 @@
       "errors": {
         "ownHome": "您不能加入自己的家"
       }
+    },
+    "home": {
+      "switch": "切换群组",
+      "switchTitle": "切换您的群组",
+      "switchSubtitle": "查看所在群组的成员信息",
+      "currentHome": "当前小家"
+    },
+    "inventory": {
+      "label": "共享库存"
     }
   },
   "toast": {

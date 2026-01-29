@@ -6,6 +6,7 @@ import {
   setError,
   setApiClient,
   setShowNicknameSetup,
+  setAccessibleAccounts,
 } from '../slices/authSlice';
 import {
   setSyncEnabled,
@@ -21,7 +22,7 @@ import {
   getUser,
   saveUser,
 } from '../../services/AuthService';
-import { User, ErrorDetails } from '../../types/api';
+import { User, ErrorDetails, ListAccessibleAccountsResponse } from '../../types/api';
 import * as SecureStore from 'expo-secure-store';
 import type { RootState } from '../types';
 import { getGlobalToast } from '../../components/organisms/ToastProvider';
@@ -42,6 +43,7 @@ const SIGNUP = 'auth/SIGNUP';
 const GOOGLE_LOGIN = 'auth/GOOGLE_LOGIN';
 const LOGOUT = 'auth/LOGOUT';
 const UPDATE_USER = 'auth/UPDATE_USER';
+const LOAD_ACCESSIBLE_ACCOUNTS = 'auth/LOAD_ACCESSIBLE_ACCOUNTS';
 const INITIALIZE_API_CLIENT = 'auth/INITIALIZE_API_CLIENT';
 
 // Action creators
@@ -60,6 +62,7 @@ export const googleLogin = (idToken: string, platform: string) => ({
 });
 export const logout = () => ({ type: LOGOUT });
 export const updateUser = (userData: User) => ({ type: UPDATE_USER, payload: userData });
+export const loadAccessibleAccounts = () => ({ type: LOAD_ACCESSIBLE_ACCOUNTS });
 export const initializeApiClient = (apiBaseUrl: string) => ({
   type: INITIALIZE_API_CLIENT,
   payload: apiBaseUrl,
@@ -137,27 +140,30 @@ function* checkAuthSaga(): Generator {
         yield call(saveUser, currentUser);
         yield put(setUser(currentUser));
         yield put(setAuthenticated(true));
-        
+
         // Check if nickname is missing
         if (!currentUser.nickname || currentUser.nickname.trim() === '') {
           yield put(setShowNicknameSetup(true));
         } else {
           yield put(setShowNicknameSetup(false));
         }
-        
+
         // Initialize sync service after successful authentication
         yield put(initializeSync());
+
+        // Load accessible accounts
+        yield put(loadAccessibleAccounts());
       } else if (savedUser) {
         yield put(setUser(savedUser));
         yield put(setAuthenticated(true));
-        
+
         // Check if nickname is missing
         if (!savedUser.nickname || savedUser.nickname.trim() === '') {
           yield put(setShowNicknameSetup(true));
         } else {
           yield put(setShowNicknameSetup(false));
         }
-        
+
         // Initialize sync service after successful authentication
         yield put(initializeSync());
       } else {
@@ -254,6 +260,9 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     // Initialize sync service after successful login
     yield put(initializeSync());
 
+    // Load accessible accounts
+    yield put(loadAccessibleAccounts());
+
     // Show success toast
     const toast = getGlobalToast();
     if (toast) {
@@ -327,6 +336,9 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
 
     // Initialize sync service after successful signup
     yield put(initializeSync());
+
+    // Load accessible accounts
+    yield put(loadAccessibleAccounts());
 
     // Show success toast
     const toast = getGlobalToast();
@@ -414,21 +426,24 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     yield put(setAuthenticated(true));
     yield put(setError(null)); // Clear error on success
     yield put(setLoading(false));
-    
+
     // Initialize sync service after successful Google login
     yield put(initializeSync());
-    
+
+    // Load accessible accounts
+    yield put(loadAccessibleAccounts());
+
     // Show success toast
     const toast = getGlobalToast();
     if (toast) {
       toast(i18n.t('toast.loginSuccess'), 'success');
     }
-    
+
     console.log('[AuthSaga] Google login successful');
   } catch (error) {
     console.error('[AuthSaga] Google login error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Google login failed. Please try again.';
-    
+
     // Handle specific error cases
     const errorWithStatus = error as Error & { status?: number; responseBody?: unknown };
     if (errorWithStatus.status === 409) {
@@ -440,30 +455,32 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     } else {
       yield put(setError(errorMessage));
     }
-    
+
     yield put(setLoading(false));
   }
 }
 
 function* logoutSaga() {
   console.log('[AuthSaga] logout() called - attempting to disable sync and clear auth');
-  
+
   try {
     // Disable sync on explicit logout (persist state)
     try {
       yield call(SecureStore.setItemAsync, 'sync_enabled', 'false');
+      yield put(setSyncEnabled(false));
       console.log('[AuthSaga] *** SYNC DISABLED ON LOGOUT *** - Set sync_enabled to "false"');
     } catch (error) {
       console.error('[AuthSaga] Error disabling sync on logout:', error);
     }
+    yield put(setAccessibleAccounts([])); // Clear accounts on logout
     yield call(handleAuthError);
-    
+
     // Show success toast
     const toast = getGlobalToast();
     if (toast) {
       toast(i18n.t('toast.logoutSuccess'), 'success');
     }
-    
+
     console.log('[AuthSaga] Logout successful');
   } catch (error) {
     console.error('[AuthSaga] Error during logout:', error);
@@ -481,6 +498,19 @@ function* updateUserSaga(action: { type: string; payload: User }) {
   }
 }
 
+function* loadAccessibleAccountsSaga(): Generator {
+  const apiClient: ApiClient = (yield select((state: RootState) => state.auth.apiClient)) as ApiClient;
+  if (!apiClient) return;
+
+  try {
+    const response = (yield call(apiClient.listAccessibleAccounts.bind(apiClient))) as ListAccessibleAccountsResponse;
+    yield put(setAccessibleAccounts(response.accounts));
+    console.log('[AuthSaga] Loaded accessible accounts:', response.accounts.length);
+  } catch (error) {
+    console.error('[AuthSaga] Error loading accessible accounts:', error);
+  }
+}
+
 // Watchers
 export function* authSaga() {
   yield takeLatest(INITIALIZE_API_CLIENT, initializeApiClientSaga);
@@ -490,5 +520,6 @@ export function* authSaga() {
   yield takeLatest(GOOGLE_LOGIN, googleLoginSaga);
   yield takeLatest(LOGOUT, logoutSaga);
   yield takeLatest(UPDATE_USER, updateUserSaga);
+  yield takeLatest(LOAD_ACCESSIBLE_ACCOUNTS, loadAccessibleAccountsSaga);
 }
 

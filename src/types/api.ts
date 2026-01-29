@@ -92,6 +92,19 @@ export interface ListMembersResponse {
   members: Member[];
 }
 
+export interface AccessibleAccount {
+  userId: string;
+  email: string;
+  nickname?: string;
+  avatarUrl?: string;
+  isOwner: boolean;
+  joinedAt: string;
+}
+
+export interface ListAccessibleAccountsResponse {
+  accounts: AccessibleAccount[];
+}
+
 export interface RegenerateInvitationResponse {
   invitationCode: string;
 }

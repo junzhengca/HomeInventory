@@ -587,6 +587,15 @@
       "errors": {
         "ownHome": "You cannot join your own home"
       }
+    },
+    "home": {
+      "switch": "Switch Group",
+      "switchTitle": "Switch Your Group",
+      "switchSubtitle": "View member information for the groups you are in",
+      "currentHome": "Current Home"
+    },
+    "inventory": {
+      "label": "Shared Inventory"
     }
   },
   "toast": {

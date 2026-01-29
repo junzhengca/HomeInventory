@@ -183,6 +183,7 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
             // Reload data
             dispatch({ type: 'inventory/LOAD_ITEMS' });
             dispatch({ type: 'todo/LOAD_TODOS' });
+            dispatch({ type: 'auth/LOAD_ACCESSIBLE_ACCOUNTS' });
 
             showToast(t('share.invite.acceptSuccess'), 'success');
 

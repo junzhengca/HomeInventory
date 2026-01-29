@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Alert, ActivityIndicator, ScrollView, Animated, Dimensions, Text } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import type { StyledProps } from '../utils/styledComponents';
 import {
   PageHeader,
@@ -14,16 +15,32 @@ import {
   Button,
   MemberList,
   InviteMenuBottomSheet,
+  HomeCard,
 } from '../components';
 import { calculateBottomPadding } from '../utils/layout';
 import { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../store/hooks';
 import { useToast } from '../hooks/useToast';
-import { Member } from '../types/api';
+import { Member, AccessibleAccount } from '../types/api';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setActiveHomeId } from '../store/slices/authSlice';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const Container = styled(View)`
   flex: 1;
   background-color: ${({ theme }: StyledProps) => theme.colors.background};
+`;
+
+const AnimatedContainer = styled(Animated.View)`
+  flex: 1;
+  flex-direction: row;
+  width: ${SCREEN_WIDTH * 2}px;
+`;
+
+const PageView = styled(View)`
+  width: ${SCREEN_WIDTH}px;
+  flex: 1;
 `;
 
 const Content = styled(ScrollView)`
@@ -50,13 +67,32 @@ const ButtonContainer = styled(View)`
   margin-top: ${({ theme }: StyledProps) => theme.spacing.lg}px;
 `;
 
+const SwitchHomeHeader = styled(View)`
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  padding-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
+const SwitchTitle = styled(Text)`
+  font-size: 24px;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 4px;
+`;
+
+const SwitchSubtitle = styled(Text)`
+  font-size: 14px;
+  color: #757575;
+`;
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const ShareScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   const navigation = useNavigation<NavigationProp>();
   const { user, isAuthenticated, getApiClient } = useAuth();
+  const activeHomeId = useAppSelector((state) => state.auth.activeHomeId);
   const { showToast } = useToast();
   const inviteMenuBottomSheetRef = useRef<BottomSheetModal | null>(null);
 
@@ -69,6 +105,14 @@ export const ShareScreen: React.FC = () => {
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
 
+  const accounts = useAppSelector((state) => state.auth.accessibleAccounts);
+  const [isSwitchingHome, setIsSwitchingHome] = useState(false);
+  const panAnim = useRef(new Animated.Value(0)).current;
+
+  const currentHome = accounts.find(a =>
+    activeHomeId ? a.userId === activeHomeId : a.isOwner
+  ) || (user ? { userId: user.id, nickname: user.nickname || user.email, email: user.email, isOwner: true } : null);
+
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -79,6 +123,7 @@ export const ShareScreen: React.FC = () => {
         return;
       }
 
+      // Note: Backend should support userId query param for these settings
       const response = await apiClient.getInvitationCode();
       setCanShareInventory(response.settings.canShareInventory);
       setCanShareTodos(response.settings.canShareTodos);
@@ -113,6 +158,10 @@ export const ShareScreen: React.FC = () => {
     }
   }, [getApiClient, t]);
 
+  const loadAccounts = useCallback(() => {
+    dispatch({ type: 'auth/LOAD_ACCESSIBLE_ACCOUNTS' });
+  }, [dispatch]);
+
   const handleRemoveMember = useCallback(
     async (memberId: string) => {
       try {
@@ -142,10 +191,6 @@ export const ShareScreen: React.FC = () => {
   }, [invitationCode, showToast, t]);
 
   const getInvitationLink = useCallback(() => {
-    // Generate invitation link - using deep link scheme
-    // This will create a link like: com.cluttrapp.cluttr://?inviteCode=123456
-    // We use root path to avoid "Unmatched Route" error in Expo Router
-    // We use inviteCode param to avoid collision with OAuth 'code' param
     const scheme = 'com.cluttrapp.cluttr'; // Matches app.json scheme
     return `${scheme}://?inviteCode=${invitationCode}`;
   }, [invitationCode]);
@@ -154,10 +199,11 @@ export const ShareScreen: React.FC = () => {
     if (isAuthenticated) {
       loadSettings();
       loadMembers();
+      loadAccounts();
     } else {
       setIsLoading(false);
     }
-  }, [loadSettings, loadMembers, isAuthenticated]);
+  }, [loadSettings, loadMembers, loadAccounts, isAuthenticated, activeHomeId]);
 
   const handleToggleInventory = useCallback(() => {
     const newValue = !canShareInventory;
@@ -251,14 +297,38 @@ export const ShareScreen: React.FC = () => {
   };
 
   const handleLoginPress = () => {
-    // Navigate directly to Profile page
     const rootNavigation = navigation.getParent();
     if (rootNavigation) {
       rootNavigation.navigate('Profile');
     }
   };
 
-  // Show login prompt if not authenticated
+  const handleSwitchHomePress = () => {
+    setIsSwitchingHome(true);
+    Animated.timing(panAnim, {
+      toValue: -SCREEN_WIDTH,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleBackToSharePress = () => {
+    Animated.timing(panAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsSwitchingHome(false);
+    });
+  };
+
+  const handleAccountSelect = (accountId: string) => {
+    // If selecting own account, set to null (default)
+    const newActiveId = accountId === user?.id ? null : accountId;
+    dispatch(setActiveHomeId(newActiveId));
+    handleBackToSharePress();
+  };
+
   if (!isAuthenticated) {
     return (
       <Container>
@@ -290,45 +360,90 @@ export const ShareScreen: React.FC = () => {
     );
   }
 
+  const accountColors = ['#E1F5FE', '#FCE4EC', '#E8F5E9', '#FFF3E0', '#F3E5F5'];
+
   return (
     <Container>
       <PageHeader
-        icon="share-outline"
-        title={t('share.title')}
-        subtitle={t('share.subtitle')}
-        showBackButton={false}
-        showRightButtons={true}
+        icon={isSwitchingHome ? "chevron-back" : "share-outline"}
+        title={isSwitchingHome ? t('share.home.switchTitle') : t('share.title')}
+        subtitle={isSwitchingHome ? t('share.home.switchSubtitle') : t('share.subtitle')}
+        showBackButton={isSwitchingHome}
+        onBackPress={isSwitchingHome ? handleBackToSharePress : undefined}
+        showRightButtons={!isSwitchingHome}
         avatarUrl={user?.avatarUrl}
         onAvatarPress={handleAvatarPress}
       />
-      <Content
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: calculateBottomPadding(insets.bottom) }}
-      >
-        {isLoading ? (
-          <LoadingContainer>
-            <ActivityIndicator size="large" />
-          </LoadingContainer>
-        ) : (
-          <>
-            <MemberList
-              owner={user}
-              members={members}
-              isLoading={membersLoading}
-              error={membersError}
-              onRemoveMember={handleRemoveMember}
-              onInvitePress={handleInvitePress}
-            />
-            <PermissionConfigPanel
-              canShareInventory={canShareInventory}
-              canShareTodos={canShareTodos}
-              onToggleInventory={handleToggleInventory}
-              onToggleTodos={handleToggleTodos}
-              isLoading={isUpdating}
-            />
-          </>
-        )}
-      </Content>
+
+      <AnimatedContainer style={{ transform: [{ translateX: panAnim }] }}>
+        {/* Main Share View */}
+        <PageView>
+          <Content
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: calculateBottomPadding(insets.bottom) }}
+          >
+            {isLoading ? (
+              <LoadingContainer>
+                <ActivityIndicator size="large" />
+              </LoadingContainer>
+            ) : (
+              <>
+                <HomeCard
+                  name={currentHome?.nickname || currentHome?.email || t('share.home.currentHome')}
+                  memberCount={members.length}
+                  isActive={true}
+                  showSwitchButton={true}
+                  onSwitchPress={handleSwitchHomePress}
+                />
+
+                <MemberList
+                  owner={user}
+                  members={members}
+                  isLoading={membersLoading}
+                  error={membersError}
+                  onRemoveMember={handleRemoveMember}
+                  onInvitePress={handleInvitePress}
+                />
+                <PermissionConfigPanel
+                  canShareInventory={canShareInventory}
+                  canShareTodos={canShareTodos}
+                  onToggleInventory={handleToggleInventory}
+                  onToggleTodos={handleToggleTodos}
+                  isLoading={isUpdating}
+                />
+              </>
+            )}
+          </Content>
+        </PageView>
+
+        {/* Switch Home View */}
+        <PageView>
+          <Content
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: calculateBottomPadding(insets.bottom) }}
+          >
+            {accounts.map((account, index) => (
+              <HomeCard
+                key={account.userId}
+                name={account.nickname || account.email}
+                memberCount={0} // We don't have member count for other homes in the accounts list
+                isActive={activeHomeId ? account.userId === activeHomeId : account.isOwner}
+                backgroundColor={accountColors[index % accountColors.length]}
+                onPress={() => handleAccountSelect(account.userId)}
+              />
+            ))}
+
+            {accounts.length === 0 && (
+              <EmptyState
+                icon="home-outline"
+                title={t('share.members.empty.title')}
+                description={t('share.members.empty.description')}
+              />
+            )}
+          </Content>
+        </PageView>
+      </AnimatedContainer>
+
       <InviteMenuBottomSheet
         bottomSheetRef={inviteMenuBottomSheetRef}
         invitationCode={invitationCode || ''}

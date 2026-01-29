@@ -8,6 +8,7 @@ import {
   setSyncLastSyncTime,
   setSyncError,
 } from '../slices/syncSlice';
+import { setActiveHomeId } from '../slices/authSlice';
 import {
   upsertItems,
   removeItems,
@@ -22,6 +23,7 @@ import { syncCallbackRegistry } from '../../services/SyncCallbackRegistry';
 import SyncService, { SyncFileType, SyncEvent } from '../../services/SyncService';
 import { InventoryItem, TodoItem } from '../../types/inventory';
 import { ApiClient } from '../../services/ApiClient';
+import { store } from '../index';
 import type { RootState } from '../types';
 
 // Action types
@@ -55,7 +57,7 @@ function* initializeSyncSaga(action: { type: string; payload?: string }): Genera
 
   try {
     const deviceName = action.payload;
-    const userId = (yield select((state: RootState) => state.auth.user?.id)) as string | undefined;
+    const userId = (yield select((state: RootState) => state.auth.activeHomeId || state.auth.user?.id)) as string | undefined;
     const newSyncService: SyncService = (yield call(() => new SyncService(apiClient))) as SyncService;
     yield call(newSyncService.initialize.bind(newSyncService), deviceName, userId);
 
@@ -240,7 +242,7 @@ function* enableSyncSaga(): Generator {
 
     try {
       console.log('[SyncSaga] Sync service not initialized, initializing now...');
-      const userId = (yield select((state: RootState) => state.auth.user?.id)) as string | undefined;
+      const userId = (yield select((state: RootState) => state.auth.activeHomeId || state.auth.user?.id)) as string | undefined;
       const newSyncService: SyncService = (yield call(() => new SyncService(apiClient))) as SyncService;
       yield call(newSyncService.initialize.bind(newSyncService), undefined, userId);
       yield put(setSyncService(newSyncService));
@@ -323,7 +325,7 @@ function* syncAllSaga(): Generator {
 
     try {
       console.log('[SyncSaga] Sync service not initialized, initializing now...');
-      const userId = (yield select((state: RootState) => state.auth.user?.id)) as string | undefined;
+      const userId = (yield select((state: RootState) => state.auth.activeHomeId || state.auth.user?.id)) as string | undefined;
       const newSyncService: SyncService = (yield call(() => new SyncService(apiClient))) as SyncService;
       yield call(newSyncService.initialize.bind(newSyncService), undefined, userId);
       yield put(setSyncService(newSyncService));
@@ -376,7 +378,7 @@ function* syncFileSaga(action: { type: string; payload: SyncFileType }): Generat
 
     try {
       console.log('[SyncSaga] Sync service not initialized, initializing now...');
-      const userId = (yield select((state: RootState) => state.auth.user?.id)) as string | undefined;
+      const userId = (yield select((state: RootState) => state.auth.activeHomeId || state.auth.user?.id)) as string | undefined;
       const newSyncService: SyncService = (yield call(() => new SyncService(apiClient))) as SyncService;
       yield call(newSyncService.initialize.bind(newSyncService), undefined, userId);
       yield put(setSyncService(newSyncService));
@@ -427,19 +429,64 @@ function* registerSyncCallbacksSaga(): Generator {
   }
 
   // Register callbacks when sync is enabled
-  const syncOnDataChange = (fileType: SyncFileType) => {
-    console.log(`[SyncSaga] Syncing ${fileType} on data change...`);
-    // Queue a high-priority push sync for the changed file type
-    syncService.queueSync(fileType, 'push', 'high');
+  const syncOnDataChange = (fileType: SyncFileType, accessibleAccounts: { userId: string }[]) => {
+    console.log(`[SyncSaga] Syncing ${fileType} on data change for ${accessibleAccounts.length} account(s)...`);
+
+    // Always queue sync for the accounts we have access to
+    if (accessibleAccounts.length > 0) {
+      accessibleAccounts.forEach(account => {
+        syncService.queueSync(fileType, 'push', 'high', account.userId);
+      });
+    } else {
+      // Fallback to active home if no accounts listed (e.g. before initial load)
+      syncService.queueSync(fileType, 'push', 'high');
+    }
   };
 
-  syncCallbackRegistry.setCallback('categories', () => syncOnDataChange('categories'));
-  syncCallbackRegistry.setCallback('locations', () => syncOnDataChange('locations'));
-  syncCallbackRegistry.setCallback('inventoryItems', () => syncOnDataChange('inventoryItems'));
-  syncCallbackRegistry.setCallback('todoItems', () => syncOnDataChange('todoItems'));
-  syncCallbackRegistry.setCallback('settings', () => syncOnDataChange('settings'));
+  syncCallbackRegistry.setCallback('categories', () => {
+    const accounts = (store.getState() as RootState).auth.accessibleAccounts;
+    syncOnDataChange('categories', accounts);
+  });
+  syncCallbackRegistry.setCallback('locations', () => {
+    const accounts = (store.getState() as RootState).auth.accessibleAccounts;
+    syncOnDataChange('locations', accounts);
+  });
+  syncCallbackRegistry.setCallback('inventoryItems', () => {
+    const accounts = (store.getState() as RootState).auth.accessibleAccounts;
+    syncOnDataChange('inventoryItems', accounts);
+  });
+  syncCallbackRegistry.setCallback('todoItems', () => {
+    const accounts = (store.getState() as RootState).auth.accessibleAccounts;
+    syncOnDataChange('todoItems', accounts);
+  });
+  syncCallbackRegistry.setCallback('settings', () => {
+    const accounts = (store.getState() as RootState).auth.accessibleAccounts;
+    syncOnDataChange('settings', accounts);
+  });
 
-  console.log('[SyncSaga] Sync callbacks registered');
+  console.log('[SyncSaga] Sync callbacks registered (multi-home enabled)');
+}
+
+function* switchHomeSaga(action: ReturnType<typeof setActiveHomeId>): Generator {
+  const syncService: SyncService | null = (yield select((state: RootState) => state.sync.syncService)) as SyncService | null;
+  if (!syncService) return;
+
+  try {
+    yield put(setSyncLoading(true));
+    const newHomeId = action.payload || undefined;
+    console.log('[SyncSaga] Switching home to:', newHomeId);
+
+    // Update userId in SyncService
+    yield call(syncService.setUserId.bind(syncService), newHomeId);
+
+    // Trigger full sync for all files
+    yield put({ type: SYNC_ALL });
+  } catch (err) {
+    console.error('[SyncSaga] Error switching home:', err);
+    yield put(setSyncError('Failed to switch home context'));
+  } finally {
+    yield put(setSyncLoading(false));
+  }
 }
 
 // Watcher
@@ -451,5 +498,6 @@ export function* syncSaga() {
   yield takeLatest(SYNC_ALL, syncAllSaga);
   yield takeLatest(SYNC_FILE, syncFileSaga);
   yield takeLatest(REGISTER_SYNC_CALLBACKS, registerSyncCallbacksSaga);
+  yield takeLatest(setActiveHomeId.type, switchHomeSaga);
 }
 

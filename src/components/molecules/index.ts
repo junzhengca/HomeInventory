@@ -13,6 +13,9 @@ export type { CategoryPreviewCardProps } from './CategoryPreviewCard';
 export { MemberCard } from './MemberCard';
 export type { MemberCardProps } from './MemberCard';
 
+export { HomeCard } from './HomeCard';
+export type { HomeCardProps } from './HomeCard';
+
 // Input/filter molecules
 export { SearchInput } from './SearchInput';
 export type { SearchInputProps } from './SearchInput';

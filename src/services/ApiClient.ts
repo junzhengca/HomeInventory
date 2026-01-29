@@ -19,6 +19,7 @@ import {
   ErrorDetails,
   RetryAttempt,
   ValidateInvitationResponse,
+  ListAccessibleAccountsResponse,
 } from '../types/api';
 import { apiLogger, syncLogger } from '../utils/Logger';
 
@@ -557,6 +558,16 @@ export class ApiClient {
    */
   async listMembers(): Promise<ListMembersResponse> {
     return this.request<ListMembersResponse>('/api/accounts/members', {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * List all accounts the authenticated user can access
+   */
+  async listAccessibleAccounts(): Promise<ListAccessibleAccountsResponse> {
+    return this.request<ListAccessibleAccountsResponse>('/api/accounts', {
       method: 'GET',
       requiresAuth: true,
     });

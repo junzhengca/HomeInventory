@@ -43,6 +43,7 @@ interface SyncTask {
   timestamp: number;
   retries: number;
   maxRetries: number;
+  userId?: string;
 }
 
 // Sync event type
@@ -66,7 +67,7 @@ class SyncService {
     request: <T>(endpoint: string, options: { method: string; body?: unknown; requiresAuth?: boolean }) => Promise<T>;
   };
   private deviceId: string | null = null;
-  private userId: string | null = null;
+  private userId: string | undefined = undefined;
   private syncQueue: SyncTask[] = [];
   private isProcessing: boolean = false;
   private syncMetadata: SyncMetadata | null = null;
@@ -131,6 +132,36 @@ class SyncService {
     }
 
     syncLogger.end('SYNC SERVICE INITIALIZATION');
+  }
+
+  /**
+   * Set user ID and reset metadata if it changed
+   */
+  async setUserId(userId: string | undefined): Promise<void> {
+    if (this.userId !== userId) {
+      syncLogger.info(`Changing user ID from ${this.userId} to ${userId}. Resetting sync metadata.`);
+      this.userId = userId;
+      await this.resetSyncMetadata();
+    }
+  }
+
+  /**
+   * Reset sync metadata to default state
+   */
+  async resetSyncMetadata(): Promise<void> {
+    if (this.deviceId) {
+      this.syncMetadata = {
+        deviceId: this.deviceId,
+        deviceName: this.syncMetadata?.deviceName,
+        categories: this.createDefaultSyncState(),
+        locations: this.createDefaultSyncState(),
+        inventoryItems: this.createDefaultSyncState(),
+        todoItems: this.createDefaultSyncState(),
+        settings: this.createDefaultSyncState(),
+      };
+      await this.saveSyncMetadata();
+      syncLogger.info('Sync metadata has been reset');
+    }
   }
 
   /**
@@ -235,7 +266,7 @@ class SyncService {
 
       // Start periodic sync every 5 minutes AFTER initial sync completes
       this.syncInterval = setInterval(() => {
-        this.syncAll();
+        this.syncAllHomes();
       }, 5 * 60 * 1000);
 
       syncLogger.end('SYNC ENABLED - initial sync completed, periodic sync started');
@@ -354,7 +385,7 @@ class SyncService {
   /**
    * Sync all file types
    */
-  async syncAll(): Promise<void> {
+  async syncAll(userId?: string): Promise<void> {
     const enabled = await this.isEnabled();
     if (!enabled) {
       syncLogger.info('Sync is disabled, skipping sync all');
@@ -367,27 +398,61 @@ class SyncService {
       return;
     }
 
-    syncLogger.info('Syncing all file types...');
+    const targetUserId = userId || this.userId;
+    syncLogger.info(`Syncing all file types for user ${targetUserId || 'default'}...`);
 
     const fileTypes: SyncFileType[] = ['categories', 'locations', 'inventoryItems', 'todoItems', 'settings'];
 
     for (const fileType of fileTypes) {
       // Do full sync (pull + push) to ensure bidirectional sync
-      this.queueSync(fileType, 'full');
+      this.queueSync(fileType, 'full', 'normal', targetUserId);
+    }
+  }
+
+  /**
+   * Sync all accessible homes
+   */
+  async syncAllHomes(): Promise<void> {
+    const enabled = await this.isEnabled();
+    if (!enabled) {
+      syncLogger.info('Sync is disabled, skipping sync all homes');
+      return;
+    }
+
+    syncLogger.header('SYNC ALL HOMES');
+
+    try {
+      // Get all accessible accounts
+      const response = await this.apiClient.request<{ accounts: { userId: string }[] }>('/api/accounts', {
+        method: 'GET',
+        requiresAuth: true,
+      });
+
+      const accounts = response.accounts || [];
+      syncLogger.info(`Found ${accounts.length} accessible account(s)`);
+
+      for (const account of accounts) {
+        await this.syncAll(account.userId);
+      }
+    } catch (error) {
+      syncLogger.error('Error syncing all homes:', error);
+      // Fallback: just sync current home
+      await this.syncAll();
     }
   }
 
   /**
    * Queue a sync task
    */
-  async queueSync(fileType: SyncFileType, operation: 'pull' | 'push' | 'full', priority: 'high' | 'normal' | 'low' = 'normal'): Promise<void> {
+  async queueSync(fileType: SyncFileType, operation: 'pull' | 'push' | 'full', priority: 'high' | 'normal' | 'low' = 'normal', userId?: string): Promise<void> {
     const enabled = await this.isEnabled();
     if (!enabled) {
       syncLogger.info(`Sync is disabled, ignoring ${operation} queue for ${fileType}`);
       return;
     }
 
-    const taskKey = `${fileType}-${operation}`;
+    const targetUserId = userId || this.userId;
+    const taskKey = `${fileType}-${operation}-${targetUserId || 'default'}`;
 
     // Check if there's already an in-flight sync for this fileType+operation
     if (this.inFlightSyncs.has(taskKey)) {
@@ -395,21 +460,21 @@ class SyncService {
       return;
     }
 
-    // If trying to do pull/push, check if a full sync is in progress for this fileType
+    // If trying to do pull/push, check if a full sync is in progress for this fileType+userId
     if (operation !== 'full') {
-      const fullSyncKey = `${fileType}-full`;
+      const fullSyncKey = `${fileType}-full-${targetUserId || 'default'}`;
       if (this.inFlightSyncs.has(fullSyncKey)) {
-        syncLogger.debug(`Full sync in progress for ${fileType}, skipping ${operation} request`);
+        syncLogger.debug(`Full sync in progress for ${fileType} (user ${targetUserId || 'default'}), skipping ${operation} request`);
         return;
       }
     }
 
-    // If trying to do full sync, check if any sync is in progress for this fileType
+    // If trying to do full sync, check if any sync is in progress for this fileType+userId
     if (operation === 'full') {
-      const pullKey = `${fileType}-pull`;
-      const pushKey = `${fileType}-push`;
+      const pullKey = `${fileType}-pull-${targetUserId || 'default'}`;
+      const pushKey = `${fileType}-push-${targetUserId || 'default'}`;
       if (this.inFlightSyncs.has(pullKey) || this.inFlightSyncs.has(pushKey)) {
-        syncLogger.debug(`Pull or push in progress for ${fileType}, skipping full sync request`);
+        syncLogger.debug(`Pull or push in progress for ${fileType} (user ${targetUserId || 'default'}), skipping full sync request`);
         return;
       }
     }
@@ -422,9 +487,9 @@ class SyncService {
       return;
     }
 
-    // Check if there's already a pending task for this fileType+operation in the queue
+    // Check if there's already a pending task for this fileType+operation+userId in the queue
     const existingTaskIndex = this.syncQueue.findIndex(
-      t => t.fileType === fileType && t.operation === operation
+      t => t.fileType === fileType && t.operation === operation && t.userId === targetUserId
     );
 
     if (existingTaskIndex !== -1) {
@@ -447,6 +512,7 @@ class SyncService {
       timestamp: Date.now(),
       retries: 0,
       maxRetries: 3,
+      userId: targetUserId,
     };
 
     syncLogger.debug('Queuing sync task', task);
@@ -536,11 +602,11 @@ class SyncService {
     const syncPromise = (async () => {
       try {
         if (task.operation === 'full') {
-          await this.syncFile(task.fileType, 'full');
+          await this.syncFile(task.fileType, 'full', task.userId);
         } else if (task.operation === 'pull') {
-          await this.pullFile(task.fileType);
+          await this.pullFile(task.fileType, task.userId);
         } else if (task.operation === 'push') {
-          await this.pushFile(task.fileType);
+          await this.pushFile(task.fileType, task.userId);
         }
 
         // Update last sync time on success
@@ -561,34 +627,35 @@ class SyncService {
   /**
    * Sync a single file type with pull-merge-push
    */
-  async syncFile(fileType: SyncFileType, mode: 'pull' | 'push' | 'full'): Promise<void> {
-    syncLogger.info(`Syncing ${fileType} in ${mode} mode...`);
+  async syncFile(fileType: SyncFileType, mode: 'pull' | 'push' | 'full', userId?: string): Promise<void> {
+    syncLogger.info(`Syncing ${fileType} in ${mode} mode for user ${userId || 'default'}...`);
 
     if (mode === 'pull') {
-      await this.pullFile(fileType);
+      await this.pullFile(fileType, userId);
     } else if (mode === 'push') {
-      await this.pushFile(fileType);
+      await this.pushFile(fileType, userId);
     } else {
       // Full sync: pull -> merge -> push
-      await this.pullFile(fileType);
-      await this.pushFile(fileType);
+      await this.pullFile(fileType, userId);
+      await this.pushFile(fileType, userId);
     }
   }
 
   /**
    * Pull data from server for a specific file type
    */
-  private async pullFile(fileType: SyncFileType): Promise<void> {
+  private async pullFile(fileType: SyncFileType, userId?: string): Promise<void> {
     const pullStartTime = Date.now();
-    syncLogger.header(`PULL FILE START - ${fileType}`);
+    const targetUserId = userId || this.userId;
+    syncLogger.header(`PULL FILE START - ${fileType} (user: ${targetUserId || 'default'})`);
     syncLogger.verbose(`Timestamp: ${new Date().toISOString()}`);
 
-    const endpoint = `/api/sync/${fileType}/pull${this.userId ? `?userId=${this.userId}` : ''}`;
+    const endpoint = `/api/sync/${fileType}/pull${targetUserId ? `?userId=${targetUserId}` : ''}`;
     const requestDetails = {
       method: 'GET',
       endpoint,
       fileType,
-      userId: this.userId,
+      userId: targetUserId,
       deviceId: this.deviceId,
       deviceName: this.syncMetadata?.deviceName,
     };
@@ -734,9 +801,10 @@ class SyncService {
   /**
    * Push merged data to server for a specific file type
    */
-  private async pushFile(fileType: SyncFileType): Promise<void> {
+  private async pushFile(fileType: SyncFileType, userId?: string): Promise<void> {
     const pushStartTime = Date.now();
-    syncLogger.header(`PUSH FILE START - ${fileType}`);
+    const targetUserId = userId || this.userId;
+    syncLogger.header(`PUSH FILE START - ${fileType} (user: ${targetUserId || 'default'})`);
     syncLogger.verbose(`Timestamp: ${new Date().toISOString()}`);
 
     let requestBody: SyncFileData<unknown> | null = null;
@@ -785,7 +853,7 @@ class SyncService {
         deviceId: this.deviceId!,
         syncTimestamp: new Date().toISOString(),
         deviceName: this.syncMetadata?.deviceName,
-        userId: this.userId || undefined,
+        userId: targetUserId || undefined,
         data: data,
       };
 
