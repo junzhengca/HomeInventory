@@ -1,9 +1,14 @@
 import * as SecureStore from 'expo-secure-store';
 import { readFile, writeFile, deleteFile } from './FileSystemService';
-import { User } from '../types/api';
+import { User, AccessibleAccount } from '../types/api';
 
 const ACCESS_TOKEN_KEY = 'access_token';
 const USER_FILE = 'user.json';
+const ACCESSIBLE_ACCOUNTS_FILE = 'accessible_accounts.json';
+
+interface AccessibleAccountsData {
+  accounts: AccessibleAccount[];
+}
 
 interface AuthTokens {
   accessToken: string;
@@ -98,7 +103,34 @@ export const clearUser = async (): Promise<boolean> => {
  * Clear all authentication data (tokens and user)
  */
 export const clearAllAuthData = async (): Promise<void> => {
-  await Promise.all([clearAuthTokens(), clearUser(), removeActiveHomeId()]);
+  await Promise.all([
+    clearAuthTokens(),
+    clearUser(),
+    removeActiveHomeId(),
+    clearAccessibleAccounts(),
+  ]);
+};
+
+/**
+ * Get stored accessible accounts
+ */
+export const getAccessibleAccounts = async (): Promise<AccessibleAccount[] | null> => {
+  const data = await readFile<AccessibleAccountsData>(ACCESSIBLE_ACCOUNTS_FILE);
+  return data?.accounts || null;
+};
+
+/**
+ * Save accessible accounts
+ */
+export const saveAccessibleAccounts = async (accounts: AccessibleAccount[]): Promise<boolean> => {
+  return writeFile<AccessibleAccountsData>(ACCESSIBLE_ACCOUNTS_FILE, { accounts });
+};
+
+/**
+ * Clear stored accessible accounts
+ */
+export const clearAccessibleAccounts = async (): Promise<boolean> => {
+  return deleteFile(ACCESSIBLE_ACCOUNTS_FILE);
 };
 
 const ACTIVE_HOME_ID_KEY = 'active_home_id';

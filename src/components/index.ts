@@ -4,3 +4,7 @@
 export * from './atoms';
 export * from './molecules';
 export * from './organisms';
+
+// Export new components
+export * from './molecules/OfflineBadge';
+export * from './organisms/OfflineExplanationBottomSheet';

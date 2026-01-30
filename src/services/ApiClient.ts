@@ -34,6 +34,7 @@ export class ApiClient {
   private baseUrl: string;
   private authToken: string | null = null;
   private onAuthError?: () => void;
+  private onAccessDenied?: (resourceId?: string) => void;
   private onError?: (errorDetails: ErrorDetails) => void;
   private maxRetries: number = 3;
   private baseDelay: number = 1000; // 1 second
@@ -70,6 +71,13 @@ export class ApiClient {
    */
   setOnAuthError(callback: () => void): void {
     this.onAuthError = callback;
+  }
+
+  /**
+   * Set callback for access denied errors (403)
+   */
+  setOnAccessDenied(callback: (resourceId?: string) => void): void {
+    this.onAccessDenied = callback;
   }
 
   /**
@@ -264,6 +272,15 @@ export class ApiClient {
           (error as Error & { responseBody?: unknown }).responseBody = responseBody;
           (error as Error & { status?: number }).status = response.status;
           throw error;
+        }
+
+        // Handle 403 Forbidden - trigger access denied callback
+        if (response.status === 403) {
+          apiLogger.warn('403 Forbidden', { endpoint, url, activeUserId: this.activeUserId });
+          if (this.onAccessDenied) {
+            this.onAccessDenied(this.activeUserId || undefined);
+          }
+          // specific handling can continue or throw
         }
 
         if (!response.ok) {

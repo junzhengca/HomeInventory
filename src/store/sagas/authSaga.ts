@@ -1,4 +1,5 @@
-import { call, put, takeLatest, select } from 'redux-saga/effects';
+import { call, put, takeLatest, select, fork, take } from 'redux-saga/effects';
+import { eventChannel, EventChannel } from 'redux-saga';
 import {
   setUser,
   setAuthenticated,
@@ -28,8 +29,11 @@ import {
   saveActiveHomeId,
   getActiveHomeId,
   removeActiveHomeId,
+  getAccessibleAccounts,
+  saveAccessibleAccounts,
+  clearAccessibleAccounts,
 } from '../../services/AuthService';
-import { User, ErrorDetails, ListAccessibleAccountsResponse } from '../../types/api';
+import { User, ErrorDetails, ListAccessibleAccountsResponse, AccessibleAccount } from '../../types/api';
 import * as SecureStore from 'expo-secure-store';
 import type { RootState } from '../types';
 import { getGlobalToast } from '../../components/organisms/ToastProvider';
@@ -52,6 +56,8 @@ const LOGOUT = 'auth/LOGOUT';
 const UPDATE_USER = 'auth/UPDATE_USER';
 const LOAD_ACCESSIBLE_ACCOUNTS = 'auth/LOAD_ACCESSIBLE_ACCOUNTS';
 const INITIALIZE_API_CLIENT = 'auth/INITIALIZE_API_CLIENT';
+const AUTH_ERROR = 'auth/AUTH_ERROR';
+const ACCESS_DENIED = 'auth/ACCESS_DENIED';
 
 // Action creators
 export const checkAuth = () => ({ type: CHECK_AUTH });
@@ -74,17 +80,32 @@ export const initializeApiClient = (apiBaseUrl: string) => ({
   type: INITIALIZE_API_CLIENT,
   payload: apiBaseUrl,
 });
+export const authError = () => ({ type: AUTH_ERROR });
+export const accessDenied = (resourceId?: string) => ({ type: ACCESS_DENIED, payload: resourceId });
+
+function createAuthChannel(apiClient: ApiClient): EventChannel<any> {
+  return eventChannel((emit) => {
+    const onAuthError = () => {
+      emit(authError());
+    };
+    const onAccessDenied = (resourceId?: string) => {
+      emit(accessDenied(resourceId));
+    };
+
+    apiClient.setOnAuthError(onAuthError);
+    apiClient.setOnAccessDenied(onAccessDenied);
+
+    return () => {
+      apiClient.setOnAuthError(() => { });
+      apiClient.setOnAccessDenied(() => { });
+    };
+  });
+}
 
 function* initializeApiClientSaga(action: { type: string; payload: string }) {
   try {
     const apiBaseUrl = action.payload;
     const apiClient = new ApiClient(apiBaseUrl);
-
-    // Set up auth error callback
-    apiClient.setOnAuthError(() => {
-      console.log('[AuthSaga] Auth error callback triggered');
-      handleAuthError();
-    });
 
     // Set up error callback for API errors (when all retries are exhausted)
     apiClient.setOnError((errorDetails: ErrorDetails) => {
@@ -96,10 +117,30 @@ function* initializeApiClientSaga(action: { type: string; payload: string }) {
       }
     });
 
+    // Create event channel for auth events (401, 403)
+    const authChannel: EventChannel<any> = yield call(createAuthChannel, apiClient);
+    yield fork(function* () {
+      while (true) {
+        const action: { type: string } = (yield take(authChannel)) as { type: string };
+        yield put(action);
+      }
+    });
+
     // Set initial active home ID from state
     const activeHomeId: string | null = (yield select((state: RootState) => state.auth.activeHomeId)) as string | null;
     if (activeHomeId) {
       apiClient.setActiveUserId(activeHomeId);
+    }
+
+    // Load cached accessible accounts
+    try {
+      const cachedAccounts: AccessibleAccount[] | null = (yield call(getAccessibleAccounts)) as AccessibleAccount[] | null;
+      if (cachedAccounts) {
+        console.log('[AuthSaga] Loaded cached accessible accounts:', cachedAccounts.length);
+        yield put(setAccessibleAccounts(cachedAccounts));
+      }
+    } catch (error) {
+      console.error('[AuthSaga] Error loading cached accessible accounts:', error);
     }
 
     yield put(setApiClient(apiClient));
@@ -120,6 +161,34 @@ function* handleAuthError() {
   yield put(setSyncEnabled(false));
   yield put(setActiveHomeId(null));
   yield put(setAccessibleAccounts([]));
+  yield call(clearAccessibleAccounts);
+}
+
+function* handleAccessDenied(action: { type: string; payload?: string }) {
+  const deniedUserId = action.payload;
+  console.log('[AuthSaga] Access denied for user:', deniedUserId);
+
+  if (!deniedUserId) return;
+
+  // 1. Remove from accessible accounts
+  const currentAccounts: AccessibleAccount[] = (yield select((state: RootState) => state.auth.accessibleAccounts)) as AccessibleAccount[];
+  const updatedAccounts = currentAccounts.filter(acc => acc.userId !== deniedUserId);
+
+  yield put(setAccessibleAccounts(updatedAccounts));
+  yield call(saveAccessibleAccounts, updatedAccounts);
+
+  // 2. If current active home is the denied one, switch to personal or null
+  const activeHomeId: string | null = (yield select((state: RootState) => state.auth.activeHomeId)) as string | null;
+  if (activeHomeId === deniedUserId) {
+    console.warn('[AuthSaga] Active home access denied, switching to default');
+    yield put(setActiveHomeId(null));
+    yield call(removeActiveHomeId);
+
+    const toast = getGlobalToast();
+    if (toast) {
+      toast('Access to this home has been revoked', 'error');
+    }
+  }
 }
 
 function* checkAuthSaga(): Generator {
@@ -568,6 +637,7 @@ function* loadAccessibleAccountsSaga(): Generator {
   try {
     const response = (yield call(apiClient.listAccessibleAccounts.bind(apiClient))) as ListAccessibleAccountsResponse;
     yield put(setAccessibleAccounts(response.accounts));
+    yield call(saveAccessibleAccounts, response.accounts);
     console.log('[AuthSaga] Loaded accessible accounts:', response.accounts.length);
 
     // Validate active home ID
@@ -603,6 +673,8 @@ function* handleActiveHomeIdChange(action: { type: string; payload: string | nul
 // Watchers
 export function* authSaga() {
   yield takeLatest(INITIALIZE_API_CLIENT, initializeApiClientSaga);
+  yield takeLatest(AUTH_ERROR, handleAuthError);
+  yield takeLatest(ACCESS_DENIED, handleAccessDenied);
   yield takeLatest(CHECK_AUTH, checkAuthSaga);
   yield takeLatest(LOGIN, loginSaga);
   yield takeLatest(SIGNUP, signupSaga);

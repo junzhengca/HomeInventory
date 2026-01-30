@@ -128,7 +128,7 @@ const MainAvatarWrapper = styled(View)`
   height: 34px;
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
   border-width: 2px;
-  border-color: ${({ theme }: StyledProps) => theme.colors.primaryLightest};
+  border-color: ${({ theme }: StyledProps) => theme.colors.primary};
   background-color: ${({ theme }: StyledProps) => theme.colors.primaryLight};
   overflow: hidden;
   position: absolute;

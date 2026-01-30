@@ -11,7 +11,7 @@ import { I18nextProvider } from 'react-i18next';
 import { Provider } from 'react-redux';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { initializeDataFiles } from '../src/services/DataInitializationService';
-import { ErrorBottomSheet, SetupNicknameBottomSheet, ToastProvider, InvitationBottomSheet } from '../src/components';
+import { ErrorBottomSheet, SetupNicknameBottomSheet, ToastProvider, InvitationBottomSheet, OfflineBadge, OfflineExplanationBottomSheet } from '../src/components';
 import { ContextMenuProvider } from '../src/components/organisms/ContextMenu/ContextMenuProvider';
 import { ErrorDetails } from '../src/types/api';
 import i18n from '../src/i18n/i18n';
@@ -32,10 +32,12 @@ function AppInner() {
     const errorBottomSheetRef = useRef<BottomSheetModal | null>(null);
     const setupNicknameBottomSheetRef = useRef<BottomSheetModal | null>(null);
     const invitationBottomSheetRef = useRef<BottomSheetModal | null>(null);
+    const offlineExplanationBottomSheetRef = useRef<BottomSheetModal>(null);
     const [inviteCode, setInviteCode] = useState<string | null>(null);
     const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null);
     const showNicknameSetup = useAppSelector((state) => state.auth.showNicknameSetup);
     const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+    const isLoading = useAppSelector((state) => state.auth.isLoading);
     const darkMode = useAppSelector((state) => state.settings.settings?.darkMode);
 
     // Deep Link Handling for Invitations
@@ -130,6 +132,20 @@ function AppInner() {
         dispatch(setShowNicknameSetup(false));
     }, [dispatch]);
 
+    const handleOfflineBadgePress = useCallback(() => {
+        offlineExplanationBottomSheetRef.current?.present();
+    }, []);
+
+    // Show loading screen while auth and initial data is loading
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: darkMode ? '#000000' : '#ffffff' }}>
+                <StatusBar style={darkMode ? 'light' : 'dark'} />
+                <ActivityIndicator size="large" color={darkMode ? '#ffffff' : '#000000'} />
+            </View>
+        );
+    }
+
     return (
         <>
             <Stack screenOptions={{ headerShown: false }}>
@@ -140,6 +156,7 @@ function AppInner() {
                 <Stack.Screen name="Profile" />
                 <Stack.Screen name="ContextMenuDemo" />
             </Stack>
+            <OfflineBadge onPress={handleOfflineBadgePress} />
             <StatusBar style={darkMode ? 'light' : 'dark'} />
             <ErrorBottomSheet
                 bottomSheetRef={errorBottomSheetRef}
@@ -154,6 +171,9 @@ function AppInner() {
                 bottomSheetRef={invitationBottomSheetRef}
                 inviteCode={inviteCode}
                 onDismiss={() => setInviteCode(null)}
+            />
+            <OfflineExplanationBottomSheet
+                bottomSheetRef={offlineExplanationBottomSheetRef}
             />
         </>
     );

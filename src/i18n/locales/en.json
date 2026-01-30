@@ -5,6 +5,11 @@
     "keepEditing": "Keep Editing",
     "discard": "Discard"
   },
+  "offline": {
+    "title": "You are Offline",
+    "description": "Changes you make will be saved locally on your device and automatically synced when you are back online.",
+    "badge": "You are offline"
+  },
   "home": {
     "title": "What's at Home",
     "subtitle": "Home Asset Management",
