@@ -5,6 +5,8 @@ import { initReactI18next } from 'react-i18next';
 import en from './locales/en.json';
 import zhCN from './locales/zh-CN.json';
 
+import ja from './locales/ja.json';
+
 // Configure i18next
 i18n
   .use(initReactI18next) // Passes i18n down to react-i18next
@@ -16,6 +18,9 @@ i18n
       },
       'zh-CN': {
         translation: zhCN,
+      },
+      ja: {
+        translation: ja,
       },
     },
     lng: 'en', // Default language

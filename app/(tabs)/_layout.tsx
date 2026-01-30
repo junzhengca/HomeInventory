@@ -5,10 +5,13 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useSettings } from '../../src/store/hooks';
 
+import { useTranslation } from 'react-i18next';
+
 export default function TabLayout() {
     const theme = useTheme();
     const { settings } = useSettings();
     const isDark = settings?.darkMode;
+    const { t } = useTranslation();
 
     return (
         <NativeTabs
@@ -19,19 +22,19 @@ export default function TabLayout() {
             shadowColor="transparent"
         >
             <NativeTabs.Trigger name="index">
-                <Label>Home</Label>
+                <Label>{t('navigation.home')}</Label>
                 <Icon src={<VectorIcon family={Ionicons} name="home" />} />
             </NativeTabs.Trigger>
             <NativeTabs.Trigger name="notes">
-                <Label>Notes</Label>
+                <Label>{t('navigation.notes')}</Label>
                 <Icon src={<VectorIcon family={MaterialCommunityIcons} name="notebook-edit" />} />
             </NativeTabs.Trigger>
             <NativeTabs.Trigger name="share">
-                <Label>Share</Label>
+                <Label>{t('navigation.share')}</Label>
                 <Icon src={<VectorIcon family={Ionicons} name="share" />} />
             </NativeTabs.Trigger>
             <NativeTabs.Trigger name="settings">
-                <Label>Settings</Label>
+                <Label>{t('navigation.settings')}</Label>
                 <Icon src={<VectorIcon family={Ionicons} name="settings" />} />
             </NativeTabs.Trigger>
         </NativeTabs>

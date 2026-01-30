@@ -1,0 +1,650 @@
+{
+    "common": {
+        "confirmation": "確認",
+        "discardChanges": "保存されていない変更があります。破棄しますか？",
+        "keepEditing": "編集を続ける",
+        "discard": "破棄"
+    },
+    "navigation": {
+        "home": "ホーム",
+        "notes": "メモ",
+        "share": "共有",
+        "settings": "設定"
+    },
+    "offline": {
+        "title": "オフラインです",
+        "description": "変更はローカルに保存され、オンラインに戻ると自動的に同期されます。",
+        "badge": "オフラインです"
+    },
+    "home": {
+        "title": "お家の持ち物",
+        "subtitle": "ホーム資産管理",
+        "empty": {
+            "title": "アイテムがありません",
+            "description": "最初のアイテムを追加して、お家の資産管理を始めましょう！"
+        }
+    },
+    "search": {
+        "placeholder": "検索... (例: ヘアドライヤー)"
+    },
+    "summary": {
+        "assetValue": "資産価値",
+        "itemCount": "アイテム数",
+        "expiring": "期限切れ間近"
+    },
+    "recentlyAdded": {
+        "title": "最近追加されたアイテム",
+        "viewAll": "すべて見る"
+    },
+    "language": {
+        "title": "言語設定"
+    },
+    "categories": {
+        "all": "すべて",
+        "appliances": "家電",
+        "kitchenware": "キッチン用品",
+        "digital": "デジタル",
+        "beauty": "美容",
+        "entertainment": "エンターテイメント",
+        "apparel": "衣料品",
+        "home": "ホーム",
+        "other": "その他"
+    },
+    "locations": {
+        "living-room": "リビングルーム",
+        "kitchen": "キッチン",
+        "bedroom": "寝室",
+        "study": "書斎",
+        "storage": "収納",
+        "fridge": "冷蔵庫",
+        "freezer": "冷凍庫",
+        "bathroom": "バスルーム",
+        "medical-cabinet": "薬棚"
+    },
+    "statuses": {
+        "using": "使用中",
+        "new": "新品",
+        "out-of-stock": "在庫切れ"
+    },
+    "inventory": {
+        "title": "すべてのアイテム",
+        "loading": "読み込み中...",
+        "itemsCount": "{{count}} アイテム",
+        "filterBy": "フィルター: {{type}}",
+        "filterType": {
+            "location": "場所",
+            "status": "状態"
+        },
+        "empty": {
+            "title": "アイテムが見つかりません",
+            "description": "最初のアイテムを追加して、お家の資産管理を始めましょう！",
+            "filtered": "検索条件を変更するか、別のカテゴリーを選択してください"
+        },
+        "actions": {
+            "plusOne": "数量 +1",
+            "minusOne": "数量 -1"
+        }
+    },
+    "notes": {
+        "title": "メモ",
+        "subtitle": "あなたのTodo",
+        "addTodo": "新しいTodoを追加...",
+        "addNote": "メモを追加 (任意)...",
+        "pending": "未完了",
+        "completed": "完了",
+        "deleteTodo": {
+            "title": "Todoを削除",
+            "message": "このTodoを削除してもよろしいですか？",
+            "cancel": "キャンセル",
+            "confirm": "削除"
+        },
+        "editTodo": {
+            "title": "Todoを編集",
+            "subtitle": "Todoを更新",
+            "submit": "変更を保存",
+            "placeholders": {
+                "text": "Todoの内容を入力...",
+                "note": "メモを入力 (任意)..."
+            },
+            "errors": {
+                "title": "エラー",
+                "enterText": "Todoの内容を入力してください",
+                "updateFailed": "Todoの更新に失敗しました。もう一度お試しください"
+            }
+        },
+        "empty": {
+            "title": "Todoがありません",
+            "description": "最初のTodoを追加して、タスク管理を始めましょう！"
+        },
+        "share": {
+            "copy": "コピー",
+            "invite": "招待",
+            "familySharing": "ファミリー共有",
+            "copied": {
+                "title": "コピーしました！",
+                "message": "{{count}}件の未完了Todoをクリップボードにコピーしました"
+            },
+            "noTodos": {
+                "title": "Todoがありません",
+                "message": "コピーする未完了のTodoがありません"
+            },
+            "error": {
+                "title": "エラー",
+                "message": "クリップボードへのコピーに失敗しました"
+            }
+        }
+    },
+    "settings": {
+        "title": "設定",
+        "subtitle": "ホームをより快適に",
+        "preferences": "環境設定",
+        "dataAndSecurity": "データとセキュリティ",
+        "experimental": "実験的機能",
+        "darkMode": "ダークモード",
+        "darkModeDescription": "アプリのダークテーマを有効にする",
+        "theme": "テーマカラー",
+        "currency": "通貨",
+        "themeNames": {
+            "warm-sun": "ウォームサン",
+            "ocean": "オーシャン",
+            "forest": "フォレスト",
+            "lilac": "ライラック"
+        },
+        "versionPrefix": "現在のバージョン",
+        "clearData": {
+            "button": "すべてのデータを消去",
+            "confirm": {
+                "title": "すべてのデータを消去しますか？",
+                "message": "本当にすべてのデータを消去しますか？これにより、すべてのアイテム、カテゴリー、Todoが削除されます。この操作は取り消せません。",
+                "cancel": "キャンセル",
+                "confirm": "すべてのデータを消去"
+            },
+            "success": {
+                "title": "成功",
+                "message": "すべてのデータが消去され、初期状態にリセットされました。"
+            },
+            "error": {
+                "title": "エラー",
+                "message": "データの消去に失敗しました。もう一度お試しください。"
+            }
+        },
+        "logout": {
+            "title": "ログアウト確認",
+            "message": "本当にログアウトしますか？",
+            "cancel": "キャンセル",
+            "confirm": "ログアウト"
+        }
+    },
+    "createItem": {
+        "title": "新しいアイテムを追加",
+        "subtitle": "忘れないように記録しましょう",
+        "fields": {
+            "name": "名前",
+            "icon": "アイコン",
+            "color": "色",
+            "location": "場所",
+            "status": "状態",
+            "price": "価格",
+            "detailedLocation": "詳細な場所",
+            "amount": "数量",
+            "warningThreshold": "在庫警告しきい値",
+            "purchaseDate": "購入日",
+            "expiryDate": "有効期限"
+        },
+        "placeholders": {
+            "name": "例: かわいいカップ",
+            "detailedLocation": "例: 玄関の靴箱",
+            "price": "0",
+            "amount": "1",
+            "warningThreshold": "0"
+        },
+        "manageCategories": "カテゴリー管理",
+        "add": "追加",
+        "submit": "ホームに追加",
+        "errors": {
+            "title": "エラー",
+            "enterName": "アイテム名を入力してください",
+            "selectCategory": "カテゴリーを選択してください",
+            "selectLocation": "場所を選択してください",
+            "createFailed": "アイテムの作成に失敗しました。もう一度お試しください",
+            "updateFailed": "アイテムの更新に失敗しました。もう一度お試しください"
+        }
+    },
+    "editItem": {
+        "title": "アイテムを編集",
+        "subtitle": "アイテム情報を更新",
+        "fields": {
+            "name": "名前",
+            "icon": "アイコン",
+            "color": "色",
+            "location": "場所",
+            "status": "状態",
+            "price": "価格",
+            "detailedLocation": "詳細な場所",
+            "amount": "数量",
+            "warningThreshold": "在庫警告しきい値",
+            "purchaseDate": "購入日",
+            "expiryDate": "有効期限"
+        },
+        "placeholders": {
+            "name": "例: かわいいカップ",
+            "detailedLocation": "例: 玄関の靴箱",
+            "price": "0",
+            "amount": "1",
+            "warningThreshold": "0"
+        },
+        "manageCategories": "カテゴリー管理",
+        "add": "追加",
+        "submit": "変更を保存",
+        "errors": {
+            "title": "エラー",
+            "enterName": "アイテム名を入力してください",
+            "selectCategory": "カテゴリーを選択してください",
+            "selectLocation": "場所を選択してください",
+            "createFailed": "アイテムの作成に失敗しました。もう一度お試しください",
+            "updateFailed": "アイテムの更新に失敗しました。もう一度お試しください"
+        }
+    },
+    "datePicker": {
+        "selectDate": "日付を選択",
+        "confirm": "確認",
+        "cancel": "キャンセル",
+        "clear": "クリア",
+        "placeholder": "未設定"
+    },
+    "itemDetails": {
+        "title": "アイテム詳細",
+        "loading": "読み込み中...",
+        "itemNotFound": "アイテムが見つかりません",
+        "error": {
+            "title": "エラー",
+            "itemNotFound": "アイテムが存在しません",
+            "loadFailed": "アイテム情報の読み込みに失敗しました",
+            "deleteFailed": "削除に失敗しました。もう一度お試しください"
+        },
+        "delete": {
+            "title": "削除確認",
+            "message": "このアイテムを削除してもよろしいですか？この操作は取り消せません。",
+            "cancel": "キャンセル",
+            "confirm": "削除"
+        },
+        "sections": {
+            "general": "一般情報",
+            "inventory": "在庫と日付"
+        },
+        "fields": {
+            "valuation": "評価額",
+            "purchaseDate": "購入日",
+            "location": "場所",
+            "detailedLocation": "詳細な場所",
+            "status": "状態",
+            "quantity": "数量",
+            "warningThreshold": "在庫警告しきい値",
+            "expiryDate": "有効期限"
+        },
+        "notSet": "未設定",
+        "actions": {
+            "delete": "削除",
+            "modify": "変更"
+        },
+        "needsRestocking": "在庫補充"
+    },
+    "categoryManager": {
+        "title": "カテゴリー管理",
+        "subtitle": "カスタムカテゴリーの作成と編集",
+        "editTitle": "カテゴリーを編集",
+        "createTitle": "カテゴリーを作成",
+        "formSubtitle": "カテゴリー名、アイコン、色を設定",
+        "customCategories": "カスタムカテゴリー",
+        "emptyState": "カスタムカテゴリーはまだありません",
+        "nameEn": "カテゴリー名 (英語)",
+        "nameZh": "カテゴリー名 (中国語)",
+        "placeholderEn": "例: electronics",
+        "placeholderZh": "例: 电子产品",
+        "buttons": {
+            "create": "カテゴリーを作成",
+            "save": "保存",
+            "cancel": "キャンセル",
+            "delete": "削除"
+        },
+        "errors": {
+            "title": "エラー",
+            "enterName": "カテゴリー名を入力してください",
+            "createFailed": "カテゴリーの作成に失敗しました。もう一度お試しください",
+            "updateFailed": "カテゴリーの更新に失敗しました。もう一度お試しください",
+            "deleteFailed": "カテゴリーの削除に失敗しました。もう一度お試しください",
+            "deleteInUse": "使用中のカテゴリーは削除できません"
+        },
+        "delete": {
+            "title": "削除確認",
+            "message": "このカテゴリーを削除してもよろしいですか？"
+        }
+    },
+    "iconSelector": {
+        "label": "アイコンを選択"
+    },
+    "colorPalette": {
+        "label": "色を選択"
+    },
+    "iconColorPicker": {
+        "label": "アイコンと色",
+        "value": "外観を変更",
+        "title": "アイコンと色を選択",
+        "subtitle": "アイコンと色をカスタマイズ",
+        "colorLabel": "色",
+        "iconLabel": "アイコン",
+        "save": "保存"
+    },
+    "profile": {
+        "title": "プロフィール",
+        "subtitle": "アカウント情報",
+        "noUserData": "ユーザーデータがありません",
+        "userId": "ID",
+        "email": "メールアドレス",
+        "nickname": "ニックネーム",
+        "editNickname": "ニックネームを編集",
+        "memberSince": "登録日",
+        "lastUpdated": "最終更新",
+        "auth": {
+            "title": "ログインまたはサインアップ",
+            "subtitle": "アカウントを作成またはログインして、デバイス間でデータを同期しましょう"
+        },
+        "sync": {
+            "title": "同期設定",
+            "enableSync": "同期を有効にする",
+            "status": {
+                "enabled": "同期は有効です",
+                "disabled": "同期は無効です"
+            },
+            "lastSync": "最終同期:",
+            "error": "エラー:",
+            "syncNow": "今すぐ同期",
+            "alerts": {
+                "disabled": {
+                    "title": "同期が無効になりました",
+                    "message": "データはデバイス間で同期されなくなります。"
+                },
+                "enabled": {
+                    "title": "同期が有効になりました",
+                    "message": "データはデバイス間で同期されるようになりました。初期同期を開始します..."
+                },
+                "started": {
+                    "title": "同期を開始しました",
+                    "message": "手動同期を開始しました。データはまもなく同期されます。"
+                },
+                "error": {
+                    "title": "同期エラー",
+                    "toggleFailed": "同期の切り替えに失敗しました",
+                    "syncFailed": "手動同期の開始に失敗しました"
+                }
+            },
+            "forcedWarning": "ホームにメンバーがいる場合、または他のホームのメンバーである場合は、同期が必要です。"
+        },
+        "avatar": {
+            "uploadSuccess": {
+                "title": "成功",
+                "message": "アバターを更新しました"
+            },
+            "uploadError": {
+                "title": "エラー",
+                "message": "アバターのアップロードに失敗しました。もう一度お試しください。",
+                "permissionDenied": "写真へのアクセスが拒否されました。設定で有効にしてください。",
+                "uploadFailed": "画像のアップロードに失敗しました。もう一度お試しください。",
+                "updateFailed": "アバターの更新に失敗しました。もう一度お試しください。"
+            },
+            "pickerCancelled": "画像の選択がキャンセルされました"
+        }
+    },
+    "login": {
+        "title": "ログイン",
+        "subtitle": "続けるには認証情報を入力してください",
+        "fields": {
+            "email": "メールアドレス",
+            "password": "パスワード"
+        },
+        "placeholders": {
+            "email": "メールアドレスを入力",
+            "password": "パスワードを入力"
+        },
+        "benefits": {
+            "sync": "デバイス間でデータを同期 - インベントリを失うことはありません",
+            "premium": "AI機能を搭載したプレミアムプランをアンロック",
+            "share": "家族や友人とインベントリを共有"
+        },
+        "submit": "ログイン",
+        "submitting": "ログイン中...",
+        "link": "アカウントをお持ちでないですか？ サインアップ",
+        "loginWithGoogle": "Googleでログイン",
+        "errors": {
+            "emptyFields": "メールアドレスとパスワードの両方を入力してください",
+            "failed": "ログインに失敗しました。もう一度お試しください。",
+            "googleLoginFailed": {
+                "title": "Googleログイン失敗",
+                "message": "Googleでのサインインに失敗しました。もう一度お試しください。"
+            },
+            "emailAlreadyRegistered": {
+                "title": "アカウントは既に存在します",
+                "message": "このメールアドレスは既に登録されています。メールアドレスとパスワードでログインしてください。"
+            },
+            "invalidGoogleAccount": {
+                "title": "無効なGoogleアカウント",
+                "message": "無効なGoogleアカウントです。もう一度お試しください。"
+            }
+        }
+    },
+    "signup": {
+        "title": "サインアップ",
+        "subtitle": "新しいアカウントを作成",
+        "fields": {
+            "email": "メールアドレス",
+            "password": "パスワード",
+            "confirmPassword": "パスワード（確認）"
+        },
+        "placeholders": {
+            "email": "メールアドレスを入力",
+            "password": "パスワードを入力",
+            "confirmPassword": "パスワードを再入力"
+        },
+        "benefits": {
+            "sync": "デバイス間でデータを同期 - インベントリを失うことはありません",
+            "premium": "AI機能を搭載したプレミアムプランをアンロック",
+            "share": "家族や友人とインベントリを共有"
+        },
+        "submit": "サインアップ",
+        "submitting": "サインアップ中...",
+        "link": "すでにアカウントをお持ちですか？ ログイン",
+        "errors": {
+            "emptyFields": "すべてのフィールドに入力してください",
+            "passwordMismatch": "パスワードが一致しません",
+            "passwordTooShort": "パスワードは6文字以上である必要があります",
+            "failed": "サインアップに失敗しました。もう一度お試しください。"
+        }
+    },
+    "enableSync": {
+        "title": "同期を有効にしますか？",
+        "subtitle": "すべてのデバイス間でデータを同期させる",
+        "checkingData": "データを確認中...",
+        "warning": {
+            "title": "データ統合の警告",
+            "message": "このデバイスにはローカルデータがあります。同期を有効にすると、ローカルデータはクラウドデータと統合されます。これにより、アイテムやTodoが重複する可能性があります。"
+        },
+        "benefits": {
+            "sync": "デバイス間でデータを同期 - インベントリを失うことはありません",
+            "devices": "どのデバイスからでもインベントリにアクセス",
+            "backup": "クラウドへのデータの自動バックアップ"
+        },
+        "buttons": {
+            "skip": "スキップ",
+            "enable": "同期を有効にする",
+            "enabling": "有効化中..."
+        }
+    },
+    "errorBottomSheet": {
+        "title": "APIエラー",
+        "subtitle": "再試行しましたが、リクエストは失敗しました",
+        "errorTitle": "エラー詳細",
+        "errorType": "エラータイプ",
+        "errorTypes": {
+            "network": "ネットワークエラー",
+            "server": "サーバーエラー"
+        },
+        "sections": {
+            "request": "リクエスト詳細",
+            "response": "レスポンス詳細",
+            "retryHistory": "再試行履歴",
+            "metadata": "メタデータ"
+        },
+        "fields": {
+            "endpoint": "エンドポイント",
+            "method": "メソッド",
+            "headers": "ヘッダー",
+            "body": "リクエストボディ",
+            "status": "ステータス",
+            "responseBody": "レスポンスボディ",
+            "timestamp": "タイムスタンプ",
+            "totalDuration": "総所要時間"
+        },
+        "retryAttempt": "試行 {{attempt}}: {{delay}}ms後に再試行、時刻 {{timestamp}}",
+        "buttons": {
+            "close": "閉じる",
+            "copy": "エラーログをコピー",
+            "copied": "コピーしました！"
+        },
+        "copied": {
+            "title": "コピーしました！",
+            "message": "エラーログをクリップボードにコピーしました"
+        },
+        "copyError": {
+            "title": "エラー",
+            "message": "エラーログのコピーに失敗しました"
+        }
+    },
+    "fab": {
+        "manuallyAdd": "手動で追加",
+        "aiAutomatic": "AI自動追加"
+    },
+    "share": {
+        "title": "共有",
+        "subtitle": "インベントリを共有",
+        "comingSoon": {
+            "title": "近日公開",
+            "description": "共有機能は今後のアップデートで利用可能になります"
+        },
+        "loginRequired": {
+            "title": "ログインが必要です",
+            "description": "共有設定を行い、権限を管理するにはログインしてください"
+        },
+        "permissions": {
+            "title": "共有範囲",
+            "itemLibrary": {
+                "label": "アイテムライブラリ",
+                "shared": "すべてのメンバーに表示",
+                "unshared": "自分のみに表示"
+            },
+            "shoppingList": {
+                "label": "買い物リスト",
+                "shared": "すべてのメンバーに表示",
+                "unshared": "自分のみに表示"
+            },
+            "confirm": {
+                "enableTitle": "共有を有効にする",
+                "enableMessage": "{{item}}の共有を有効にしますか？すべてのメンバーがこのデータにアクセスできるようになります。",
+                "disableTitle": "共有を無効にする",
+                "disableMessage": "{{item}}の共有を無効にしますか？メンバーはこのデータにアクセスできなくなります。",
+                "cancel": "キャンセル",
+                "confirm": "確認"
+            },
+            "toast": {
+                "updateSuccess": "共有設定を更新しました",
+                "updateError": "共有設定の更新に失敗しました"
+            }
+        },
+        "members": {
+            "title": "家族メンバー",
+            "ownerBadge": "(所有者)",
+            "invite": "家族を招待する",
+            "unknownMember": "不明なメンバー",
+            "loadError": "メンバーの読み込みに失敗しました",
+            "removeSuccess": "メンバーを削除しました",
+            "removeError": "メンバーの削除に失敗しました",
+            "removeConfirm": {
+                "title": "メンバーの削除",
+                "message": "本当に{{name}}を削除しますか？共有データへのアクセス権を失います。",
+                "cancel": "キャンセル",
+                "confirm": "削除"
+            },
+            "empty": {
+                "title": "メンバーがいません",
+                "description": "家族を招待してインベントリを共有しましょう"
+            }
+        },
+        "invite": {
+            "title": "メンバーを招待",
+            "subtitle": "招待コードを共有",
+            "loadingError": "招待コードを読み込んでいます。しばらくしてからもう一度お試しください。",
+            "showQRCode": "QRコードを表示",
+            "showQRCodeDescription": "スキャンしやすいQRコードを表示",
+            "shareLink": "リンクを共有",
+            "shareLinkDescription": "メッセージやメールで招待リンクを共有",
+            "shareTitle": "私のCluttrに参加しよう",
+            "qrCode": {
+                "title": "招待QRコード",
+                "subtitle": "スキャンして参加",
+                "copy": "リンクをコピー",
+                "copied": "コピーしました！",
+                "copyError": "コピーに失敗しました"
+            },
+            "receivedTitle": "{{name}} があなたをホームに招待しています",
+            "receivedSubtitle": "招待を受け取りました",
+            "syncRequired": {
+                "title": "同期が必要です",
+                "message": "家族を招待するには同期をオンにする必要があります。今すぐオンにしますか？"
+            },
+            "errors": {
+                "ownHome": "自分のホームには参加できません"
+            }
+        },
+        "home": {
+            "switch": "グループを切り替え",
+            "switchTitle": "グループを切り替え",
+            "switchSubtitle": "参加しているグループの情報を表示",
+            "currentHome": "現在のホーム"
+        },
+        "inventory": {
+            "label": "共有インベントリ"
+        },
+        "shoppingList": {
+            "label": "共有買い物リスト"
+        }
+    },
+    "toast": {
+        "loginSuccess": "ログインしました",
+        "logoutSuccess": "ログアウトしました",
+        "signupSuccess": "アカウントを作成しました"
+    },
+    "setupNickname": {
+        "title": "プロフィール設定",
+        "subtitle": "あと少しです。",
+        "nicknameLabel": "覚えやすい名前を付けましょう。",
+        "nicknameHelper": "これは他のユーザーに表示される名前です。",
+        "submit": "ホームに入る",
+        "logoutLink": "あなたのアカウントではありませんか？ ログアウト",
+        "errors": {
+            "title": "エラー",
+            "enterNickname": "ニックネームを入力してください",
+            "updateFailed": "ニックネームの更新に失敗しました。もう一度お試しください"
+        }
+    },
+    "editNickname": {
+        "title": "ニックネームを編集",
+        "subtitle": "表示名を変更",
+        "nicknameLabel": "ニックネーム",
+        "nicknameHelper": "これは他のユーザーに表示される名前です。",
+        "submit": "変更を保存",
+        "errors": {
+            "title": "エラー",
+            "enterNickname": "ニックネームを入力してください",
+            "updateFailed": "ニックネームの更新に失敗しました。もう一度お試しください"
+        }
+    }
+}

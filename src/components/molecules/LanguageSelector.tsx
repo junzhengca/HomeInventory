@@ -51,7 +51,7 @@ const OptionsContainer = styled(View)`
   gap: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
-const LanguageButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
+const LanguageButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
   flex: 1;
   padding-vertical: ${({ theme }: StyledProps) => theme.spacing.md}px;
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.lg}px;
@@ -77,7 +77,7 @@ const FlagText = styled(Text)`
   font-size: 18px;
 `;
 
-const LanguageButtonText = styled(Text)<{ isSelected: boolean }>`
+const LanguageButtonText = styled(Text) <{ isSelected: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
@@ -85,8 +85,9 @@ const LanguageButtonText = styled(Text)<{ isSelected: boolean }>`
 `;
 
 const defaultLanguages: LanguageOption[] = [
-  { id: 'zh-cn', code: 'zh-CN', name: '简体中文', flag: '🇨🇳' },
   { id: 'en', code: 'en', name: 'English', flag: '🇺🇸' },
+  { id: 'zh-cn', code: 'zh-CN', name: '简体中文', flag: '🇨🇳' },
+  { id: 'ja', code: 'ja', name: '日本語', flag: '🇯🇵' },
 ];
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({

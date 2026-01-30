@@ -60,21 +60,20 @@ const OptionsContainer = styled(View)`
   gap: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
-const CurrencyButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
-  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.lg}px;
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
+const CurrencyButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   border-width: 2px;
   border-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.borderLight};
   align-items: center;
   justify-content: center;
-  min-width: 100px;
 `;
 
-const CurrencyButtonText = styled(Text)<{ isSelected: boolean }>`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
+const CurrencyButtonText = styled(Text) <{ isSelected: boolean }>`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
   font-weight: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.typography.fontWeight.bold : theme.typography.fontWeight.bold};
   color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
@@ -82,27 +81,49 @@ const CurrencyButtonText = styled(Text)<{ isSelected: boolean }>`
 `;
 
 export const defaultCurrencies: CurrencyOption[] = [
-  { id: 'cny', symbol: '¥', code: 'CNY', label: '¥ CNY' },
   { id: 'usd', symbol: '$', code: 'USD', label: '$ USD' },
   { id: 'eur', symbol: '€', code: 'EUR', label: '€ EUR' },
+  { id: 'jpy', symbol: '¥', code: 'JPY', label: '¥ JPY' },
   { id: 'gbp', symbol: '£', code: 'GBP', label: '£ GBP' },
+  { id: 'cny', symbol: '¥', code: 'CNY', label: '¥ CNY' },
+  { id: 'aud', symbol: '$', code: 'AUD', label: '$ AUD' },
+  { id: 'cad', symbol: '$', code: 'CAD', label: '$ CAD' },
+  { id: 'chf', symbol: 'Fr', code: 'CHF', label: 'Fr CHF' },
+  { id: 'hkd', symbol: '$', code: 'HKD', label: '$ HKD' },
+  { id: 'sgd', symbol: '$', code: 'SGD', label: '$ SGD' },
+  { id: 'krw', symbol: '₩', code: 'KRW', label: '₩ KRW' },
+  { id: 'inr', symbol: '₹', code: 'INR', label: '₹ INR' },
+  { id: 'brl', symbol: 'R$', code: 'BRL', label: 'R$ BRL' },
+  { id: 'mxn', symbol: '$', code: 'MXN', label: '$ MXN' },
 ];
 
 /**
  * Get currency symbol by currency ID
  * @param currencyId - The currency ID (e.g., 'cny', 'usd', 'eur', 'gbp')
- * @returns The currency symbol (e.g., '¥', '$', '€', '£') or '¥' as default
+ * @returns The currency symbol (e.g., '¥', '$', '€', '£') or '$' as default
  */
 export const getCurrencySymbol = (currencyId: string): string => {
   const currency = defaultCurrencies.find((c) => c.id === currencyId);
-  return currency?.symbol || '¥';
+  return currency?.symbol || '$';
 };
 
 export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
-  selectedCurrencyId = 'cny',
+  selectedCurrencyId = 'usd',
   onCurrencySelect,
 }) => {
   const { t } = useTranslation();
+
+  // Filter defaultCurrencies to get unique symbols
+  const uniqueCurrencies = React.useMemo(() => {
+    const seenSymbols = new Set<string>();
+    return defaultCurrencies.filter((currency) => {
+      if (seenSymbols.has(currency.symbol)) {
+        return false;
+      }
+      seenSymbols.add(currency.symbol);
+      return true;
+    });
+  }, []);
 
   return (
     <Container>
@@ -114,18 +135,21 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
       </Header>
       <OptionsScroll>
         <OptionsContainer>
-          {defaultCurrencies.map((currency) => (
-            <CurrencyButton
-              key={currency.id}
-              isSelected={selectedCurrencyId === currency.id}
-              onPress={() => onCurrencySelect?.(currency.id)}
-              activeOpacity={0.7}
-            >
-              <CurrencyButtonText isSelected={selectedCurrencyId === currency.id}>
-                {currency.label}
-              </CurrencyButtonText>
-            </CurrencyButton>
-          ))}
+          {uniqueCurrencies.map((currency) => {
+            const isSelected = getCurrencySymbol(selectedCurrencyId) === currency.symbol;
+            return (
+              <CurrencyButton
+                key={currency.symbol}
+                isSelected={isSelected}
+                onPress={() => onCurrencySelect?.(currency.id)}
+                activeOpacity={0.7}
+              >
+                <CurrencyButtonText isSelected={isSelected}>
+                  {currency.symbol}
+                </CurrencyButtonText>
+              </CurrencyButton>
+            );
+          })}
         </OptionsContainer>
       </OptionsScroll>
     </Container>

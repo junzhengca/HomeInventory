@@ -5,6 +5,12 @@
     "keepEditing": "Keep Editing",
     "discard": "Discard"
   },
+  "navigation": {
+    "home": "Home",
+    "notes": "Notes",
+    "share": "Share",
+    "settings": "Settings"
+  },
   "offline": {
     "title": "You are Offline",
     "description": "Changes you make will be saved locally on your device and automatically synced when you are back online.",

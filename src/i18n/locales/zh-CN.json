@@ -5,6 +5,12 @@
     "keepEditing": "继续编辑",
     "discard": "放弃修改"
   },
+  "navigation": {
+    "home": "首页",
+    "notes": "笔记",
+    "share": "分享",
+    "settings": "设置"
+  },
   "home": {
     "title": "家里有什么",
     "subtitle": "家庭资产管理",
