@@ -4,7 +4,7 @@
 
 Home Inventory Sync Server API
 
-**Generated:** 2026-01-29T22:30:00.782Z
+**Generated:** 2026-01-30T11:56:24.470Z
 
 ## Table of Contents
 
@@ -281,9 +281,9 @@ Internal server error
 
 **Remove a member from the account**
 
-Removes a household member from the authenticated user account. Only the account owner can remove members. The owner cannot remove themselves.
+Removes a household member from an account. Only the account owner can remove other members (no query parameter). Users can remove themselves (leave an account) by setting memberId to their own ID and providing the account ID in the userId query parameter.
 
-**Authentication:** Required (jwt) - Requires valid JWT token \(owner only\)
+**Authentication:** Required (jwt) - Requires valid JWT token
 
 **Tags:** `Accounts`
 
@@ -291,7 +291,13 @@ Removes a household member from the authenticated user account. Only the account
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `memberId` | string | Yes | ID of the member to remove |
+| `memberId` | string | Yes | ID of the member to remove, or your own ID to leave an account |
+
+#### Query Parameters
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `userId` | string | No | - | Required when removing yourself \(leaving\); ID of the account to leave\. |
 
 #### Response (200)
 
@@ -308,17 +314,31 @@ Member removed successfully
 
 #### Error Responses
 
-##### 400 - `CANNOT_REMOVE_OWNER`
+##### 400 - `USERID_REQUIRED_TO_LEAVE`
 
-Cannot remove the account owner
+To leave an account, specify the account ID \(userId query parameter\)
 
-The owner cannot be removed from their own account
+When removing yourself \(memberId equals your ID\), userId query parameter is required
 
 **Example:**
 
 ```json
 {
-  "message": "Cannot remove the account owner"
+  "message": "To leave an account, specify the account ID (userId query parameter)"
+}
+```
+
+##### 400 - `CANNOT_LEAVE_OWN_ACCOUNT`
+
+Cannot leave your own account
+
+The account ID in userId cannot be your own user ID
+
+**Example:**
+
+```json
+{
+  "message": "Cannot leave your own account"
 }
 ```
 
@@ -336,13 +356,15 @@ Unauthorized \- invalid or expired token
 
 ##### 403 - `FORBIDDEN`
 
-Only the account owner can remove members
+You don't have access to this account
+
+When leaving, the user is not a member of the specified account
 
 **Example:**
 
 ```json
 {
-  "message": "Only the account owner can remove members"
+  "message": "You don't have access to this account"
 }
 ```
 
@@ -357,6 +379,20 @@ The specified member is not in this account
 ```json
 {
   "message": "Member not found"
+}
+```
+
+##### 404 - `NOT_MEMBER_OF_ACCOUNT`
+
+You are not a member of this account
+
+When leaving, no membership exists for the specified account
+
+**Example:**
+
+```json
+{
+  "message": "You are not a member of this account"
 }
 ```
 

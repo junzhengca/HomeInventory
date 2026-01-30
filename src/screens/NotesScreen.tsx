@@ -398,107 +398,116 @@ export const NotesScreen: React.FC = () => {
           ownerAvatarUrl={currentHomeOwner?.avatarUrl}
           onAvatarPress={handleAvatarPress}
         />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}
-        >
-          <Content
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: bottomPadding }}
-            keyboardDismissMode="interactive"
-            keyboardShouldPersistTaps="handled"
+        {/* Check if user has access to notes */}
+        {currentHomeOwner && !currentHomeOwner.isOwner && !currentHomeOwner.permissions?.canShareTodos ? (
+          <EmptyState
+            icon="lock-closed"
+            title={t('accessControl.notes.title')}
+            description={t('accessControl.notes.description')}
+          />
+        ) : (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={{ flex: 1 }}
           >
-            <AddTodoContainer isFocused={isFocused}>
-              <TodoInputRow>
-                <TodoInput
-                  placeholder={t('notes.addTodo')}
-                  placeholderTextColor={theme.colors.textLight}
-                  value={newTodoText}
-                  onChangeText={handleTodoTextChange}
-                  onSubmitEditing={handleAddTodo}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                  autoCorrect={false}
-                  spellCheck={false}
-                  textContentType="none"
-                  autoComplete="off"
-                />
-                <ToggleNotesButton
-                  isActive={showNotesField}
-                  onPress={() => setShowNotesField(!showNotesField)}
-                  activeOpacity={0.7}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name={
-                      showNotesField ? 'document-text' : 'document-text-outline'
-                    }
-                    size={18}
-                    color={showNotesField ? 'white' : theme.colors.textSecondary}
-                  />
-                </ToggleNotesButton>
-                <AddButton
-                  onPress={handleAddTodo}
-                  activeOpacity={0.7}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons name="add" size={18} color="white" />
-                </AddButton>
-              </TodoInputRow>
-              <NotesHeightWrapper
-                style={{
-                  height: notesHeight.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, 80],
-                  }),
-                  opacity: notesOpacity,
-                  overflow: 'hidden',
-                }}
-                pointerEvents={showNotesField ? 'auto' : 'none'}
-              >
-                <NotesInputContainer>
-                  <NotesInput
-                    placeholder={t('notes.addNote')}
+            <Content
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: bottomPadding }}
+              keyboardDismissMode="interactive"
+              keyboardShouldPersistTaps="handled"
+            >
+              <AddTodoContainer isFocused={isFocused}>
+                <TodoInputRow>
+                  <TodoInput
+                    placeholder={t('notes.addTodo')}
                     placeholderTextColor={theme.colors.textLight}
-                    value={newTodoNote}
-                    onChangeText={handleTodoNoteChange}
-                    multiline={true}
+                    value={newTodoText}
+                    onChangeText={handleTodoTextChange}
+                    onSubmitEditing={handleAddTodo}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
                     autoCorrect={false}
                     spellCheck={false}
                     textContentType="none"
                     autoComplete="off"
                   />
-                </NotesInputContainer>
-              </NotesHeightWrapper>
-            </AddTodoContainer>
+                  <ToggleNotesButton
+                    isActive={showNotesField}
+                    onPress={() => setShowNotesField(!showNotesField)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons
+                      name={
+                        showNotesField ? 'document-text' : 'document-text-outline'
+                      }
+                      size={18}
+                      color={showNotesField ? 'white' : theme.colors.textSecondary}
+                    />
+                  </ToggleNotesButton>
+                  <AddButton
+                    onPress={handleAddTodo}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="add" size={18} color="white" />
+                  </AddButton>
+                </TodoInputRow>
+                <NotesHeightWrapper
+                  style={{
+                    height: notesHeight.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 80],
+                    }),
+                    opacity: notesOpacity,
+                    overflow: 'hidden',
+                  }}
+                  pointerEvents={showNotesField ? 'auto' : 'none'}
+                >
+                  <NotesInputContainer>
+                    <NotesInput
+                      placeholder={t('notes.addNote')}
+                      placeholderTextColor={theme.colors.textLight}
+                      value={newTodoNote}
+                      onChangeText={handleTodoNoteChange}
+                      multiline={true}
+                      autoCorrect={false}
+                      spellCheck={false}
+                      textContentType="none"
+                      autoComplete="off"
+                    />
+                  </NotesInputContainer>
+                </NotesHeightWrapper>
+              </AddTodoContainer>
 
-            {pendingTodos.length > 0 && (
-              <>
-                <SectionTitle>
-                  {t('notes.pending')} ({pendingTodos.length})
-                </SectionTitle>
-                {pendingTodos.map((todo) => renderTodoItem(todo))}
-              </>
-            )}
+              {pendingTodos.length > 0 && (
+                <>
+                  <SectionTitle>
+                    {t('notes.pending')} ({pendingTodos.length})
+                  </SectionTitle>
+                  {pendingTodos.map((todo) => renderTodoItem(todo))}
+                </>
+              )}
 
-            {completedTodos.length > 0 && (
-              <>
-                <SectionTitle style={{ marginTop: 20 }}>
-                  {t('notes.completed')} ({completedTodos.length})
-                </SectionTitle>
-                {completedTodos.map((todo) => renderTodoItem(todo))}
-              </>
-            )}
+              {completedTodos.length > 0 && (
+                <>
+                  <SectionTitle style={{ marginTop: 20 }}>
+                    {t('notes.completed')} ({completedTodos.length})
+                  </SectionTitle>
+                  {completedTodos.map((todo) => renderTodoItem(todo))}
+                </>
+              )}
 
-            {pendingTodos.length === 0 && completedTodos.length === 0 && (
-              <EmptyState
-                icon="clipboard-outline"
-                title={t('notes.empty.title')}
-                description={t('notes.empty.description')}
-              />
-            )}
-          </Content>
-        </KeyboardAvoidingView>
+              {pendingTodos.length === 0 && completedTodos.length === 0 && (
+                <EmptyState
+                  icon="clipboard-outline"
+                  title={t('notes.empty.title')}
+                  description={t('notes.empty.description')}
+                />
+              )}
+            </Content>
+          </KeyboardAvoidingView>
+        )}
 
         <LoginBottomSheet
           bottomSheetRef={loginBottomSheetRef}

@@ -3,7 +3,9 @@
         "confirmation": "確認",
         "discardChanges": "保存されていない変更があります。破棄しますか？",
         "keepEditing": "編集を続ける",
-        "discard": "破棄"
+        "discard": "破棄",
+        "cancel": "キャンセル",
+        "close": "閉じる"
     },
     "navigation": {
         "home": "ホーム",
@@ -598,8 +600,17 @@
             "receivedSubtitle": "招待を受け取りました",
             "syncRequired": {
                 "title": "同期が必要です",
-                "message": "家族を招待するには同期をオンにする必要があります。今すぐオンにしますか？"
+                "message": "家族を招待するには同期をオンにする必要があります。今すぐオンにしますか？",
+                "acceptMessage": "招待を承諾するには同期をオンにする必要があります。今すぐオンにしますか？"
             },
+            "acceptSuccess": "ホームに参加しました",
+            "acceptError": "ホームへの参加に失敗しました。もう一度お試しください。",
+            "receivedScope": "共有範囲",
+            "inventory": "アイテムライブラリ",
+            "shoppingList": "買い物リスト",
+            "visibleToAll": "すべてのメンバーに表示",
+            "private": "プライベート",
+            "accept": "招待を承諾する",
             "errors": {
                 "ownHome": "自分のホームには参加できません"
             }

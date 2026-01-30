@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { Category, Location, InventoryItem, TodoItem } from '../types/inventory';
 import { Settings } from '../types/settings';
+import { AccessibleAccount } from '../types/api';
 import { syncCallbackRegistry } from './SyncCallbackRegistry';
 import { syncLogger, storageLogger } from '../utils/Logger';
 
@@ -69,6 +70,7 @@ class SyncService {
   private deviceId: string | null = null;
   private userId: string | undefined = undefined;
   private ownerId: string | undefined = undefined;
+  private accessibleAccounts: AccessibleAccount[] = [];
   private syncQueue: SyncTask[] = [];
   private isProcessing: boolean = false;
   private syncMetadata: SyncMetadata | null = null;
@@ -92,7 +94,7 @@ class SyncService {
   /**
    * Initialize sync service
    */
-  async initialize(deviceName?: string, userId?: string, ownerId?: string): Promise<void> {
+  async initialize(deviceName?: string, userId?: string, ownerId?: string, accessibleAccounts?: AccessibleAccount[]): Promise<void> {
     syncLogger.header('INITIALIZING SYNC SERVICE');
 
     // Set user ID
@@ -107,6 +109,11 @@ class SyncService {
     } else if (userId && !this.ownerId) {
       this.ownerId = userId;
       syncLogger.info(`Initialized owner ID from user ID: ${userId}`);
+    }
+
+    if (accessibleAccounts) {
+      this.accessibleAccounts = accessibleAccounts;
+      syncLogger.info(`Initialized with ${accessibleAccounts.length} accessible account(s)`);
     }
 
     // Get or create device ID
@@ -152,6 +159,66 @@ class SyncService {
       this.userId = userId;
       await this.resetSyncMetadata();
     }
+  }
+
+  /**
+   * Update accessible accounts
+   */
+  setAccessibleAccounts(accounts: AccessibleAccount[]): void {
+    this.accessibleAccounts = accounts;
+    syncLogger.debug(`Updated accessible accounts: ${accounts.length} accounts`);
+  }
+
+  /**
+   * Check if current user has permission for a specific file type and target user
+   */
+  hasPermission(fileType: SyncFileType, targetUserId?: string): boolean {
+    const userId = targetUserId || this.userId;
+
+    // If no userId is provided or resolved, it's the current user's local context
+    // which always has permission to sync.
+    if (!userId) {
+      return true;
+    }
+
+    // Always allow settings sync
+    if (fileType === 'settings') {
+      return true;
+    }
+
+    // Owner always has permission for their own data
+    if (userId === this.ownerId) {
+      return true;
+    }
+
+    // Check permissions in accessible accounts
+    const account = this.accessibleAccounts.find(a => a.userId === userId);
+    if (!account) {
+      // If we don't have this account in accessible accounts, we probably don't have access
+      syncLogger.warn(`No accessible account found for user ${userId}. Sync blocked for ${fileType}.`);
+      return false;
+    }
+
+    // If they are the owner of the account being synced, they have full access (should be caught by userId === this.ownerId above)
+    if (account.isOwner) {
+      return true;
+    }
+
+    // Check specific permissions
+    if (!account.permissions) {
+      syncLogger.warn(`No permissions defined for accessible account ${userId}. Sync blocked for ${fileType}.`);
+      return false;
+    }
+
+    if (fileType === 'inventoryItems' || fileType === 'categories' || fileType === 'locations') {
+      return account.permissions.canShareInventory;
+    }
+
+    if (fileType === 'todoItems') {
+      return account.permissions.canShareTodos;
+    }
+
+    return false;
   }
 
   /**
@@ -422,8 +489,13 @@ class SyncService {
     const fileTypes: SyncFileType[] = ['categories', 'locations', 'inventoryItems', 'todoItems', 'settings'];
 
     for (const fileType of fileTypes) {
-      // Do full sync (pull + push) to ensure bidirectional sync
-      this.queueSync(fileType, 'full', 'normal', targetUserId);
+      // Check permission before queuing
+      if (this.hasPermission(fileType, targetUserId)) {
+        // Do full sync (pull + push) to ensure bidirectional sync
+        this.queueSync(fileType, 'full', 'normal', targetUserId);
+      } else {
+        syncLogger.warn(`Skipping ${fileType} sync for user ${targetUserId}: Insufficient permission`);
+      }
     }
   }
 
@@ -470,6 +542,13 @@ class SyncService {
     }
 
     const targetUserId = userId || this.userId;
+
+    // Check permission before queuing
+    if (!this.hasPermission(fileType, targetUserId)) {
+      syncLogger.warn(`Sync BLOCKED for ${fileType} (user: ${targetUserId}) due to insufficient permissions.`);
+      return;
+    }
+
     const taskKey = `${fileType}-${operation}-${targetUserId || 'default'}`;
 
     // Check if there's already an in-flight sync for this fileType+operation
@@ -646,16 +725,25 @@ class SyncService {
    * Sync a single file type with pull-merge-push
    */
   async syncFile(fileType: SyncFileType, mode: 'pull' | 'push' | 'full', userId?: string): Promise<void> {
-    syncLogger.info(`Syncing ${fileType} in ${mode} mode for user ${userId || 'default'}...`);
+    const targetUserId = userId || this.userId;
+
+    // Final safety check for permissions
+    if (!this.hasPermission(fileType, targetUserId)) {
+      const errorMsg = `Permission denied for syncing ${fileType} (user: ${targetUserId})`;
+      syncLogger.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    syncLogger.info(`Syncing ${fileType} in ${mode} mode for user ${targetUserId || 'default'}...`);
 
     if (mode === 'pull') {
-      await this.pullFile(fileType, userId);
+      await this.pullFile(fileType, targetUserId);
     } else if (mode === 'push') {
-      await this.pushFile(fileType, userId);
+      await this.pushFile(fileType, targetUserId);
     } else {
       // Full sync: pull -> merge -> push
-      await this.pullFile(fileType, userId);
-      await this.pushFile(fileType, userId);
+      await this.pullFile(fileType, targetUserId);
+      await this.pushFile(fileType, targetUserId);
     }
   }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, Alert } from 'react-native';
 import styled from 'styled-components/native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,11 +7,14 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ValidateInvitationResponse } from '../../types/api';
 import { Button, BottomSheetHeader, HEADER_HEIGHT } from '../atoms';
-import { useAppSelector, useAppDispatch } from '../../store/hooks';
+import { useAppSelector, useAppDispatch, useSync } from '../../store/hooks';
 import { useToast } from '../../hooks/useToast';
 import type { StyledProps } from '../../utils/styledComponents';
 import Ionicons from '@expo/vector-icons/Ionicons';
-
+import { setActiveHomeId, setAccessibleAccounts } from '../../store/slices/authSlice';
+import { loadItems } from '../../store/sagas/inventorySaga';
+import { loadTodos } from '../../store/sagas/todoSaga';
+import { loadSettings } from '../../store/sagas/settingsSaga';
 
 
 const ErrorRow = styled(View)`
@@ -173,19 +176,78 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
         }
     };
 
+    const { enabled: syncEnabled, enableSync } = useSync();
+
     const handleAccept = async () => {
         if (!apiClient || !inviteCode) return;
 
+        if (!syncEnabled) {
+            Alert.alert(
+                t('share.invite.syncRequired.title'),
+                t('share.invite.syncRequired.acceptMessage'),
+                [
+                    {
+                        text: t('common.cancel'),
+                        style: 'cancel',
+                    },
+                    {
+                        text: t('common.confirmation'),
+                        onPress: async () => {
+                            enableSync();
+                            await processAccept();
+                        },
+                    },
+                ]
+            );
+            return;
+        }
+
+        await processAccept();
+    };
+
+    const processAccept = async () => {
+        if (!apiClient || !inviteCode) return;
         setLoading(true);
+        console.log('[Invitation] Accepting invite:', inviteCode);
         try {
             await apiClient.acceptInvitation(inviteCode);
 
-            // Reload data
-            dispatch({ type: 'inventory/LOAD_ITEMS' });
-            dispatch({ type: 'todo/LOAD_TODOS' });
-            dispatch({ type: 'auth/LOAD_ACCESSIBLE_ACCOUNTS' });
+            // Fetch updated accessible accounts
+            const response = await apiClient.listAccessibleAccounts();
+            console.log('[Invitation] Fetched accounts:', response.accounts.length);
 
-            showToast(t('share.invite.acceptSuccess'), 'success');
+            // Find the new account we just joined
+            // We use the accountEmail from the invitation data to match
+            const targetEmail = invitationData?.accountEmail?.toLowerCase();
+            console.log('[Invitation] Target email:', targetEmail);
+
+            const newAccount = response.accounts.find(
+                acc => acc.email.toLowerCase() === targetEmail
+            );
+            console.log('[Invitation] Matched account:', newAccount?.userId);
+
+            if (newAccount) {
+                // Switch to the new home
+                console.log('[Invitation] Switching to new home:', newAccount.userId);
+                dispatch(setActiveHomeId(newAccount.userId));
+                dispatch(setAccessibleAccounts(response.accounts));
+
+                // Reload data for the new home context
+                // We need to wait a brief moment for the state to update
+                setTimeout(() => {
+                    console.log('[Invitation] Reloading data for new context');
+                    dispatch(loadItems());
+                    dispatch(loadTodos());
+                    dispatch(loadSettings());
+                }, 100);
+
+                showToast(t('share.invite.acceptSuccess'), 'success');
+            } else {
+                // Fallback if we can't find the account (shouldn't happen)
+                console.warn('[Invitation] Could not find matched account for email:', targetEmail);
+                dispatch(setAccessibleAccounts(response.accounts));
+                showToast(t('share.invite.acceptSuccess'), 'success');
+            }
 
             // Dismiss and clear state
             onDismiss?.();
@@ -245,7 +307,7 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
                             <>
                                 <ErrorText>{error}</ErrorText>
                                 <Button
-                                    label="Close"
+                                    label={t('common.close')}
                                     onPress={handleClose}
                                     variant="secondary"
                                 />
@@ -290,7 +352,7 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
                                 )}
 
                                 <ScopeSection>
-                                    <ScopeTitle>Shared Scope</ScopeTitle>
+                                    <ScopeTitle>{t('share.invite.receivedScope')}</ScopeTitle>
                                     <ScopeRow>
                                         <Ionicons
                                             name={invitationData.permissions?.canShareInventory ? "checkmark-circle" : "lock-closed"}
@@ -298,7 +360,7 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
                                             color={invitationData.permissions?.canShareInventory ? theme.colors.success : theme.colors.textSecondary}
                                         />
                                         <ScopeText>
-                                            Inventory ({invitationData.permissions?.canShareInventory ? 'Visible to all' : 'Private'})
+                                            {t('share.invite.inventory')} ({invitationData.permissions?.canShareInventory ? t('share.invite.visibleToAll') : t('share.invite.private')})
                                         </ScopeText>
                                     </ScopeRow>
                                     <ScopeRow>
@@ -308,13 +370,13 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
                                             color={invitationData.permissions?.canShareTodos ? theme.colors.success : theme.colors.textSecondary}
                                         />
                                         <ScopeText>
-                                            Shopping List ({invitationData.permissions?.canShareTodos ? 'Visible to all' : 'Private'})
+                                            {t('share.invite.shoppingList')} ({invitationData.permissions?.canShareTodos ? t('share.invite.visibleToAll') : t('share.invite.private')})
                                         </ScopeText>
                                     </ScopeRow>
                                 </ScopeSection>
 
                                 <Button
-                                    label="Accept Invitation"
+                                    label={t('share.invite.accept')}
                                     onPress={handleAccept}
                                     variant="primary"
                                     disabled={loading || isOwnHome}

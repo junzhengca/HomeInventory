@@ -193,7 +193,7 @@ export const MemberList: React.FC<MemberListProps> = ({
               key={member.id}
               member={member}
               isOwner={false}
-              onRemove={handleRemoveMember}
+              onRemove={onRemoveMember ? handleRemoveMember : undefined}
               swipeableRef={getSwipeableRef(member.id)}
             />
           ))}

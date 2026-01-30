@@ -3,7 +3,9 @@
     "confirmation": "确认",
     "discardChanges": "您有未保存的修改。确定要放弃吗？",
     "keepEditing": "继续编辑",
-    "discard": "放弃修改"
+    "discard": "放弃修改",
+    "cancel": "取消",
+    "close": "关闭"
   },
   "navigation": {
     "home": "首页",
@@ -590,6 +592,19 @@
       },
       "receivedTitle": "{{name}} 邀请您加入他们的家",
       "receivedSubtitle": "收到邀请",
+      "syncRequired": {
+        "title": "需要同步",
+        "message": "您必须开启同步才能邀请成员。现在开启吗？",
+        "acceptMessage": "您必须开启同步才能接受邀请。现在开启吗？"
+      },
+      "acceptSuccess": "成功加入小家",
+      "acceptError": "加入小家失败，请重试。",
+      "receivedScope": "分享范围",
+      "inventory": "物品库",
+      "shoppingList": "购物清单",
+      "visibleToAll": "全员可见",
+      "private": "仅自己可见",
+      "accept": "接受邀请",
       "errors": {
         "ownHome": "您不能加入自己的家"
       }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Alert, ActivityIndicator, ScrollView, Animated, Dimensions, Text } from 'react-native';
+import { View, Alert, ActivityIndicator, ScrollView, Animated, Dimensions, Text, TouchableOpacity } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
 import {
   PageHeader,
@@ -84,10 +85,26 @@ const SwitchSubtitle = styled(Text)`
   color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
 `;
 
+const LeaveHomeButton = styled(TouchableOpacity)`
+  margin-top: ${({ theme }: StyledProps) => theme.spacing.xl}px;
+  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+`;
+
+const LeaveHomeText = styled(Text)`
+  color: ${({ theme }: StyledProps) => theme.colors.error || '#ff4444'};
+  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+  margin-left: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+`;
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const ShareScreen: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const navigation = useNavigation<NavigationProp>();
@@ -136,7 +153,7 @@ export const ShareScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [getApiClient, showToast, t]);
+  }, [getApiClient, showToast, t, activeHomeId]);
 
   const loadMembers = useCallback(async () => {
     setMembersLoading(true);
@@ -158,7 +175,7 @@ export const ShareScreen: React.FC = () => {
     } finally {
       setMembersLoading(false);
     }
-  }, [getApiClient, t]);
+  }, [getApiClient, t, activeHomeId]);
 
   const loadAccounts = useCallback(() => {
     dispatch({ type: 'auth/LOAD_ACCESSIBLE_ACCOUNTS' });
@@ -316,6 +333,46 @@ export const ShareScreen: React.FC = () => {
     ]);
   }, [canShareTodos, getApiClient, showToast, t]);
 
+  const handleLeaveHome = useCallback(() => {
+    Alert.alert(
+      t('share.members.leaveConfirm.title', 'Leave Home'),
+      t('share.members.leaveConfirm.message', 'Are you sure you want to leave this home?'),
+      [
+        {
+          text: t('common.cancel', 'Cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('share.members.leaveConfirm.confirm', 'Leave'),
+          style: 'destructive',
+          onPress: async () => {
+            setIsUpdating(true);
+            try {
+              const apiClient = getApiClient();
+              if (!apiClient || !activeHomeId || !user) {
+                throw new Error('Missing client or user info');
+              }
+
+              // To leave, we remove ourselves (memberId = user.id) from the account (userId = activeHomeId)
+              await apiClient.removeMember(user.id, activeHomeId);
+
+              showToast(t('share.members.leaveSuccess', 'Left home successfully'), 'success');
+
+              // Switch back to own home
+              dispatch(setActiveHomeId(null));
+
+            } catch (error) {
+              console.error('Error leaving home:', error);
+              showToast(t('share.members.leaveError', 'Failed to leave home'), 'error');
+            } finally {
+              setIsUpdating(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [getApiClient, activeHomeId, user, showToast, t, dispatch]);
+
   const handleAvatarPress = () => {
     const rootNavigation = navigation.getParent();
     if (rootNavigation) {
@@ -439,6 +496,23 @@ export const ShareScreen: React.FC = () => {
                   onInvitePress={handleInvitePress}
                   showInviteButton={currentHome?.isOwner}
                 />
+
+                {!currentHome?.isOwner && (
+                  <LeaveHomeButton
+                    onPress={handleLeaveHome}
+                    activeOpacity={0.8}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? (
+                      <ActivityIndicator color={theme.colors.error || '#ff4444'} />
+                    ) : (
+                      <>
+                        <Ionicons name="log-out-outline" size={20} color={theme.colors.error || '#ff4444'} />
+                        <LeaveHomeText>{t('share.members.leaveHome', 'Leave Home')}</LeaveHomeText>
+                      </>
+                    )}
+                  </LeaveHomeButton>
+                )}
                 {currentHome?.isOwner && (
                   <PermissionConfigPanel
                     canShareInventory={canShareInventory}

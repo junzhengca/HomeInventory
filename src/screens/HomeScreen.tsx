@@ -403,7 +403,14 @@ export const HomeScreen: React.FC = () => {
           ownerAvatarUrl={currentHomeOwner?.avatarUrl}
           onAvatarPress={handleAvatarPress}
         />
-        {isLoading ? (
+        {/* Check if user has access to item library */}
+        {currentHomeOwner && !currentHomeOwner.isOwner && !currentHomeOwner.permissions?.canShareInventory ? (
+          <EmptyState
+            icon="lock-closed"
+            title={t('accessControl.itemLibrary.title')}
+            description={t('accessControl.itemLibrary.description')}
+          />
+        ) : isLoading ? (
           <LoadingContainer>
             <ActivityIndicator size="large" />
           </LoadingContainer>
@@ -550,11 +557,13 @@ export const HomeScreen: React.FC = () => {
           ref={editBottomSheetRef}
           bottomSheetRef={editBottomSheetModalRef}
         />
-        <FloatingActionButton
-          onManualAdd={handleManualAdd}
-          onAIAutomatic={handleAIAutomatic}
-          isAIRecognizing={isAIRecognizing}
-        />
+        {(!currentHomeOwner || (currentHomeOwner.isOwner || currentHomeOwner.permissions?.canShareInventory)) && (
+          <FloatingActionButton
+            onManualAdd={handleManualAdd}
+            onAIAutomatic={handleAIAutomatic}
+            isAIRecognizing={isAIRecognizing}
+          />
+        )}
       </Container>
     </TouchableWithoutFeedback>
   );

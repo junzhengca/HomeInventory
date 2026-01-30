@@ -3,7 +3,9 @@
     "confirmation": "Confirm",
     "discardChanges": "You have unsaved changes. Do you want to discard them?",
     "keepEditing": "Keep Editing",
-    "discard": "Discard"
+    "discard": "Discard",
+    "cancel": "Cancel",
+    "close": "Close"
   },
   "navigation": {
     "home": "Home",
@@ -15,6 +17,16 @@
     "title": "You are Offline",
     "description": "Changes you make will be saved locally on your device and automatically synced when you are back online.",
     "badge": "You are offline"
+  },
+  "accessControl": {
+    "itemLibrary": {
+      "title": "Access Restricted",
+      "description": "You do not have permission to view the item library for this home."
+    },
+    "notes": {
+      "title": "Access Restricted",
+      "description": "You do not have permission to view the shopping list and notes for this home."
+    }
   },
   "home": {
     "title": "What's at Home",
@@ -573,6 +585,15 @@
         "cancel": "Cancel",
         "confirm": "Remove"
       },
+      "leaveHome": "Leave Home",
+      "leaveConfirm": {
+        "title": "Leave Home",
+        "message": "Are you sure you want to leave this home?",
+        "cancel": "Cancel",
+        "confirm": "Leave"
+      },
+      "leaveSuccess": "Left home successfully",
+      "leaveError": "Failed to leave home",
       "empty": {
         "title": "No Members",
         "description": "Invite family members to share your inventory"
@@ -598,8 +619,17 @@
       "receivedSubtitle": "Received Invitation",
       "syncRequired": {
         "title": "Sync Required",
-        "message": "You must turn on sync to invite family members. Would you like to turn it on now?"
+        "message": "You must turn on sync to invite family members. Would you like to turn it on now?",
+        "acceptMessage": "You must turn on sync to accept invitations. Would you like to turn it on now?"
       },
+      "acceptSuccess": "Successfully joined the home",
+      "acceptError": "Failed to join the home. Please try again.",
+      "receivedScope": "Shared Scope",
+      "inventory": "Inventory",
+      "shoppingList": "Shopping List",
+      "visibleToAll": "Visible to all",
+      "private": "Private",
+      "accept": "Accept Invitation",
       "errors": {
         "ownHome": "You cannot join your own home"
       }
