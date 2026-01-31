@@ -86,7 +86,8 @@
         },
         "actions": {
             "plusOne": "数量 +1",
-            "minusOne": "数量 -1"
+            "minusOne": "数量 -1",
+            "addToTodo": "TODOリストに追加"
         }
     },
     "notes": {
@@ -633,7 +634,8 @@
     "toast": {
         "loginSuccess": "ログインしました",
         "logoutSuccess": "ログアウトしました",
-        "signupSuccess": "アカウントを作成しました"
+        "signupSuccess": "アカウントを作成しました",
+        "addToTodoSuccess": "TODOリストに追加しました"
     },
     "setupNickname": {
         "title": "プロフィール設定",

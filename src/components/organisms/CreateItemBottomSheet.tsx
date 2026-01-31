@@ -1,5 +1,7 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { Ionicons } from '@expo/vector-icons';
 import type { InventoryItem } from '../../types/inventory';
 import { useAppDispatch } from '../../store/hooks';
@@ -28,6 +30,34 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   const dispatch = useAppDispatch();
   // const { createItem } = useInventory(); // Removed to prevent re-renders on items change
 
+  const [lastLocation, setLastLocation] = React.useState<string | undefined>(undefined);
+  const [lastStatus, setLastStatus] = React.useState<string | undefined>(undefined);
+
+  // Load persisted values on mount
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const location = await AsyncStorage.getItem('LAST_CREATED_ITEM_LOCATION');
+        const status = await AsyncStorage.getItem('LAST_CREATED_ITEM_STATUS');
+        if (location) setLastLocation(location);
+        if (status) setLastStatus(status);
+      } catch (error) {
+        console.error('Failed to load last created item settings', error);
+      }
+    })();
+  }, []);
+
+  const combinedInitialData = React.useMemo(() => {
+    const data = { ...initialData };
+    if (!data.location && lastLocation) {
+      data.location = lastLocation;
+    }
+    if (!data.status && lastStatus) {
+      data.status = lastStatus;
+    }
+    return data;
+  }, [initialData, lastLocation, lastStatus]);
+
   const handleSubmit = useCallback(
     async (values: {
       name: string;
@@ -44,6 +74,16 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     }) => {
       // createItem(values);
       dispatch({ type: 'inventory/CREATE_ITEM', payload: values });
+
+      // Save location and status
+      try {
+        await AsyncStorage.setItem('LAST_CREATED_ITEM_LOCATION', values.location);
+        await AsyncStorage.setItem('LAST_CREATED_ITEM_STATUS', values.status);
+        setLastLocation(values.location);
+        setLastStatus(values.status);
+      } catch (error) {
+        console.error('Failed to save last created item settings', error);
+      }
     },
     [dispatch]
   );
@@ -56,7 +96,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     <ItemFormBottomSheet
       bottomSheetRef={bottomSheetRef}
       mode="create"
-      initialData={initialData}
+      initialData={combinedInitialData}
       onSubmit={handleSubmit}
       onSuccess={handleSuccess}
       onSheetClose={onSheetClose}

@@ -33,7 +33,6 @@ import type { StyledProps } from '../utils/styledComponents';
 
 import {
   PageHeader,
-  SearchInput,
   LocationFilter,
   StatusFilter,
   ItemCard,
@@ -50,9 +49,10 @@ import {
 import { useItemActions } from '../hooks/useItemActions';
 import { InventoryItem } from '../types/inventory';
 import { RootStackParamList } from '../navigation/types';
-import { useInventory, useSync, useAuth, useAppSelector } from '../store/hooks';
+import { useInventory, useSync, useAuth, useAppSelector, useTodos } from '../store/hooks';
 import { calculateBottomPadding } from '../utils/layout';
 import * as SecureStore from 'expo-secure-store';
+import { useToast } from '../hooks/useToast';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -112,7 +112,6 @@ const LoadingContainer = styled(View)`
 
 export const HomeScreen: React.FC = () => {
   const { t } = useTranslation();
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
     null
   );
@@ -139,6 +138,8 @@ export const HomeScreen: React.FC = () => {
   const editBottomSheetModalRef = useRef<BottomSheetModal>(null);
 
   const { confirmDelete } = useItemActions();
+  const { addTodo } = useTodos();
+  const { showToast } = useToast();
 
   // Calculate card width for 2-column grid to prevent the "last row single item" expansion issue
   const cardWidth = useMemo(() => {
@@ -218,19 +219,8 @@ export const HomeScreen: React.FC = () => {
       filtered = filtered.filter((item) => item.status === selectedStatusId);
     }
 
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const lowerQuery = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.name.toLowerCase().includes(lowerQuery) ||
-          item.location.toLowerCase().includes(lowerQuery) ||
-          item.detailedLocation.toLowerCase().includes(lowerQuery)
-      );
-    }
-
     return filtered;
-  }, [searchQuery, selectedLocationId, selectedStatusId, items]);
+  }, [selectedLocationId, selectedStatusId, items]);
 
   const currentHomeOwner = useMemo(() => {
     if (!activeHomeId) return null;
@@ -420,7 +410,6 @@ export const HomeScreen: React.FC = () => {
           </LoadingContainer>
         ) : (
           <Content>
-            <SearchInput value={searchQuery} onChangeText={setSearchQuery} />
             <FilterRow>
               <FilterToggleBtn
                 onPress={() => {
@@ -466,8 +455,7 @@ export const HomeScreen: React.FC = () => {
                   icon="list-outline"
                   title={t('inventory.empty.title')}
                   description={
-                    searchQuery.trim() ||
-                      selectedLocationId !== null ||
+                    selectedLocationId !== null ||
                       selectedStatusId !== null
                       ? t('inventory.empty.filtered')
                       : t('inventory.empty.description')
@@ -493,6 +481,15 @@ export const HomeScreen: React.FC = () => {
                         icon: 'minus',
                         onPress: () => {
                           updateInventoryItem(item.id, { amount: Math.max(0, (item.amount || 0) - 1) });
+                        },
+                      },
+                      {
+                        id: 'add-to-todo',
+                        label: t('inventory.actions.addToTodo'),
+                        icon: 'playlist-plus',
+                        onPress: () => {
+                          addTodo(item.name);
+                          showToast(t('toast.addToTodoSuccess'));
                         },
                       },
                       {

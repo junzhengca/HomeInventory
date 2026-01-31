@@ -96,7 +96,8 @@
     },
     "actions": {
       "plusOne": "+1 Quantity",
-      "minusOne": "-1 Quantity"
+      "minusOne": "-1 Quantity",
+      "addToTodo": "Add to todo"
     }
   },
   "notes": {
@@ -652,7 +653,8 @@
   "toast": {
     "loginSuccess": "Successfully logged in",
     "logoutSuccess": "Successfully logged out",
-    "signupSuccess": "Account created successfully"
+    "signupSuccess": "Account created successfully",
+    "addToTodoSuccess": "Added to todo list"
   },
   "setupNickname": {
     "title": "Setup Profile",

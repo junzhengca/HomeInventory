@@ -80,7 +80,8 @@
     },
     "actions": {
       "plusOne": "数量 +1",
-      "minusOne": "数量 -1"
+      "minusOne": "数量 -1",
+      "addToTodo": "添加到待办"
     }
   },
   "notes": {
@@ -626,7 +627,8 @@
   "toast": {
     "loginSuccess": "登录成功",
     "logoutSuccess": "登出成功",
-    "signupSuccess": "账户创建成功"
+    "signupSuccess": "账户创建成功",
+    "addToTodoSuccess": "已添加到待办列表"
   },
   "setupNickname": {
     "title": "设置个人资料",
