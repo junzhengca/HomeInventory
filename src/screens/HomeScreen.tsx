@@ -16,6 +16,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  RefreshControl,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -125,7 +126,7 @@ export const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { items, loading: isLoading, loadItems, updateItem: updateInventoryItem } = useInventory();
-  const { enabled: isSyncEnabled } = useSync();
+  const { enabled: isSyncEnabled, syncAll, loading: isSyncLoading } = useSync();
   const { user, getApiClient } = useAuth();
   const activeHomeId = useAppSelector((state) => state.auth.activeHomeId);
   const accounts = useAppSelector((state) => state.auth.accessibleAccounts);
@@ -254,7 +255,10 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleManualAdd = () => {
-    setRecognizedItemData(null);
+    setRecognizedItemData({
+      location: selectedLocationId || undefined,
+      status: selectedStatusId || undefined,
+    });
     createItemBottomSheetRef.current?.present();
   };
 
@@ -528,6 +532,14 @@ export const HomeScreen: React.FC = () => {
                   contentContainerStyle={{
                     paddingBottom: bottomPadding,
                   }}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={isSyncLoading}
+                      onRefresh={syncAll}
+                      colors={[theme.colors.primary]}
+                      tintColor={theme.colors.primary}
+                    />
+                  }
                 />
               )}
             </ListContainer>
@@ -552,6 +564,7 @@ export const HomeScreen: React.FC = () => {
           bottomSheetRef={createItemBottomSheetRef}
           initialData={recognizedItemData}
           onItemCreated={handleItemCreated}
+          onSheetClose={() => setRecognizedItemData(null)}
         />
         <EditItemBottomSheet
           ref={editBottomSheetRef}

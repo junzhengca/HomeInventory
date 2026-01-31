@@ -224,7 +224,7 @@ export const ProfileScreen: React.FC = () => {
   // 2. User's home has other members (excluding self)
   // We need to fetch members to know this. Ideally backend sends member count in user profile or account list.
   // For now, we fetch members.
-  const hasOtherMembers = members.length > 1; // Assuming self is always in the list
+  const hasOtherMembers = members.length > 0; // members list from API excludes owner
 
   const isForcedSync = isMemberOfOtherHome || hasOtherMembers;
 

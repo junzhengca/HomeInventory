@@ -9,6 +9,7 @@ export interface CreateItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
   onItemCreated?: () => void;
   initialData?: Partial<InventoryItem> | null;
+  onSheetClose?: () => void;
 }
 
 /**
@@ -22,18 +23,10 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   bottomSheetRef,
   onItemCreated,
   initialData,
+  onSheetClose,
 }) => {
   const dispatch = useAppDispatch();
   // const { createItem } = useInventory(); // Removed to prevent re-renders on items change
-
-  // Track initial data for form initialization
-  const initialDataRef = useRef<Partial<InventoryItem> | null | undefined>(
-    initialData
-  );
-
-  useEffect(() => {
-    initialDataRef.current = initialData;
-  }, [initialData]);
 
   const handleSubmit = useCallback(
     async (values: {
@@ -63,9 +56,10 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     <ItemFormBottomSheet
       bottomSheetRef={bottomSheetRef}
       mode="create"
-      initialData={initialDataRef.current}
+      initialData={initialData}
       onSubmit={handleSubmit}
       onSuccess={handleSuccess}
+      onSheetClose={onSheetClose}
     />
   );
 };

@@ -9,6 +9,7 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import styled from 'styled-components/native';
@@ -30,7 +31,7 @@ import {
   SignupBottomSheet,
   EnableSyncBottomSheet,
 } from '../components';
-import { useTodos, useAuth, useAppSelector } from '../store/hooks';
+import { useTodos, useAuth, useAppSelector, useSync } from '../store/hooks';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../theme/ThemeProvider';
@@ -183,6 +184,7 @@ export const NotesScreen: React.FC = () => {
     removeTodo,
     updateTodo,
   } = useTodos();
+  const { syncAll, loading: isSyncLoading } = useSync();
   const theme = useTheme();
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -415,6 +417,14 @@ export const NotesScreen: React.FC = () => {
               contentContainerStyle={{ paddingBottom: bottomPadding }}
               keyboardDismissMode="interactive"
               keyboardShouldPersistTaps="handled"
+              refreshControl={
+                <RefreshControl
+                  refreshing={isSyncLoading}
+                  onRefresh={syncAll}
+                  colors={[theme.colors.primary]}
+                  tintColor={theme.colors.primary}
+                />
+              }
             >
               <AddTodoContainer isFocused={isFocused}>
                 <TodoInputRow>
