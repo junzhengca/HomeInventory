@@ -8,6 +8,7 @@ const ITEMS_FILE = 'items.json';
 const CATEGORIES_FILE = 'categories.json';
 const SETTINGS_FILE = 'settings.json';
 const TODOS_FILE = 'todos.json';
+const HOMES_FILE = 'homes.json';
 
 interface ItemsData {
   items: InventoryItem[];
@@ -57,7 +58,7 @@ export const initializeDataFiles = async (): Promise<void> => {
         console.log('Added missing item categories and removed location categories');
       }
     }
-    
+
     // Initialize items
     if (!(await fileExists(ITEMS_FILE))) {
       // Start with empty array - no mock data
@@ -66,7 +67,7 @@ export const initializeDataFiles = async (): Promise<void> => {
       });
       console.log('Items file initialized');
     }
-    
+
     // Initialize settings
     if (!(await fileExists(SETTINGS_FILE))) {
       await writeFile<Settings>(SETTINGS_FILE, defaultSettings);
@@ -79,6 +80,16 @@ export const initializeDataFiles = async (): Promise<void> => {
         todos: [],
       });
       console.log('Todos file initialized');
+    }
+
+    // Initialize homes (handled by HomeService, but ensure file exists check here?
+    // Actually, let's just leave it to HomeService or ensure it's clean here)
+    if (!(await fileExists(HOMES_FILE))) {
+      // HomeService.init() will handle this, but for consistency in this file:
+      // We won't write default data here to avoid duplication logic with HomeService
+      // just logging for now or we can import homeService.
+      // Better yet, let's leave initialization to HomeService.init() which is called at app start
+      // but we SHOULD include it in clearAllDataFiles.
     }
   } catch (error) {
     console.error('Error initializing data files:', error);
@@ -104,8 +115,8 @@ export const isDataInitialized = async (): Promise<boolean> => {
 export const clearAllDataFiles = async (): Promise<boolean> => {
   try {
     // Delete all JSON files
-    const filesToDelete = [ITEMS_FILE, CATEGORIES_FILE, SETTINGS_FILE, TODOS_FILE];
-    
+    const filesToDelete = [ITEMS_FILE, CATEGORIES_FILE, SETTINGS_FILE, TODOS_FILE, HOMES_FILE];
+
     for (const file of filesToDelete) {
       const deleted = await deleteFile(file);
       if (!deleted) {
@@ -113,12 +124,12 @@ export const clearAllDataFiles = async (): Promise<boolean> => {
         return false;
       }
     }
-    
+
     console.log('All data files deleted successfully');
-    
+
     // Re-initialize with default data
     await initializeDataFiles();
-    
+
     console.log('Data files re-initialized with defaults');
     return true;
   } catch (error) {

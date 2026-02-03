@@ -33,6 +33,21 @@
   "home": {
     "title": "What's at Home",
     "subtitle": "Home Asset Management",
+    "switcher": {
+      "title": "Switch Space",
+      "defaultName": "Inventory",
+      "noAddress": "No address",
+      "addProperty": "Add New Property"
+    },
+    "create": {
+      "title": "Add New Property",
+      "subtitle": "Add multiple properties for easy management",
+      "nicknameLabel": "Property Nickname",
+      "nicknamePlaceholder": "e.g. Lake House",
+      "addressLabel": "Detailed Address",
+      "addressPlaceholder": "e.g. 123 Lake St",
+      "submit": "Done"
+    },
     "empty": {
       "title": "No Items Yet",
       "description": "Start by adding your first item to manage your home assets!"

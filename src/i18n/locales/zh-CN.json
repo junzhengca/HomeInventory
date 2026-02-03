@@ -17,6 +17,21 @@
   "home": {
     "title": "家里有什么",
     "subtitle": "家庭资产管理",
+    "switcher": {
+      "title": "切换空间",
+      "defaultName": "库存",
+      "noAddress": "无地址",
+      "addProperty": "添加新房产"
+    },
+    "create": {
+      "title": "添加新房产",
+      "subtitle": "添加多个房产以便轻松管理",
+      "nicknameLabel": "房产昵称",
+      "nicknamePlaceholder": "例如：湖畔别墅",
+      "addressLabel": "详细地址",
+      "addressPlaceholder": "例如：湖滨路123号",
+      "submit": "完成"
+    },
     "empty": {
       "title": "还没有物品",
       "description": "开始添加您的第一个物品来管理您的家庭资产吧！"

@@ -9,7 +9,8 @@ import type { StyledProps } from '../../utils/styledComponents';
 
 export interface PageHeaderProps {
   icon: keyof typeof Ionicons.glyphMap;
-  title: string;
+  title?: string;
+  titleComponent?: React.ReactNode;
   subtitle: string;
   avatarUrl?: string;
   ownerAvatarUrl?: string;
@@ -159,6 +160,7 @@ const StackedAvatarImage = styled(Image)`
 export const PageHeader: React.FC<PageHeaderProps> = ({
   icon,
   title,
+  titleComponent,
   subtitle,
   avatarUrl,
   ownerAvatarUrl,
@@ -213,7 +215,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           </IconContainer>
         )}
         <TextContainer>
-          <Title>{title}</Title>
+          {titleComponent ? titleComponent : <Title>{title}</Title>}
           <Subtitle>{subtitle}</Subtitle>
         </TextContainer>
       </LeftSection>

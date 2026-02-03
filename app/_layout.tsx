@@ -11,6 +11,7 @@ import { I18nextProvider } from 'react-i18next';
 import { Provider } from 'react-redux';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { initializeDataFiles } from '../src/services/DataInitializationService';
+import { homeService } from '../src/services/HomeService';
 import { ErrorBottomSheet, SetupNicknameBottomSheet, ToastProvider, InvitationBottomSheet, OfflineBadge, OfflineExplanationBottomSheet } from '../src/components';
 import { ContextMenuProvider } from '../src/components/organisms/ContextMenu/ContextMenuProvider';
 import { ErrorDetails } from '../src/types/api';
@@ -186,6 +187,7 @@ export default function RootLayout() {
         const init = async () => {
             try {
                 await initializeDataFiles();
+                await homeService.init();
                 setIsInitialized(true);
             } catch (error) {
                 console.error('Failed to initialize data files:', error);

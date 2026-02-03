@@ -45,6 +45,7 @@ import {
   EditItemBottomSheet,
   type EditItemBottomSheetRef,
   ContextMenu,
+  HomeSwitcher,
 } from '../components';
 import { useItemActions } from '../hooks/useItemActions';
 import { InventoryItem } from '../types/inventory';
@@ -390,7 +391,7 @@ export const HomeScreen: React.FC = () => {
       <Container>
         <PageHeader
           icon="home"
-          title={t('inventory.title')}
+          titleComponent={<HomeSwitcher />}
           subtitle={headerSubtitle}
           showRightButtons={true}
           avatarUrl={user?.avatarUrl}
