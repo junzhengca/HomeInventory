@@ -187,7 +187,6 @@ export const HomeSwitcher: React.FC = () => {
       <View ref={triggerRef} collapsable={false}>
         <Container onPress={handleOpenStart} activeOpacity={0.7}>
           <HomeNameString>{currentHome?.name || t('home.switcher.defaultName')}</HomeNameString>
-          <Text style={{ fontSize: 20, marginLeft: 4 }}>🏠</Text>
           <IconWrapper>
             <Ionicons name="chevron-down" size={14} color={theme.colors.textSecondary} />
           </IconWrapper>
@@ -225,7 +224,7 @@ export const HomeSwitcher: React.FC = () => {
                       >
                         <HomeItemInfo>
                           <HomeItemName>
-                            {item.name} {item.name.includes("🏠") ? "" : "🏠"}
+                            {item.name}
                           </HomeItemName>
                           <HomeItemAddress>{item.address || t('home.switcher.noAddress')}</HomeItemAddress>
                         </HomeItemInfo>
