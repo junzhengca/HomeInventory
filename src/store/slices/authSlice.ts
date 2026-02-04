@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { User, AccessibleAccount } from '../../types/api';
+import { User } from '../../types/api';
 import { ApiClient } from '../../services/ApiClient';
 
 interface AuthState {
@@ -11,7 +11,6 @@ interface AuthState {
   apiClient: ApiClient | null;
   showNicknameSetup: boolean;
   activeHomeId: string | null;
-  accessibleAccounts: AccessibleAccount[];
 }
 
 const initialState: AuthState = {
@@ -23,7 +22,6 @@ const initialState: AuthState = {
   apiClient: null,
   showNicknameSetup: false,
   activeHomeId: null,
-  accessibleAccounts: [],
 };
 
 const authSlice = createSlice({
@@ -54,9 +52,6 @@ const authSlice = createSlice({
     setActiveHomeId: (state, action: PayloadAction<string | null>) => {
       state.activeHomeId = action.payload;
     },
-    setAccessibleAccounts: (state, action: PayloadAction<AccessibleAccount[]>) => {
-      state.accessibleAccounts = action.payload;
-    },
   },
 });
 
@@ -69,7 +64,6 @@ export const {
   setApiClient,
   setShowNicknameSetup,
   setActiveHomeId,
-  setAccessibleAccounts,
 } = authSlice.actions;
 export default authSlice.reducer;
 

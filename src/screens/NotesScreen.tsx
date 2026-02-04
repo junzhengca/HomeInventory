@@ -189,9 +189,9 @@ export const NotesScreen: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const activeHomeId = useAppSelector((state) => state.auth.activeHomeId);
-  const accounts = useAppSelector((state) => state.auth.accessibleAccounts);
+  const accounts = useAppSelector((state) => state.home?.homes || []);
 
-  const currentHomeOwner = accounts.find((a) => a.userId === activeHomeId);
+  const currentHomeOwner = accounts.find((a) => a.id === activeHomeId);
 
   const [newTodoText, setNewTodoText] = useState('');
   const [newTodoNote, setNewTodoNote] = useState('');

@@ -1,4 +1,6 @@
-export interface Settings {
+import { SyncMetadata } from './inventory';
+
+export interface Settings extends SyncMetadata {
   theme: string; // Selected theme ID
   currency: string; // Selected currency ID
   language: string; // Selected language ID
@@ -8,7 +10,7 @@ export interface Settings {
 }
 
 // Note: defaultSettings does not include timestamps as they are set on first use
-export const defaultSettings: Omit<Settings, 'createdAt' | 'updatedAt'> = {
+export const defaultSettings: Omit<Settings, keyof SyncMetadata> = {
   theme: 'forest',
   currency: 'cny',
   language: 'en',

@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import SyncService, { SyncMetadata } from '../../services/SyncService';
+import SyncService from '../../services/SyncService';
+import { SyncMetadata } from '../../types/inventory';
 
 interface SyncState {
   syncService: SyncService | null;

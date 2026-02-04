@@ -20,6 +20,7 @@ export const useAuth = () => {
   const isLoading = useAppSelector((state) => state.auth.isLoading);
   const error = useAppSelector((state) => state.auth.error);
   const apiClient = useAppSelector((state) => state.auth.apiClient);
+  const activeHomeId = useAppSelector((state) => state.auth.activeHomeId);
 
   const login = useCallback(
     (email: string, password: string) => {
@@ -73,6 +74,7 @@ export const useAuth = () => {
     checkAuth,
     updateUser,
     getApiClient,
+    activeHomeId,
   };
 };
 
@@ -100,13 +102,13 @@ export const useSettings = () => {
       return new Promise((resolve) => {
         // Clear previous result
         dispatch(clearUpdateResult());
-        
+
         // Add resolver to pending list
         pendingResolversRef.current.push(resolve);
-        
+
         // Dispatch update action
         dispatch({ type: 'settings/UPDATE_SETTINGS', payload: updates });
-        
+
         // Timeout after 2 seconds if no result
         setTimeout(() => {
           const index = pendingResolversRef.current.indexOf(resolve);

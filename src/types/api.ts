@@ -92,22 +92,6 @@ export interface ListMembersResponse {
   members: Member[];
 }
 
-export interface AccessibleAccount {
-  userId: string;
-  email: string;
-  nickname?: string;
-  avatarUrl?: string;
-  isOwner: boolean;
-  joinedAt: string;
-  permissions?: {
-    canShareInventory: boolean;
-    canShareTodos: boolean;
-  };
-}
-
-export interface ListAccessibleAccountsResponse {
-  accounts: AccessibleAccount[];
-}
 
 export interface RegenerateInvitationResponse {
   invitationCode: string;
@@ -162,7 +146,8 @@ export interface ErrorDetails {
 }
 
 // Sync Entities Types
-export type EntityType = 'categories' | 'locations' | 'inventoryItems' | 'todoItems' | 'settings';
+// IMPORTANT: 'homes' must be synced FIRST before any other entity types to avoid permission errors
+export type EntityType = 'homes' | 'categories' | 'locations' | 'inventoryItems' | 'todoItems' | 'settings';
 
 export interface SyncCheckpoint {
   lastPulledVersion: number;
@@ -178,7 +163,8 @@ export interface PullEntitiesRequest {
   since?: string;
   includeDeleted?: boolean;
   checkpoint?: SyncCheckpoint;
-  userId?: string;
+  homeId: string;
+  deviceId: string;
 }
 
 export interface EntityChange {

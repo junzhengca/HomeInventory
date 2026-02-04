@@ -152,7 +152,7 @@ export const EnableSyncBottomSheet: React.FC<EnableSyncBottomSheetProps> = ({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { enableSync } = useSync();
-  const { getApiClient } = useAuth();
+  const { getApiClient, activeHomeId, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingData, setIsCheckingData] = useState(true);
   const [hasLocalData, setHasLocalData] = useState(false);
@@ -195,27 +195,39 @@ export const EnableSyncBottomSheet: React.FC<EnableSyncBottomSheetProps> = ({
       const apiClient = getApiClient();
       if (apiClient) {
         try {
-          // Pull items from cloud to check for existence
-          const itemsResponse = await apiClient.pullEntities({
-            entityType: 'inventoryItems',
-            includeDeleted: true,
-          });
+          // Get device ID
+          let deviceId = await import('expo-secure-store').then(Store => Store.getItemAsync('device_id'));
+          if (!deviceId) deviceId = 'temp-check-device';
 
-          // Pull todos from cloud to check for existence
-          const todosResponse = await apiClient.pullEntities({
-            entityType: 'todoItems',
-            includeDeleted: true,
-          });
+          const homeId = activeHomeId || user?.id;
 
-          // Check if there are any non-deleted items
-          const hasCloudItems = itemsResponse.changes.some(change => change.changeType !== 'deleted');
-          const hasCloudTodos = todosResponse.changes.some(change => change.changeType !== 'deleted');
-          const hasCloud = hasCloudItems || hasCloudTodos;
+          if (homeId) {
+            const itemsRequest = {
+              entityType: 'inventoryItems' as const,
+              homeId,
+              deviceId,
+              checkpoint: { lastPulledVersion: 0 },
+              includeDeleted: true
+            };
+            const itemsResponse = await apiClient.pullEntities(itemsRequest);
 
-          setHasCloudData(hasCloud);
+            const todosRequest = {
+              entityType: 'todoItems' as const,
+              homeId,
+              deviceId,
+              checkpoint: { lastPulledVersion: 0 },
+              includeDeleted: true
+            };
+            const todosResponse = await apiClient.pullEntities(todosRequest);
+
+            const hasCloudItems = itemsResponse.changes.some(change => change.changeType !== 'deleted');
+            const hasCloudTodos = todosResponse.changes.some(change => change.changeType !== 'deleted');
+            setHasCloudData(hasCloudItems || hasCloudTodos);
+          } else {
+            setHasCloudData(false);
+          }
         } catch (error) {
           console.error('Error pulling cloud data:', error);
-          // If error, assume no cloud data
           setHasCloudData(false);
         }
       }
@@ -224,7 +236,7 @@ export const EnableSyncBottomSheet: React.FC<EnableSyncBottomSheetProps> = ({
     } finally {
       setIsCheckingData(false);
     }
-  }, [getApiClient]);
+  }, [getApiClient, activeHomeId, user]);
 
   // Handle modal presentation - only check data when modal is actually shown
   const handleSheetChange = useCallback((index: number) => {
@@ -361,4 +373,3 @@ export const EnableSyncBottomSheet: React.FC<EnableSyncBottomSheetProps> = ({
     </BottomSheetModal>
   );
 };
-

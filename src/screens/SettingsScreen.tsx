@@ -66,9 +66,9 @@ export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuth();
   const activeHomeId = useAppSelector((state) => state.auth.activeHomeId);
-  const accounts = useAppSelector((state) => state.auth.accessibleAccounts);
+  const accounts = useAppSelector((state) => state.home?.homes || []);
 
-  const currentHomeOwner = accounts.find((a) => a.userId === activeHomeId);
+  const currentHomeOwner = accounts.find((a) => a.id === activeHomeId);
 
   const handleAvatarPress = () => {
     const rootNavigation = navigation.getParent();
