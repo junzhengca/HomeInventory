@@ -19,6 +19,7 @@ import {
   ErrorDetails,
   RetryAttempt,
   ValidateInvitationResponse,
+  ListAccessibleAccountsResponse,
   PullEntitiesRequest,
   PullEntitiesResponse,
   PushEntitiesRequest,
@@ -37,6 +38,7 @@ interface RequestOptions {
 }
 
 export class ApiClient {
+  private activeUserId: string | null = null;
   private baseUrl: string;
   private authToken: string | null = null;
   private onAuthError?: () => void;
@@ -49,6 +51,14 @@ export class ApiClient {
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
   }
+
+  /**
+   * Set the active user ID (for home switching)
+   */
+  setActiveUserId(userId: string | null): void {
+    this.activeUserId = userId;
+  }
+
   /**
    * Set the authentication token for subsequent requests
    */
@@ -144,7 +154,14 @@ export class ApiClient {
     endpoint: string,
     options: RequestOptions
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Automatically append activeUserId if set and not already present
+    let finalEndpoint = endpoint;
+    if (this.activeUserId && !finalEndpoint.includes('userId=')) {
+      const separator = finalEndpoint.includes('?') ? '&' : '?';
+      finalEndpoint = `${finalEndpoint}${separator}userId=${this.activeUserId}`;
+    }
+
+    const url = `${this.baseUrl}${finalEndpoint}`;
     const isSyncRequest = endpoint.startsWith('/api/sync/');
     const requestStartTime = Date.now();
     const retryAttempts: RetryAttempt[] = [];
@@ -186,18 +203,11 @@ export class ApiClient {
       syncLogger.verbose(`Full URL: ${url}`);
       syncLogger.verbose(`Method: ${options.method}`);
       syncLogger.verbose(`Requires Auth: ${options.requiresAuth}`);
-      const isHomesSync = endpoint.includes('entityType=homes') ||
-        (options.body && (options.body as any).entityType === 'homes');
-
       if (options.body) {
         const bodyStr = JSON.stringify(options.body);
         const bodySize = new Blob([bodyStr]).size;
         syncLogger.dataSize('Request Body', bodySize);
-        if (isHomesSync) {
-          syncLogger.info('Request Body (Homes Sync):', options.body);
-        } else {
-          syncLogger.verbose('Request Body:', options.body);
-        }
+        syncLogger.verbose('Request Body:', options.body);
       } else {
         syncLogger.verbose('Request Body: (none)');
       }
@@ -274,9 +284,9 @@ export class ApiClient {
 
         // Handle 403 Forbidden - trigger access denied callback
         if (response.status === 403) {
-          apiLogger.warn('403 Forbidden', { endpoint, url });
+          apiLogger.warn('403 Forbidden', { endpoint, url, activeUserId: this.activeUserId });
           if (this.onAccessDenied) {
-            this.onAccessDenied(undefined);
+            this.onAccessDenied(this.activeUserId || undefined);
           }
           // specific handling can continue or throw
         }
@@ -364,15 +374,7 @@ export class ApiClient {
           const responseStr = JSON.stringify(responseData);
           const responseSize = new Blob([responseStr]).size;
           syncLogger.dataSize('Response Body', responseSize);
-
-          const isHomesSync = endpoint.includes('entityType=homes') ||
-            (options.body && (options.body as any).entityType === 'homes');
-
-          if (isHomesSync) {
-            syncLogger.info('Response Body (Homes Sync):', responseData);
-          } else {
-            syncLogger.verbose('Response Body:', responseData);
-          }
+          syncLogger.verbose('Response Body:', responseData);
           syncLogger.end('SYNC REQUEST', requestDuration);
         } else {
           apiLogger.debug('Request successful', { endpoint, status: response.status, duration: requestDuration });
@@ -569,23 +571,22 @@ export class ApiClient {
   }
 
   /**
-   * Get invitation code and account settings for a specific home
+   * Get invitation code and account settings
    */
-  async getInvitationCode(homeId: string): Promise<InvitationResponse> {
-    return this.request<InvitationResponse>(`/api/homes/${homeId}/invitation`, {
+  async getInvitationCode(): Promise<InvitationResponse> {
+    return this.request<InvitationResponse>('/api/invitations', {
       method: 'GET',
       requiresAuth: true,
     });
   }
 
   /**
-   * Update account settings (sharing permissions) for a specific home
+   * Update account settings (sharing permissions)
    */
   async updateAccountSettings(
-    homeId: string,
     settings: UpdateAccountSettingsRequest
   ): Promise<UpdateAccountSettingsResponse> {
-    return this.request<UpdateAccountSettingsResponse>(`/api/homes/${homeId}/settings`, {
+    return this.request<UpdateAccountSettingsResponse>('/api/accounts/settings', {
       method: 'PATCH',
       body: settings,
       requiresAuth: true,
@@ -593,10 +594,10 @@ export class ApiClient {
   }
 
   /**
-   * List members of a specific home
+   * List members of the current user's account
    */
-  async listMembers(homeId: string): Promise<ListMembersResponse> {
-    const endpoint = `/api/homes/${homeId}/members`;
+  async listMembers(userId?: string): Promise<ListMembersResponse> {
+    const endpoint = `/api/accounts/members${userId ? `?userId=${userId}` : ''}`;
     return this.request<ListMembersResponse>(endpoint, {
       method: 'GET',
       requiresAuth: true,
@@ -604,10 +605,20 @@ export class ApiClient {
   }
 
   /**
-   * Remove a member from a specific home
+   * List all accounts the authenticated user can access
    */
-  async removeMember(homeId: string, memberId: string): Promise<{ success: boolean; message: string }> {
-    const endpoint = `/api/homes/${homeId}/members/${memberId}`;
+  async listAccessibleAccounts(): Promise<ListAccessibleAccountsResponse> {
+    return this.request<ListAccessibleAccountsResponse>('/api/accounts', {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * Remove a member from the current user's account
+   */
+  async removeMember(memberId: string, userId?: string): Promise<{ success: boolean; message: string }> {
+    const endpoint = `/api/accounts/members/${memberId}${userId ? `?userId=${userId}` : ''}`;
     return this.request<{ success: boolean; message: string }>(
       endpoint,
       {
@@ -618,10 +629,10 @@ export class ApiClient {
   }
 
   /**
-   * Regenerate invitation code for a specific home
+   * Regenerate invitation code for the current user's account
    */
-  async regenerateInvitationCode(homeId: string): Promise<RegenerateInvitationResponse> {
-    return this.request<RegenerateInvitationResponse>(`/api/homes/${homeId}/invitation/regenerate`, {
+  async regenerateInvitationCode(): Promise<RegenerateInvitationResponse> {
+    return this.request<RegenerateInvitationResponse>('/api/invitations/regenerate', {
       method: 'POST',
       requiresAuth: true,
     });
@@ -662,16 +673,11 @@ export class ApiClient {
   async pullEntities(
     request: PullEntitiesRequest
   ): Promise<PullEntitiesResponse> {
-    const params = new URLSearchParams();
-    params.append('homeId', request.homeId);
-    params.append('entityType', request.entityType);
-    params.append('deviceId', request.deviceId);
-    if (request.since) params.append('since', request.since);
-    if (request.includeDeleted) params.append('includeDeleted', 'true');
-
-    const endpoint = `/api/sync/entities/pull?${params.toString()}`;
+    const { userId, ...body } = request;
+    const endpoint = `/api/sync/entities/pull${userId ? `?userId=${userId}` : ''}`;
     return this.request<PullEntitiesResponse>(endpoint, {
-      method: 'GET',
+      method: 'POST',
+      body,
       requiresAuth: true,
     });
   }
@@ -680,13 +686,10 @@ export class ApiClient {
    * Push entities for a specific type
    */
   async pushEntities(
-    request: PushEntitiesRequest,
-    homeId?: string
+    request: PushEntitiesRequest
   ): Promise<PushEntitiesResponse> {
     const { userId, ...body } = request;
-    // Prefer passed homeId, fallback to userId in request, fallback to nothing
-    const contextId = homeId || userId;
-    const endpoint = `/api/sync/entities/push${contextId ? `?homeId=${contextId}` : ''}`;
+    const endpoint = `/api/sync/entities/push${userId ? `?userId=${userId}` : ''}`;
     return this.request<PushEntitiesResponse>(endpoint, {
       method: 'POST',
       body,

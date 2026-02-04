@@ -37,14 +37,11 @@ export const store = configureStore({
 });
 
 // Run saga
-import { initializeSyncCallbacks } from './syncCallbacks';
-
 sagaMiddleware.run(rootSaga);
 
 // Export RootState from types (re-export for convenience)
 export type { RootState } from './types';
 
-// Infer the `AppDispatch` type from the store // Initialize sync callbacks with the store instance
-initializeSyncCallbacks(store);
-
+// Infer the `AppDispatch` type from the store itself
 export type AppDispatch = typeof store.dispatch;
+

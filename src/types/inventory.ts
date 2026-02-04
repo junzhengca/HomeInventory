@@ -1,18 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { EntityType } from './api';
 
-export interface SyncMetadata {
-  version?: number;
-  serverUpdatedAt?: string | null;
-  clientUpdatedAt?: string;
-  pendingCreate?: boolean;
-  pendingUpdate?: boolean;
-  pendingDelete?: boolean;
-  deletedAt?: string; // ISO date string - marks soft deletion
-  homeId?: string; // Scope
-}
-
-export interface Category extends SyncMetadata {
+export interface Category {
   id: string;
   name: string;
   label: string; // Chinese label
@@ -24,7 +12,7 @@ export interface Category extends SyncMetadata {
   iconColor?: string;
 }
 
-export interface Location extends SyncMetadata {
+export interface Location {
   id: string;
   name: string; // Chinese label (will be i18n'd in future)
   createdAt?: string; // ISO date string
@@ -32,7 +20,7 @@ export interface Location extends SyncMetadata {
   deletedAt?: string; // ISO date string - marks soft deletion
 }
 
-export interface InventoryItem extends SyncMetadata {
+export interface InventoryItem {
   id: string;
   name: string;
   location: string; // Location ID (e.g., "living-room")
@@ -50,7 +38,7 @@ export interface InventoryItem extends SyncMetadata {
   deletedAt?: string; // ISO date string - marks soft deletion
 }
 
-export interface TodoItem extends SyncMetadata {
+export interface TodoItem {
   id: string;
   text: string;
   completed: boolean;

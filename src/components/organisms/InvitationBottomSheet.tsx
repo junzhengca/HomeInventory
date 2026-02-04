@@ -11,7 +11,7 @@ import { useAppSelector, useAppDispatch, useSync } from '../../store/hooks';
 import { useToast } from '../../hooks/useToast';
 import type { StyledProps } from '../../utils/styledComponents';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { setActiveHomeId } from '../../store/slices/authSlice';
+import { setActiveHomeId, setAccessibleAccounts } from '../../store/slices/authSlice';
 import { loadItems } from '../../store/sagas/inventorySaga';
 import { loadTodos } from '../../store/sagas/todoSaga';
 import { loadSettings } from '../../store/sagas/settingsSaga';
@@ -212,8 +212,42 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
         try {
             await apiClient.acceptInvitation(inviteCode);
 
-            // Fetch current home to verify acceptance or just rely on the sync
-            showToast(t('share.invite.acceptSuccess'), 'success');
+            // Fetch updated accessible accounts
+            const response = await apiClient.listAccessibleAccounts();
+            console.log('[Invitation] Fetched accounts:', response.accounts.length);
+
+            // Find the new account we just joined
+            // We use the accountEmail from the invitation data to match
+            const targetEmail = invitationData?.accountEmail?.toLowerCase();
+            console.log('[Invitation] Target email:', targetEmail);
+
+            const newAccount = response.accounts.find(
+                acc => acc.email.toLowerCase() === targetEmail
+            );
+            console.log('[Invitation] Matched account:', newAccount?.userId);
+
+            if (newAccount) {
+                // Switch to the new home
+                console.log('[Invitation] Switching to new home:', newAccount.userId);
+                dispatch(setActiveHomeId(newAccount.userId));
+                dispatch(setAccessibleAccounts(response.accounts));
+
+                // Reload data for the new home context
+                // We need to wait a brief moment for the state to update
+                setTimeout(() => {
+                    console.log('[Invitation] Reloading data for new context');
+                    dispatch(loadItems());
+                    dispatch(loadTodos());
+                    dispatch(loadSettings());
+                }, 100);
+
+                showToast(t('share.invite.acceptSuccess'), 'success');
+            } else {
+                // Fallback if we can't find the account (shouldn't happen)
+                console.warn('[Invitation] Could not find matched account for email:', targetEmail);
+                dispatch(setAccessibleAccounts(response.accounts));
+                showToast(t('share.invite.acceptSuccess'), 'success');
+            }
 
             // Dismiss and clear state
             onDismiss?.();

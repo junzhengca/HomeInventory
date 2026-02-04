@@ -204,10 +204,10 @@ const AuthSubtitle = styled(Text)`
 export const ProfileScreen: React.FC = () => {
   const { user, isAuthenticated, isLoading, error, logout, updateUser, googleLogin, getApiClient } = useAuth();
   const { enabled: syncEnabled, loading: syncLoading, lastSyncTime, error: syncError, enableSync, disableSync, syncAll } = useSync();
-  const activeHomeId = useAppSelector((state: any) => state.auth.activeHomeId);
-  const accounts = useAppSelector((state: any) => (state as any).home?.homes || []);
+  const activeHomeId = useAppSelector((state) => state.auth.activeHomeId);
+  const accounts = useAppSelector((state) => state.auth.accessibleAccounts);
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const { t } = useTranslation();
   const theme = useTheme();
   const [isUploading, setIsUploading] = useState(false);
@@ -220,7 +220,7 @@ export const ProfileScreen: React.FC = () => {
 
   // Check if sync should be forced
   // 1. User is member of another home (not owner)
-  const isMemberOfOtherHome = accounts.some((a: any) => !a.isOwner);
+  const isMemberOfOtherHome = accounts.some(a => !a.isOwner);
   // 2. User's home has other members (excluding self)
   // We need to fetch members to know this. Ideally backend sends member count in user profile or account list.
   // For now, we fetch members.
@@ -233,16 +233,13 @@ export const ProfileScreen: React.FC = () => {
       const apiClient = getApiClient();
       if (!apiClient) return;
 
-      // Use activeHomeId or fallback to user.id for personal home
-      const homeId = activeHomeId || user?.id;
-      if (!homeId) return;
-
-      const response = await apiClient.listMembers(homeId);
+      // List members for the current active home (or default context if activeHomeId is null)
+      const response = await apiClient.listMembers(activeHomeId || undefined);
       setMembers(response.members);
     } catch (error) {
       console.error('Error loading members in Profile:', error);
     }
-  }, [getApiClient, activeHomeId, user?.id]);
+  }, [getApiClient, activeHomeId]);
 
   useEffect(() => {
     if (isAuthenticated) {

@@ -2,7 +2,6 @@ import { BehaviorSubject } from 'rxjs';
 import { readFile, writeFile } from './FileSystemService';
 import { Home } from '../types/home';
 import { generateItemId } from '../utils/idGenerator';
-import { syncCallbackRegistry } from './SyncCallbackRegistry';
 
 const HOMES_FILE = 'homes.json';
 
@@ -28,14 +27,11 @@ class HomeService {
 
         if (!data || !data.homes || data.homes.length === 0) {
             console.log('[HomeService] No homes found, creating default home...');
-            const now = new Date().toISOString();
             const defaultHome: Home = {
                 id: generateItemId(),
                 name: 'My Home',
-                createdAt: now,
-                updatedAt: now,
-                clientUpdatedAt: now,
-                pendingCreate: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
             };
             data = {
                 homes: [defaultHome],
@@ -79,15 +75,12 @@ class HomeService {
      * Create a new home and switch to it.
      */
     async createHome(name: string, address?: string): Promise<Home | null> {
-        const now = new Date().toISOString();
         const newHome: Home = {
             id: generateItemId(),
             name,
             address,
-            createdAt: now,
-            updatedAt: now,
-            clientUpdatedAt: now,
-            pendingCreate: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
         };
 
         const currentHomes = this.homesSubject.value;
@@ -100,8 +93,6 @@ class HomeService {
         });
 
         if (success) {
-            console.log('[HomeService] Triggering sync after createHome');
-            syncCallbackRegistry.trigger('homes');
             this.homesSubject.next(updatedHomes);
             this.switchHome(newHome.id); // switchHome also updates subject, but we already saved to disk
             return newHome;
@@ -132,14 +123,6 @@ class HomeService {
     getCurrentHome(): Home | undefined {
         const id = this.currentHomeIdSubject.value;
         return this.homesSubject.value.find((h) => h.id === id);
-    }
-
-    /**
-     * Get all homes for sync (including metadata)
-     */
-    async getAllHomesForSync(): Promise<Home[]> {
-        const data = await readFile<HomesData>(HOMES_FILE);
-        return data?.homes || [];
     }
 }
 

@@ -1,37 +1,41 @@
-import { EntityType } from '../types/api';
+// Centralized registry for sync callbacks to avoid naming conflicts
 
-export type SyncFileType = EntityType;
-
-export interface PendingItemsResult {
-  created: any[];
-  updated: any[];
-  deleted: string[];
-}
-
-export type GetPendingItemsCallback = (homeId: string) => Promise<PendingItemsResult>;
+type SyncFileType = 'categories' | 'locations' | 'inventoryItems' | 'todoItems' | 'settings';
 
 class SyncCallbackRegistry {
   private callbacks: Map<SyncFileType, ((userId?: string) => void) | null> = new Map();
-  private pendingItemsCallbacks: Map<SyncFileType, GetPendingItemsCallback | null> = new Map();
-  private suppressCallbacks: boolean = false;
+  private suppressCallbacks: boolean = false; // Flag to suppress callbacks during merge operations
 
   setCallback(fileType: SyncFileType, callback: ((userId?: string) => void) | null): void {
     this.callbacks.set(fileType, callback);
   }
 
-  setPendingItemsCallback(fileType: SyncFileType, callback: GetPendingItemsCallback | null): void {
-    this.pendingItemsCallbacks.set(fileType, callback);
+  getCallback(fileType: SyncFileType): ((userId?: string) => void) | null {
+    return this.callbacks.get(fileType) || null;
   }
 
-  getPendingItemsCallback(fileType: SyncFileType): GetPendingItemsCallback | null {
-    return this.pendingItemsCallbacks.get(fileType) || null;
+  setSuppressCallbacks(suppress: boolean): void {
+    this.suppressCallbacks = suppress;
+    if (suppress) {
+      console.log('[SyncCallbackRegistry] Suppressing sync callbacks');
+    } else {
+      console.log('[SyncCallbackRegistry] Re-enabling sync callbacks');
+    }
   }
 
   trigger(fileType: SyncFileType, userId?: string): void {
-    if (this.suppressCallbacks) return;
+    if (this.suppressCallbacks) {
+      console.log(`[SyncCallbackRegistry] Callback suppressed for ${fileType} (merge in progress)`);
+      return;
+    }
+
     const callback = this.callbacks.get(fileType);
-    if (callback) callback(userId);
+    if (callback) {
+      console.log(`[SyncCallbackRegistry] Triggering sync for ${fileType} (user: ${userId || 'unknown'})`);
+      callback(userId);
+    }
   }
 }
 
 export const syncCallbackRegistry = new SyncCallbackRegistry();
+

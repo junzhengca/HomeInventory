@@ -129,7 +129,7 @@ export const HomeScreen: React.FC = () => {
   const { enabled: isSyncEnabled, syncAll, loading: isSyncLoading } = useSync();
   const { user, getApiClient } = useAuth();
   const activeHomeId = useAppSelector((state) => state.auth.activeHomeId);
-  const accounts = useAppSelector((state) => state.home?.homes || []);
+  const accounts = useAppSelector((state) => state.auth.accessibleAccounts);
   const theme = useTheme();
   const loginBottomSheetRef = useRef<BottomSheetModal | null>(null);
   const signupBottomSheetRef = useRef<BottomSheetModal | null>(null);
@@ -225,7 +225,7 @@ export const HomeScreen: React.FC = () => {
 
   const currentHomeOwner = useMemo(() => {
     if (!activeHomeId) return null;
-    return accounts.find((a) => a.id === activeHomeId);
+    return accounts.find((a) => a.userId === activeHomeId);
   }, [activeHomeId, accounts]);
 
   const handleItemPress = (item: InventoryItem) => {

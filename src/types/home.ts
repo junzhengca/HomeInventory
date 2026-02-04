@@ -1,6 +1,4 @@
-import { SyncMetadata } from './inventory';
-
-export interface Home extends SyncMetadata {
+export interface Home {
     id: string;
     name: string;
     address?: string; // Detailed address

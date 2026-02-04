@@ -22,7 +22,7 @@ import { calculateBottomPadding } from '../utils/layout';
 import { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../store/hooks';
 import { useToast } from '../hooks/useToast';
-import { Member } from '../types/api';
+import { Member, AccessibleAccount } from '../types/api';
 import { useAppDispatch, useAppSelector, useSync } from '../store/hooks';
 import { setActiveHomeId } from '../store/slices/authSlice';
 
@@ -124,13 +124,13 @@ export const ShareScreen: React.FC = () => {
 
 
   const { enabled: syncEnabled, enableSync } = useSync();
-  const accounts = useAppSelector((state: any) => state.home?.homes || []);
+  const accounts = useAppSelector((state) => state.auth.accessibleAccounts);
   const [isSwitchingHome, setIsSwitchingHome] = useState(false);
   const panAnim = useRef(new Animated.Value(0)).current;
 
-  const currentHome = accounts.find((a: any) =>
-    activeHomeId ? a.id === activeHomeId : a.isOwner
-  ) || (user ? { id: user.id, name: user.nickname || user.email, email: user.email, avatarUrl: user.avatarUrl, isOwner: true, createdAt: user.createdAt, permissions: { canShareInventory: true, canShareTodos: true } } : null);
+  const currentHome = accounts.find(a =>
+    activeHomeId ? a.userId === activeHomeId : a.isOwner
+  ) || (user ? { userId: user.id, nickname: user.nickname || user.email, email: user.email, avatarUrl: user.avatarUrl, isOwner: true, createdAt: user.createdAt } : null);
 
   const loadSettings = useCallback(async () => {
     setIsLoading(true);
@@ -142,15 +142,8 @@ export const ShareScreen: React.FC = () => {
         return;
       }
 
-      // Use activeHomeId or fallback to currentHome.id (which is user.id for personal home)
-      const homeId = activeHomeId || currentHome?.id;
-      if (!homeId) {
-        console.error('No homeId available for loading settings');
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await apiClient.getInvitationCode(homeId);
+      // Note: Backend should support userId query param for these settings
+      const response = await apiClient.getInvitationCode();
       setCanShareInventory(response.settings.canShareInventory);
       setCanShareTodos(response.settings.canShareTodos);
       setInvitationCode(response.invitationCode);
@@ -160,7 +153,7 @@ export const ShareScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [getApiClient, showToast, t, activeHomeId, currentHome?.id]);
+  }, [getApiClient, showToast, t, activeHomeId]);
 
   const loadMembers = useCallback(async () => {
     setMembersLoading(true);
@@ -174,32 +167,18 @@ export const ShareScreen: React.FC = () => {
         return;
       }
 
-      const homeId = activeHomeId || currentHome?.id;
-      if (!homeId) {
-        console.error('No homeId available for loading members');
-        setMembersLoading(false);
-        return;
-      }
-
-      const response = await apiClient.listMembers(homeId);
+      const response = await apiClient.listMembers(activeHomeId || undefined);
       setMembers(response.members);
     } catch (error) {
       console.error('Error loading members:', error);
-      // If 403 or 404, it might be a new locally created home that hasn't synced yet
-      // So we just show no members (except owner which is handled by UI)
-      const status = (error as any)?.status;
-      if (status === 403 || status === 404) {
-        setMembers([]);
-      } else {
-        setMembersError(t('share.members.loadError'));
-      }
+      setMembersError(t('share.members.loadError'));
     } finally {
       setMembersLoading(false);
     }
-  }, [getApiClient, t, activeHomeId, currentHome?.id]);
+  }, [getApiClient, t, activeHomeId]);
 
   const loadAccounts = useCallback(() => {
-    dispatch({ type: 'home/LOAD_HOMES' });
+    dispatch({ type: 'auth/LOAD_ACCESSIBLE_ACCOUNTS' });
   }, [dispatch]);
 
   const handleRemoveMember = useCallback(
@@ -210,12 +189,7 @@ export const ShareScreen: React.FC = () => {
           throw new Error('Failed to get API client');
         }
 
-        const homeId = activeHomeId || currentHome?.id;
-        if (!homeId) {
-          throw new Error('No homeId available for removing member');
-        }
-
-        await apiClient.removeMember(homeId, memberId);
+        await apiClient.removeMember(memberId, activeHomeId || undefined);
         showToast(t('share.members.removeSuccess'), 'success');
         // Reload members after removal
         await loadMembers();
@@ -224,7 +198,7 @@ export const ShareScreen: React.FC = () => {
         showToast(t('share.members.removeError'), 'error');
       }
     },
-    [getApiClient, loadMembers, showToast, t, activeHomeId, currentHome?.id]
+    [getApiClient, loadMembers, showToast, t]
   );
 
   const handleInvitePress = useCallback(() => {
@@ -296,12 +270,11 @@ export const ShareScreen: React.FC = () => {
           setIsUpdating(true);
           try {
             const apiClient = getApiClient();
-            const homeId = activeHomeId || currentHome?.id;
-            if (!apiClient || !homeId) {
-              throw new Error('Failed to get API client or homeId');
+            if (!apiClient) {
+              throw new Error('Failed to get API client');
             }
 
-            await apiClient.updateAccountSettings(homeId, {
+            await apiClient.updateAccountSettings({
               canShareInventory: newValue,
             });
 
@@ -316,7 +289,7 @@ export const ShareScreen: React.FC = () => {
         },
       },
     ]);
-  }, [canShareInventory, getApiClient, showToast, t, activeHomeId, currentHome?.id]);
+  }, [canShareInventory, getApiClient, showToast, t]);
 
   const handleToggleTodos = useCallback(() => {
     const newValue = !canShareTodos;
@@ -339,12 +312,11 @@ export const ShareScreen: React.FC = () => {
           setIsUpdating(true);
           try {
             const apiClient = getApiClient();
-            const homeId = activeHomeId || currentHome?.id;
-            if (!apiClient || !homeId) {
-              throw new Error('Failed to get API client or homeId');
+            if (!apiClient) {
+              throw new Error('Failed to get API client');
             }
 
-            await apiClient.updateAccountSettings(homeId, {
+            await apiClient.updateAccountSettings({
               canShareTodos: newValue,
             });
 
@@ -359,7 +331,7 @@ export const ShareScreen: React.FC = () => {
         },
       },
     ]);
-  }, [canShareTodos, getApiClient, showToast, t, activeHomeId, currentHome?.id]);
+  }, [canShareTodos, getApiClient, showToast, t]);
 
   const handleLeaveHome = useCallback(() => {
     Alert.alert(
@@ -377,13 +349,12 @@ export const ShareScreen: React.FC = () => {
             setIsUpdating(true);
             try {
               const apiClient = getApiClient();
-              const homeId = activeHomeId || currentHome?.id;
-              if (!apiClient || !homeId || !user) {
-                throw new Error('Missing client, home or user info');
+              if (!apiClient || !activeHomeId || !user) {
+                throw new Error('Missing client or user info');
               }
 
-              // To leave, we remove ourselves (memberId = user.id) from the account (userId = homeId)
-              await apiClient.removeMember(homeId, user.id);
+              // To leave, we remove ourselves (memberId = user.id) from the account (userId = activeHomeId)
+              await apiClient.removeMember(user.id, activeHomeId);
 
               showToast(t('share.members.leaveSuccess', 'Left home successfully'), 'success');
 
@@ -400,7 +371,7 @@ export const ShareScreen: React.FC = () => {
         },
       ]
     );
-  }, [getApiClient, activeHomeId, currentHome?.id, user, showToast, t, dispatch]);
+  }, [getApiClient, activeHomeId, user, showToast, t, dispatch]);
 
   const handleAvatarPress = () => {
     const rootNavigation = navigation.getParent();
@@ -484,7 +455,7 @@ export const ShareScreen: React.FC = () => {
         onBackPress={isSwitchingHome ? handleBackToSharePress : undefined}
         showRightButtons={!isSwitchingHome}
         avatarUrl={user?.avatarUrl}
-        ownerAvatarUrl={!isSwitchingHome && activeHomeId ? accounts.find((a: any) => a.userId === activeHomeId)?.avatarUrl : undefined}
+        ownerAvatarUrl={!isSwitchingHome && activeHomeId ? accounts.find(a => a.userId === activeHomeId)?.avatarUrl : undefined}
         onAvatarPress={handleAvatarPress}
       />
 
@@ -512,11 +483,11 @@ export const ShareScreen: React.FC = () => {
 
                 <MemberList
                   owner={currentHome ? {
-                    id: currentHome.id,
-                    email: currentHome.email || '',
-                    nickname: (currentHome as any).name || currentHome.nickname,
+                    id: currentHome.userId,
+                    email: currentHome.email,
+                    nickname: currentHome.nickname,
                     avatarUrl: currentHome.avatarUrl,
-                    createdAt: (currentHome as any).createdAt,
+                    createdAt: (currentHome as AccessibleAccount).joinedAt || (currentHome as any).createdAt,
                   } : null}
                   members={members}
                   isLoading={membersLoading}
@@ -562,12 +533,12 @@ export const ShareScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: calculateBottomPadding(insets.bottom) }}
           >
-            {accounts.map((account: any, index: number) => (
+            {accounts.map((account, index) => (
               <HomeCard
-                key={account.id}
-                name={(account as any).name || account.nickname || account.email}
-                isActive={activeHomeId ? account.id === activeHomeId : account.isOwner}
-                onPress={() => handleAccountSelect(account.id)}
+                key={account.userId}
+                name={account.nickname || account.email}
+                isActive={activeHomeId ? account.userId === activeHomeId : account.isOwner}
+                onPress={() => handleAccountSelect(account.userId)}
                 canShareInventory={account.permissions?.canShareInventory}
                 canShareTodos={account.permissions?.canShareTodos}
               />
