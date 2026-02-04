@@ -7,7 +7,6 @@ const HOMES_FILE = 'homes.json';
 
 interface HomesData {
     homes: Home[];
-    activeHomeId?: string;
 }
 
 class HomeService {
@@ -33,10 +32,7 @@ class HomeService {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
-            data = {
-                homes: [defaultHome],
-                activeHomeId: defaultHome.id
-            };
+            data = { homes: [defaultHome] };
             const success = await writeFile(HOMES_FILE, data);
             if (!success) {
                 console.error('[HomeService] Failed to write default home');
@@ -46,28 +42,9 @@ class HomeService {
 
         this.homesSubject.next(data.homes);
 
-        // Determine active home
-        let activeHomeId = data.activeHomeId;
-
-        // Validate activeHomeId exists in homes list
-        const isValidHome = activeHomeId && data.homes.some(h => h.id === activeHomeId);
-
-        if (!isValidHome) {
-            // Fallback to first home if activeHomeId is missing or invalid
-            if (data.homes.length > 0) {
-                activeHomeId = data.homes[0].id;
-                console.log('[HomeService] Active home invalid or missing, falling back to first home:', activeHomeId);
-
-                // Persist the correction
-                await writeFile<HomesData>(HOMES_FILE, {
-                    homes: data.homes,
-                    activeHomeId
-                });
-            }
-        }
-
-        if (activeHomeId) {
-            this.currentHomeIdSubject.next(activeHomeId);
+        // Set initial home (first one) if not already set
+        if (!this.currentHomeIdSubject.value && data.homes.length > 0) {
+            this.currentHomeIdSubject.next(data.homes[0].id);
         }
     }
 
@@ -86,15 +63,10 @@ class HomeService {
         const currentHomes = this.homesSubject.value;
         const updatedHomes = [...currentHomes, newHome];
 
-        // When creating a new home, we switch to it, so it becomes active
-        const success = await writeFile<HomesData>(HOMES_FILE, {
-            homes: updatedHomes,
-            activeHomeId: newHome.id
-        });
-
+        const success = await writeFile<HomesData>(HOMES_FILE, { homes: updatedHomes });
         if (success) {
             this.homesSubject.next(updatedHomes);
-            this.switchHome(newHome.id); // switchHome also updates subject, but we already saved to disk
+            this.switchHome(newHome.id);
             return newHome;
         }
         return null;
@@ -103,15 +75,10 @@ class HomeService {
     /**
      * Switch the active home.
      */
-    async switchHome(id: string) {
+    switchHome(id: string) {
         const home = this.homesSubject.value.find((h) => h.id === id);
         if (home) {
             this.currentHomeIdSubject.next(id);
-            // Persist the switch
-            await writeFile<HomesData>(HOMES_FILE, {
-                homes: this.homesSubject.value,
-                activeHomeId: id
-            });
         } else {
             console.warn(`[HomeService] Attempted to switch to non-existent homeId: ${id}`);
         }

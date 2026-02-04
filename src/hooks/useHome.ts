@@ -43,7 +43,7 @@ export const useHome = () => {
         currentHomeId,
         currentHome,
         createHome: homeService.createHome.bind(homeService),
-        switchHome: (id: string) => homeService.switchHome(id),
+        switchHome: homeService.switchHome.bind(homeService),
         init: homeService.init.bind(homeService),
     };
 };
