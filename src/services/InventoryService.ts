@@ -2,11 +2,19 @@ import { InventoryItem } from '../types/inventory';
 import { readFile, writeFile } from './FileSystemService';
 import { generateItemId } from '../utils/idGenerator';
 import { isExpiringSoon } from '../utils/dateUtils';
+import { ApiClient } from './ApiClient';
+import {
+  BatchSyncRequest,
+  BatchSyncPullRequest,
+  BatchSyncPushRequest
+} from '../types/api';
 
 const ITEMS_FILE = 'items.json';
 
 interface ItemsData {
   items: InventoryItem[];
+  lastSyncTime?: string;
+  lastPulledVersion?: number;
 }
 
 /**
@@ -39,7 +47,8 @@ export const getItemById = async (id: string, userId?: string): Promise<Inventor
  */
 export const createItem = async (item: Omit<InventoryItem, 'id'>, userId?: string): Promise<InventoryItem | null> => {
   try {
-    const items = await getAllItems(userId);
+    const data = await readFile<ItemsData>(ITEMS_FILE, userId);
+    const items = data?.items || [];
     const now = new Date().toISOString();
     const newItem: InventoryItem = {
       ...item,
@@ -47,10 +56,15 @@ export const createItem = async (item: Omit<InventoryItem, 'id'>, userId?: strin
       id: generateItemId(),
       createdAt: now,
       updatedAt: now,
+
+      // Sync metadata
+      version: 1,
+      clientUpdatedAt: now,
+      pendingCreate: true,
     };
 
     items.push(newItem);
-    const success = await writeFile<ItemsData>(ITEMS_FILE, { items }, userId);
+    const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, userId);
 
     return success ? newItem : null;
   } catch (error) {
@@ -69,16 +83,28 @@ export const updateItem = async (
 ): Promise<InventoryItem | null> => {
   try {
     console.log('[InventoryService] updateItem called with id:', id, 'updates:', updates);
-    const items = await getAllItems(userId);
+    const data = await readFile<ItemsData>(ITEMS_FILE, userId);
+    const items = data?.items || [];
     const index = items.findIndex((item) => item.id === id);
 
     if (index === -1) {
       return null;
     }
 
-    items[index] = { ...items[index], ...updates, updatedAt: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const isPendingCreate = items[index].pendingCreate;
+
+    items[index] = {
+      ...items[index],
+      ...updates,
+      updatedAt: now,
+      // Sync metadata
+      version: items[index].version + 1,
+      clientUpdatedAt: now,
+      pendingUpdate: !isPendingCreate, // If it's pending create, it stays pending create
+    };
     console.log('[InventoryService] Updated item to be written:', items[index]);
-    const success = await writeFile<ItemsData>(ITEMS_FILE, { items }, userId);
+    const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, userId);
 
     return success ? items[index] : null;
   } catch (error) {
@@ -107,13 +133,24 @@ export const deleteItem = async (id: string, userId?: string): Promise<boolean> 
 
     // Soft delete: set deletedAt and update updatedAt
     const now = new Date().toISOString();
-    items[index] = {
-      ...items[index],
-      deletedAt: now,
-      updatedAt: now,
-    };
+    const isPendingCreate = items[index].pendingCreate;
 
-    const success = await writeFile<ItemsData>(ITEMS_FILE, { items }, userId);
+    if (isPendingCreate) {
+      // If it was never synced, just hard delete it
+      items.splice(index, 1);
+    } else {
+      items[index] = {
+        ...items[index],
+        deletedAt: now,
+        updatedAt: now,
+        version: items[index].version + 1,
+        clientUpdatedAt: now,
+        pendingDelete: true,
+        pendingUpdate: false, // delete overrides update
+      };
+    }
+
+    const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, userId);
 
     return success;
   } catch (error) {
@@ -150,5 +187,207 @@ export const searchItems = async (
   }
 
   return items;
+};
+
+/**
+ * Sync items with server
+ */
+export const syncItems = async (
+  homeId: string,
+  apiClient: ApiClient,
+  deviceId: string
+): Promise<void> => {
+  console.log('[InventoryService] Starting item sync...');
+  try {
+    const data = await readFile<ItemsData>(ITEMS_FILE, homeId);
+    let items = data?.items || [];
+    const lastSyncTime = data?.lastSyncTime;
+    const lastPulledVersion = data?.lastPulledVersion || 0;
+
+    // 1. Prepare Push Requests
+    const pendingItems = items.filter(t => t.pendingCreate || t.pendingUpdate || t.pendingDelete);
+    const pushRequests: BatchSyncPushRequest[] = [];
+
+    if (pendingItems.length > 0) {
+      console.log(`[InventoryService] Pushing ${pendingItems.length} pending items`);
+      pushRequests.push({
+        entityType: 'inventoryItems',
+        entities: pendingItems.map(t => ({
+          entityId: t.id,
+          entityType: 'inventoryItems',
+          homeId: homeId,
+          data: {
+            id: t.id,
+            name: t.name,
+            location: t.location,
+            detailedLocation: t.detailedLocation,
+            status: t.status,
+            icon: t.icon,
+            iconColor: t.iconColor,
+            price: t.price,
+            amount: t.amount,
+            warningThreshold: t.warningThreshold,
+            expiryDate: t.expiryDate,
+            purchaseDate: t.purchaseDate,
+          },
+          version: t.version,
+          clientUpdatedAt: t.clientUpdatedAt,
+          pendingCreate: t.pendingCreate,
+          pendingDelete: t.pendingDelete,
+        })),
+        lastPulledAt: lastSyncTime,
+        checkpoint: { lastPulledVersion }
+      });
+    }
+
+    // 2. Prepare Pull Request
+    const pullRequests: BatchSyncPullRequest[] = [{
+      entityType: 'inventoryItems',
+      since: lastSyncTime,
+      includeDeleted: true,
+      checkpoint: { lastPulledVersion }
+    }];
+
+    // 3. Perform Batch Sync
+    const batchRequest: BatchSyncRequest = {
+      homeId,
+      deviceId,
+      pullRequests,
+      pushRequests: pushRequests.length > 0 ? pushRequests : undefined
+    };
+
+    const response = await apiClient.batchSync(batchRequest);
+
+    if (!response.success) {
+      console.error('[InventoryService] Sync failed:', response);
+      return;
+    }
+
+    // 4. Process Push Results
+    if (response.pushResults) {
+      for (const pushResult of response.pushResults) {
+        if (pushResult.entityType === 'inventoryItems') {
+          for (const result of pushResult.results) {
+            const index = items.findIndex(t => t.id === result.entityId);
+            if (index === -1) continue;
+
+            if (result.status === 'created' || result.status === 'updated') {
+              items[index] = {
+                ...items[index],
+                pendingCreate: false,
+                pendingUpdate: false,
+                pendingDelete: false,
+                serverUpdatedAt: result.serverUpdatedAt,
+                lastSyncedAt: response.serverTimestamp,
+              };
+              if (result.status === 'created' && result.serverVersion) {
+                items[index].version = result.serverVersion;
+              }
+            } else if (result.status === 'server_version' && result.winner === 'server') {
+              // Server won, update local with server data
+              if (result.serverVersionData) {
+                const serverData = result.serverVersionData.data as any;
+                items[index] = {
+                  ...items[index],
+                  name: serverData.name,
+                  location: serverData.location,
+                  detailedLocation: serverData.detailedLocation,
+                  status: serverData.status,
+                  icon: serverData.icon,
+                  iconColor: serverData.iconColor,
+                  price: serverData.price,
+                  amount: serverData.amount,
+                  warningThreshold: serverData.warningThreshold,
+                  expiryDate: serverData.expiryDate,
+                  purchaseDate: serverData.purchaseDate,
+                  version: result.serverVersionData.version,
+                  serverUpdatedAt: result.serverVersionData.updatedAt,
+                  lastSyncedAt: response.serverTimestamp,
+                  pendingCreate: false,
+                  pendingUpdate: false,
+                };
+              }
+            } else if (result.status === 'deleted') {
+              // Confirmed deletion
+              items[index] = {
+                ...items[index],
+                pendingDelete: false,
+                lastSyncedAt: response.serverTimestamp
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // 5. Process Pull Results
+    if (response.pullResults) {
+      for (const pullResult of response.pullResults) {
+        if (pullResult.entityType === 'inventoryItems') {
+          // Handle new/updated entities
+          for (const entity of pullResult.entities) {
+            const index = items.findIndex(t => t.id === entity.entityId);
+            const serverData = entity.data as any;
+
+            const newItem: InventoryItem = {
+              id: entity.entityId,
+              name: serverData.name,
+              location: serverData.location,
+              detailedLocation: serverData.detailedLocation,
+              status: serverData.status,
+              icon: serverData.icon,
+              iconColor: serverData.iconColor,
+              price: serverData.price,
+              amount: serverData.amount,
+              warningThreshold: serverData.warningThreshold,
+              expiryDate: serverData.expiryDate,
+              purchaseDate: serverData.purchaseDate,
+              createdAt: entity.updatedAt, // Approximate if new
+              updatedAt: entity.updatedAt,
+              version: entity.version,
+              serverUpdatedAt: entity.updatedAt,
+              clientUpdatedAt: entity.clientUpdatedAt,
+              lastSyncedAt: response.serverTimestamp,
+            };
+
+            if (index >= 0) {
+              if (!items[index].pendingUpdate && !items[index].pendingCreate && !items[index].pendingDelete) {
+                items[index] = { ...items[index], ...newItem };
+              }
+            } else {
+              items.push(newItem);
+            }
+          }
+
+          // Handle deleted entities
+          for (const deletedId of pullResult.deletedEntityIds) {
+            const index = items.findIndex(t => t.id === deletedId);
+            if (index >= 0) {
+              items[index] = {
+                ...items[index],
+                deletedAt: response.serverTimestamp, // Mark deleted
+                pendingDelete: false // Server told us it's deleted
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // 6. Save changes
+    const checkPoint = response.pullResults?.find(r => r.entityType === 'inventoryItems')?.checkpoint;
+    const newLastPulledVersion = checkPoint?.lastPulledVersion ?? lastPulledVersion;
+
+    await writeFile<ItemsData>(ITEMS_FILE, {
+      items,
+      lastSyncTime: response.serverTimestamp,
+      lastPulledVersion: newLastPulledVersion
+    }, homeId);
+
+    console.log('[InventoryService] Item sync complete');
+
+  } catch (error) {
+    console.error('[InventoryService] Error syncing items:', error);
+  }
 };
 

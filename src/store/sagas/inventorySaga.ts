@@ -1,4 +1,4 @@
-import { call, put, select, takeLatest } from 'redux-saga/effects';
+import { call, put, select, takeLatest, delay, spawn } from 'redux-saga/effects';
 import {
   setItems,
   silentSetItems,
@@ -12,9 +12,13 @@ import {
   createItem,
   updateItem as updateItemService,
   deleteItem,
+  syncItems,
 } from '../../services/InventoryService';
 import { InventoryItem } from '../../types/inventory';
 import type { RootState } from '../types';
+import { homeService } from '../../services/HomeService';
+import { ApiClient } from '../../services/ApiClient';
+import { getDeviceId } from '../../utils/deviceUtils';
 
 // Action types
 const LOAD_ITEMS = 'inventory/LOAD_ITEMS';
@@ -22,6 +26,7 @@ const SILENT_REFRESH_ITEMS = 'inventory/SILENT_REFRESH_ITEMS';
 const CREATE_ITEM = 'inventory/CREATE_ITEM';
 const UPDATE_ITEM = 'inventory/UPDATE_ITEM';
 const DELETE_ITEM = 'inventory/DELETE_ITEM';
+const SYNC_ITEMS = 'inventory/SYNC_ITEMS';
 
 // Action creators
 export const loadItems = () => ({ type: LOAD_ITEMS });
@@ -35,6 +40,7 @@ export const updateItemAction = (id: string, updates: Partial<Omit<InventoryItem
   payload: { id, updates },
 });
 export const deleteItemAction = (id: string) => ({ type: DELETE_ITEM, payload: id });
+export const syncItemsAction = () => ({ type: SYNC_ITEMS });
 
 
 function* getFileUserId() {
@@ -83,6 +89,30 @@ function* silentRefreshItemsSaga() {
   }
 }
 
+function* syncItemsSaga() {
+  try {
+    const state: RootState = yield select();
+    const { activeHomeId, apiClient } = state.auth;
+
+    if (!activeHomeId || !apiClient) return;
+
+    console.log('[InventorySaga] Starting scheduled/triggered sync sequence');
+
+    // 1. Sync Homes first
+    yield call([homeService, homeService.syncHomes], apiClient);
+
+    // 2. Sync Items
+    const deviceId: string = yield call(getDeviceId);
+    yield call(syncItems, activeHomeId, apiClient as ApiClient, deviceId);
+
+    // 3. Refresh UI
+    yield call(silentRefreshItemsSaga);
+
+  } catch (error) {
+    console.error('[InventorySaga] Error in sync sequence:', error);
+  }
+}
+
 function* createItemSaga(action: { type: string; payload: Omit<InventoryItem, 'id'> }) {
   const item = action.payload;
 
@@ -101,6 +131,9 @@ function* createItemSaga(action: { type: string; payload: Omit<InventoryItem, 'i
         return bTime - aTime;
       });
       yield put(setItems(allItems));
+
+      // Trigger sync
+      yield put(syncItemsAction());
     }
   } catch (error) {
     console.error('[InventorySaga] Error creating item:', error);
@@ -137,6 +170,9 @@ function* updateItemSaga(action: { type: string; payload: { id: string; updates:
       return bTime - aTime;
     });
     yield put(setItems(allItems));
+
+    // Trigger sync
+    yield put(syncItemsAction());
   } catch (error) {
     console.error('[InventorySaga] Error updating item:', error);
     // Revert on error by refreshing
@@ -164,6 +200,9 @@ function* deleteItemSaga(action: { type: string; payload: string }) {
       return bTime - aTime;
     });
     yield put(setItems(allItems));
+
+    // Trigger sync
+    yield put(syncItemsAction());
   } catch (error) {
     console.error('[InventorySaga] Error deleting item:', error);
     // Revert on error by refreshing
@@ -178,5 +217,18 @@ export function* inventorySaga() {
   yield takeLatest(CREATE_ITEM, createItemSaga);
   yield takeLatest(UPDATE_ITEM, updateItemSaga);
   yield takeLatest(DELETE_ITEM, deleteItemSaga);
+  yield takeLatest(SYNC_ITEMS, syncItemsSaga);
+
+  // Start periodic sync
+  yield spawn(periodicSyncSaga);
+}
+
+function* periodicSyncSaga() {
+  while (true) {
+    // Wait 5 minutes
+    yield delay(5 * 60 * 1000);
+    console.log('[InventorySaga] Triggering periodic sync');
+    yield put(syncItemsAction());
+  }
 }
 
