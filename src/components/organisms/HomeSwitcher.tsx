@@ -198,7 +198,7 @@ export const HomeSwitcher: React.FC = () => {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <HomeNameString>{currentHome?.name || t('home.switcher.defaultName')}</HomeNameString>
               <IconWrapper>
-                <Ionicons name="chevron-down" size={20} color="#000" />
+                <Ionicons name="chevron-down" size={20} color={theme.colors.text} />
               </IconWrapper>
             </View>
           </ContentWrapper>

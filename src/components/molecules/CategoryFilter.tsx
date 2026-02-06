@@ -34,6 +34,14 @@ const CategoryButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
   margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
+const ColorDot = styled(View) <{ color: string }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: ${({ color }: { color: string }) => color};
+  margin-right: 6px;
+`;
+
 const CategoryText = styled(Text) <{ isSelected: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
   color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
@@ -97,6 +105,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                             onPress={() => onSelect(category.id)}
                             activeOpacity={0.7}
                         >
+                            {category.color && <ColorDot color={category.color} />}
                             <CategoryText isSelected={isSelected}>
                                 {category.name}
                             </CategoryText>

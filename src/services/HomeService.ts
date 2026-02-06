@@ -3,6 +3,7 @@ import { readFile, writeFile, deleteHomeFiles } from './FileSystemService';
 import { Home } from '../types/home';
 import { generateItemId } from '../utils/idGenerator';
 import { SyncHomesResponse, PushHomesResponse } from '../types/api';
+import { initializeHomeData } from './DataInitializationService';
 
 const HOMES_FILE = 'homes.json';
 
@@ -45,6 +46,8 @@ class HomeService {
                 console.error('[HomeService] Failed to write default home');
                 return;
             }
+            // Initialize home-specific data files for the default home
+            await initializeHomeData(defaultHome.id);
         }
 
         // Self-healing: Ensure local-only homes are marked as pendingCreate
@@ -286,6 +289,8 @@ class HomeService {
         if (success) {
             this.homesSubject.next(updatedHomes);
             this.switchHome(newHome.id);
+            // Initialize home-specific data files (categories, locations, items, todos)
+            await initializeHomeData(newHome.id);
             return newHome;
         }
         return null;
@@ -371,6 +376,10 @@ class HomeService {
                 const availableHome = currentHomes.find(h => h.id !== id && !h.pendingLeave && !h.pendingDelete);
                 if (availableHome) {
                     this.switchHome(availableHome.id);
+                    // If this is a newly created default home, initialize its data files
+                    if (availableHome.pendingCreate) {
+                        await initializeHomeData(availableHome.id);
+                    }
                 }
             }
             return true;

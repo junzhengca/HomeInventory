@@ -17,6 +17,8 @@ const ScrollContainer = styled(ScrollView)`
 `;
 
 const CategoryButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
+  flex-direction: row;
+  align-items: center;
   padding-horizontal: 16px;
   padding-vertical: 6px;
   border-radius: 18px;
@@ -35,6 +37,14 @@ const CategoryButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
   shadow-offset: 0px 2px;
   shadow-opacity: ${({ isSelected }: { isSelected: boolean }) => (isSelected ? 0.1 : 0)};
   shadow-radius: 2px;
+`;
+
+const ColorDot = styled(View) <{ color: string }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: ${({ color }: { color: string }) => color};
+  margin-right: 6px;
 `;
 
 const CategoryText = styled(Text) <{ isSelected: boolean }>`
@@ -139,6 +149,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             onPress={() => handleCategoryPress(category.id)}
             activeOpacity={0.8}
           >
+            {category.color && <ColorDot color={category.color} />}
             <CategoryText isSelected={selectedCategory === category.id}>
               {category.isCustom ? category.label : t(`categories.${category.name}`)}
             </CategoryText>

@@ -179,6 +179,7 @@ export const syncCategories = async (
             id: c.id,
             name: c.name,
             icon: c.icon,
+            color: c.color,
             isCustom: c.isCustom,
             label: c.label
           },
@@ -242,6 +243,7 @@ export const syncCategories = async (
                   ...categories[index],
                   name: serverData.name,
                   icon: serverData.icon,
+                  color: serverData.color,
                   isCustom: serverData.isCustom,
                   label: serverData.label,
                   version: result.serverVersionData.version,
@@ -276,6 +278,7 @@ export const syncCategories = async (
               homeId: homeId,
               name: serverData.name,
               icon: serverData.icon,
+              color: serverData.color,
               isCustom: serverData.isCustom,
               label: serverData.label,
               // Common fields

@@ -6,6 +6,7 @@ export interface Category {
   label?: string; // Chinese label - making optional/deprecated as name will be used
   isCustom: boolean; // Flag to distinguish system vs user-created categories
   icon?: keyof typeof Ionicons.glyphMap;
+  color?: string; // Hex color code for category display
   homeId: string;
 
   createdAt?: string; // ISO date string
