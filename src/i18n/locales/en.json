@@ -35,6 +35,7 @@
     "subtitle": "Home Asset Management",
     "switcher": {
       "title": "Switch Space",
+      "currentlyManaging": "Currently Managing",
       "defaultName": "Inventory",
       "noAddress": "No address",
       "addProperty": "Add New Property"
@@ -99,7 +100,7 @@
   "statuses": {
     "using": "Using",
     "new": "New",
-    "out-of-stock": "Out of Stock",
+    "out-of-stock": "Empty",
     "en-route": "En-route",
     "expiring": "Expiring"
   },

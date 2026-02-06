@@ -272,7 +272,6 @@ export const ShareScreen: React.FC = () => {
     <Container>
       <PageHeader
         titleComponent={<HomeSwitcher />}
-        subtitle={t('share.subtitle')}
         showBackButton={false}
         showRightButtons={true}
         avatarUrl={user?.avatarUrl}

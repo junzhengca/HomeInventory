@@ -37,6 +37,17 @@ const IconWrapper = styled(View)`
   margin-left: 4px;
 `;
 
+const ContentWrapper = styled(View)`
+  flex-direction: column;
+`;
+
+const ManagedLabel = styled(Text)`
+  font-size: 12px;
+  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+`;
+
 const HeaderText = styled(Text)`
   font-size: 12px;
   color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
@@ -182,10 +193,15 @@ export const HomeSwitcher: React.FC = () => {
     <>
       <View ref={triggerRef} collapsable={false}>
         <Container onPress={handleOpenStart} activeOpacity={0.7}>
-          <HomeNameString>{currentHome?.name || t('home.switcher.defaultName')}</HomeNameString>
-          <IconWrapper>
-            <Ionicons name="chevron-down" size={20} color="#000" />
-          </IconWrapper>
+          <ContentWrapper>
+            <ManagedLabel>{t('home.switcher.currentlyManaging')}</ManagedLabel>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <HomeNameString>{currentHome?.name || t('home.switcher.defaultName')}</HomeNameString>
+              <IconWrapper>
+                <Ionicons name="chevron-down" size={20} color="#000" />
+              </IconWrapper>
+            </View>
+          </ContentWrapper>
         </Container>
       </View>
 

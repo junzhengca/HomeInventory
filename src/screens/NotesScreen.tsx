@@ -354,7 +354,6 @@ export const NotesScreen: React.FC = () => {
       <Container>
         <PageHeader
           titleComponent={<HomeSwitcher />}
-          subtitle={t('notes.subtitle')}
           showRightButtons={true}
           avatarUrl={user?.avatarUrl}
           ownerAvatarUrl={currentHome?.owner?.avatarUrl}
@@ -378,7 +377,6 @@ export const NotesScreen: React.FC = () => {
       <Container>
         <PageHeader
           titleComponent={<HomeSwitcher />}
-          subtitle={t('notes.subtitle')}
           showRightButtons={true}
           avatarUrl={user?.avatarUrl}
           ownerAvatarUrl={currentHome?.owner?.avatarUrl}

@@ -11,7 +11,7 @@ export interface PageHeaderProps {
   icon?: keyof typeof Ionicons.glyphMap;
   title?: string;
   titleComponent?: React.ReactNode;
-  subtitle: string;
+  subtitle?: string;
   avatarUrl?: string;
   ownerAvatarUrl?: string;
   onSharePress?: () => void;
@@ -216,7 +216,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         ) : null}
         <TextContainer>
           {titleComponent ? titleComponent : <Title>{title}</Title>}
-          <Subtitle>{subtitle}</Subtitle>
+          {subtitle && <Subtitle>{subtitle}</Subtitle>}
         </TextContainer>
       </LeftSection>
       {showRightButtons && (

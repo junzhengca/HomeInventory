@@ -25,6 +25,7 @@
         "subtitle": "ホーム資産管理",
         "switcher": {
             "title": "スペースを切り替え",
+            "currentlyManaging": "管理中",
             "defaultName": "インベントリ",
             "noAddress": "住所なし",
             "addProperty": "新しい物件を追加"

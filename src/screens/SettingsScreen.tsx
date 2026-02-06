@@ -154,7 +154,6 @@ export const SettingsScreen: React.FC = () => {
       <Container>
         <PageHeader
           titleComponent={<HomeSwitcher />}
-          subtitle={t('settings.subtitle')}
           showBackButton={false}
           showRightButtons={true}
           avatarUrl={user?.avatarUrl}
@@ -172,7 +171,6 @@ export const SettingsScreen: React.FC = () => {
     <Container>
       <PageHeader
         titleComponent={<HomeSwitcher />}
-        subtitle={t('settings.subtitle')}
         showBackButton={false}
         showRightButtons={true}
         avatarUrl={user?.avatarUrl}

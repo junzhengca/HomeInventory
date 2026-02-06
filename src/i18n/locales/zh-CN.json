@@ -19,6 +19,7 @@
     "subtitle": "家庭资产管理",
     "switcher": {
       "title": "切换空间",
+      "currentlyManaging": "当前管理",
       "defaultName": "库存",
       "noAddress": "无地址",
       "addProperty": "添加新房产"
