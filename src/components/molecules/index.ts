@@ -26,6 +26,9 @@ export type { StatusFilterProps } from './StatusFilter';
 export { LocationFilter } from './LocationFilter';
 export type { LocationFilterProps } from './LocationFilter';
 
+export { CategoryFilter } from './CategoryFilter';
+export type { CategoryFilterProps } from './CategoryFilter';
+
 // Form field molecules
 export { CategoryField } from './CategoryField';
 export type { CategoryFieldProps } from './CategoryField';
@@ -63,6 +66,9 @@ export type { ThemeChooserProps } from './ThemeChooser';
 
 export { SettingsToggleItem } from './SettingsToggleItem';
 export type { SettingsToggleItemProps } from './SettingsToggleItem';
+
+export { SettingsItem } from './SettingsItem';
+export type { SettingsItemProps } from './SettingsItem';
 
 // Action button molecules
 export { ClearDataButton } from './ClearDataButton';

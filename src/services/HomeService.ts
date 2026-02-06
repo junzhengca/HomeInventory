@@ -1,5 +1,5 @@
-import { BehaviorSubject } from 'rxjs';
-import { readFile, writeFile } from './FileSystemService';
+import { BehaviorSubject, map } from 'rxjs';
+import { readFile, writeFile, deleteHomeFiles } from './FileSystemService';
 import { Home } from '../types/home';
 import { generateItemId } from '../utils/idGenerator';
 import { SyncHomesResponse, PushHomesResponse } from '../types/api';
@@ -17,7 +17,10 @@ class HomeService {
     private currentHomeIdSubject = new BehaviorSubject<string | null>(null);
 
     // Expose observables for components to consume
-    homes$ = this.homesSubject.asObservable();
+    // Filter out homes that are pending deletion or pending leave so the UI updates immediately
+    homes$ = this.homesSubject.asObservable().pipe(
+        map(homes => homes.filter(h => !h.pendingDelete && !h.pendingLeave))
+    );
     currentHomeId$ = this.currentHomeIdSubject.asObservable();
 
     /**
@@ -70,7 +73,11 @@ class HomeService {
 
         // Set initial home (first one) if not already set
         if (!this.currentHomeIdSubject.value && data.homes.length > 0) {
-            this.currentHomeIdSubject.next(data.homes[0].id);
+            // Find first available home (not pending delete/leave)
+            const availableHome = data.homes.find(h => !h.pendingDelete && !h.pendingLeave);
+            if (availableHome) {
+                this.currentHomeIdSubject.next(availableHome.id);
+            }
         }
     }
 
@@ -85,7 +92,7 @@ class HomeService {
             const currentHomes = [...this.homesSubject.value];
 
             // 1. Identify pending changes
-            const pendingHomes = currentHomes.filter(h => h.pendingCreate || h.pendingUpdate || h.pendingLeave || h.pendingJoin);
+            const pendingHomes = currentHomes.filter(h => h.pendingCreate || h.pendingUpdate || h.pendingLeave || h.pendingJoin || h.pendingDelete);
 
             let syncResponse: SyncHomesResponse | PushHomesResponse;
 
@@ -101,14 +108,15 @@ class HomeService {
                         pendingUpdate: h.pendingUpdate,
                         pendingLeave: h.pendingLeave,
                         pendingJoin: h.pendingJoin,
+                        pendingDelete: h.pendingDelete,
                     })),
                     lastSyncedAt: lastSyncTime,
                 });
                 syncResponse = pushResponse;
 
                 // Handle results of push
-                pushResponse.results.forEach((result: any) => {
-                    const localIndex = currentHomes.findIndex(h => h.id === result.homeId);
+                for (const result of pushResponse.results) {
+                    const localIndex = currentHomes.findIndex(h => h.id === (result as any).homeId);
                     if (localIndex >= 0) {
                         if (result.status === 'created' || result.status === 'updated') {
                             // Clear pending flags on success
@@ -119,12 +127,17 @@ class HomeService {
                                 serverUpdatedAt: result.serverUpdatedAt,
                                 lastSyncedAt: pushResponse.serverTimestamp,
                             };
+                        } else if (result.status === 'deleted') {
+                            // Home deleted on server, remove locally
+                            await deleteHomeFiles((result as any).homeId);
+                            // Set to null to filter out later
+                            (currentHomes as any)[localIndex] = null;
                         } else if (result.status === 'server_version' && result.winner === 'server') {
                             // Server won conflict, update local data
                             currentHomes[localIndex] = {
                                 ...currentHomes[localIndex],
-                                ...result.serverVersion,
-                                id: result.homeId,
+                                ...(result as any).serverVersion,
+                                id: (result as any).homeId,
                                 pendingCreate: false,
                                 pendingUpdate: false,
                                 serverUpdatedAt: result.serverUpdatedAt,
@@ -132,7 +145,13 @@ class HomeService {
                             };
                         }
                     }
-                });
+                }
+
+                // Filter out nulls (deleted homes)
+                const finalValues = currentHomes.filter(h => h !== null) as Home[];
+                // Update array in place
+                currentHomes.length = 0;
+                currentHomes.push(...finalValues);
 
                 // Handle errors (like homeId collisions)
                 if ((syncResponse as PushHomesResponse).errors) {
@@ -194,6 +213,9 @@ class HomeService {
             if (deletedHomeIds.length > 0) {
                 console.log(`[HomeService] Removing ${deletedHomeIds.length} deleted homes`);
                 finalHomes = currentHomes.filter(h => !deletedHomeIds.includes(h.id));
+                for (const deletedId of deletedHomeIds) {
+                    await deleteHomeFiles(deletedId);
+                }
             }
 
             // 4. Persist
@@ -207,10 +229,14 @@ class HomeService {
 
             // 5. Handle active home switch if needed
             const activeId = this.currentHomeIdSubject.value;
-            if (activeId && !finalHomes.find(h => h.id === activeId)) {
-                if (finalHomes.length > 0) {
-                    console.log('[HomeService] Active home was deleted, switching...');
-                    this.switchHome(finalHomes[0].id);
+            // Check if active home was permanently deleted or is now pending delete/leave
+            const activeHome = finalHomes.find(h => h.id === activeId);
+            if (!activeHome || activeHome.pendingDelete || activeHome.pendingLeave) {
+                // Find next available home
+                const nextHome = finalHomes.find(h => !h.pendingDelete && !h.pendingLeave);
+                if (nextHome) {
+                    console.log('[HomeService] Active home was deleted or unavailable, switching...');
+                    this.switchHome(nextHome.id);
                 } else {
                     this.currentHomeIdSubject.next(null);
                 }
@@ -278,6 +304,55 @@ class HomeService {
     }
 
     /**
+     * Delete (or leave) a home.
+     */
+    async deleteHome(id: string): Promise<boolean> {
+        const currentHomes = [...this.homesSubject.value];
+        const index = currentHomes.findIndex(h => h.id === id);
+
+        if (index < 0) return false;
+
+        const home = currentHomes[index];
+        const now = new Date().toISOString();
+
+        if (home.role === 'owner') {
+            // Owner deleting the home
+            currentHomes[index] = {
+                ...home,
+                updatedAt: now,
+                clientUpdatedAt: now,
+                pendingDelete: true,
+            };
+        } else {
+            // Member leaving the home
+            currentHomes[index] = {
+                ...home,
+                updatedAt: now,
+                clientUpdatedAt: now,
+                pendingLeave: true,
+            };
+        }
+
+        const success = await writeFile<HomesData>(HOMES_FILE, { homes: currentHomes });
+        if (success) {
+            this.homesSubject.next(currentHomes);
+
+            // If we're deleting/leaving the current home, switch to another one or null
+            // We consider the home "gone" for UI purposes immediately
+            if (this.currentHomeIdSubject.value === id) {
+                const availableHome = currentHomes.find(h => h.id !== id && !h.pendingLeave && !h.pendingDelete);
+                if (availableHome) {
+                    this.switchHome(availableHome.id);
+                } else {
+                    this.currentHomeIdSubject.next(null);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Switch the active home.
      */
     switchHome(id: string) {
@@ -291,17 +366,21 @@ class HomeService {
 
     /**
      * Get the current home object synchronously.
+     * Returns undefined if current home is pending delete/leave.
      */
     getCurrentHome(): Home | undefined {
         const id = this.currentHomeIdSubject.value;
-        return this.homesSubject.value.find((h) => h.id === id);
+        const home = this.homesSubject.value.find((h) => h.id === id);
+        if (home && (home.pendingDelete || home.pendingLeave)) return undefined;
+        return home;
     }
 
     /**
      * Get all homes synchronously.
+     * Filter pending delete/leave homes.
      */
     getHomes(): Home[] {
-        return this.homesSubject.value;
+        return this.homesSubject.value.filter(h => !h.pendingDelete && !h.pendingLeave);
     }
 }
 

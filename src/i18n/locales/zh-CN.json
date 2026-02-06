@@ -86,7 +86,8 @@
     "filterBy": "筛选：{{type}}",
     "filterType": {
       "location": "按位置",
-      "status": "按状态"
+      "status": "按状态",
+      "category": "按分类"
     },
     "empty": {
       "title": "没有找到物品",

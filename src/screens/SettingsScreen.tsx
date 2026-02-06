@@ -1,9 +1,10 @@
-import React from 'react';
-import { ScrollView, ActivityIndicator, View, Text } from 'react-native';
+import React, { useRef, useCallback } from 'react';
+import { ScrollView, ActivityIndicator, View, Text, Alert } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useTranslation } from 'react-i18next';
 import Constants from 'expo-constants';
 import type { StyledProps } from '../utils/styledComponents';
@@ -16,9 +17,12 @@ import {
   ExportDataButton,
   ClearDataButton,
   SettingsToggleItem,
+  SettingsItem,
+  EditHomeBottomSheet,
 } from '../components';
 import { useSettings, useAuth, useAppSelector } from '../store/hooks';
 import { useHome } from '../hooks/useHome';
+import { useToast } from '../hooks/useToast';
 import { calculateBottomPadding } from '../utils/layout';
 import { RootStackParamList } from '../navigation/types';
 
@@ -65,9 +69,43 @@ export const SettingsScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { user } = useAuth();
+  const { user, getApiClient } = useAuth();
+  const toast = useToast();
 
-  const { currentHome } = useHome();
+  const { currentHome, deleteHome, syncHomes } = useHome();
+  const editHomeSheetRef = useRef<BottomSheetModal>(null);
+
+  const handleEditHomePress = useCallback(() => {
+    editHomeSheetRef.current?.present();
+  }, []);
+
+  const handleDeleteHomePress = useCallback(() => {
+    if (!currentHome) return;
+
+    Alert.alert(
+      t('settings.deleteHome.title', 'Delete Home'),
+      t('settings.deleteHome.message', 'Are you sure you want to delete this home? This action cannot be undone and will remove the home for all members.'),
+      [
+        {
+          text: t('common.cancel', 'Cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('common.delete', 'Delete'),
+          style: 'destructive',
+          onPress: async () => {
+            const success = await deleteHome(currentHome.id);
+            if (success) {
+              user && getApiClient() && syncHomes(getApiClient()).catch(console.error);
+              toast.showToast(t('settings.deleteHome.success', 'Home deleted'));
+            } else {
+              Alert.alert(t('common.error'), t('settings.deleteHome.error', 'Failed to delete home'));
+            }
+          },
+        },
+      ]
+    );
+  }, [currentHome, deleteHome, t]);
 
   const handleAvatarPress = () => {
     const rootNavigation = navigation.getParent();
@@ -146,9 +184,9 @@ export const SettingsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
-        {/* Preferences Section */}
+        {/* Global Settings Section */}
         <SettingsSection>
-          <SectionTitle>{t('settings.preferences')}</SectionTitle>
+          <SectionTitle>{t('settings.globalSettings')}</SectionTitle>
           <ThemeChooser
             selectedThemeId={settings.theme}
             onThemeSelect={handleThemeChange}
@@ -162,6 +200,24 @@ export const SettingsScreen: React.FC = () => {
             onLanguageSelect={handleLanguageChange}
           />
         </SettingsSection>
+
+        {/* Home Settings Section */}
+        {currentHome && (
+          <SettingsSection>
+            <SectionTitle>{t('settings.homeSettings')}</SectionTitle>
+            <SettingsItem
+              label={t('settings.editHome', 'Edit Home')}
+              icon="home-outline"
+              onPress={handleEditHomePress}
+            />
+            <SettingsItem
+              label={t('settings.deleteHome', 'Delete Home')}
+              icon="trash-outline"
+              onPress={handleDeleteHomePress}
+              variant="destructive"
+            />
+          </SettingsSection>
+        )}
 
         {/* Data & Security Section */}
         <SettingsSection>
@@ -186,6 +242,10 @@ export const SettingsScreen: React.FC = () => {
           {t('settings.versionPrefix')} v{appVersion}
         </VersionText>
       </Content>
+      <EditHomeBottomSheet
+        bottomSheetRef={editHomeSheetRef}
+        home={currentHome || null}
+      />
     </Container>
   );
 };

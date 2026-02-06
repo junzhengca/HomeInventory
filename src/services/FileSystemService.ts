@@ -124,3 +124,21 @@ export const listJsonFiles = async (): Promise<string[]> => {
   }
 };
 
+
+/**
+ * Delete all files associated with a specific home
+ */
+export const deleteHomeFiles = async (homeId: string): Promise<void> => {
+  try {
+    const files = await listJsonFiles();
+    const filesToDelete = files.filter(file => file.endsWith(`_${homeId}.json`));
+
+    console.log(`[FileSystemService] Deleting ${filesToDelete.length} files for home ${homeId}`);
+
+    for (const file of filesToDelete) {
+      await deleteFile(file);
+    }
+  } catch (error) {
+    console.error(`[FileSystemService] Error deleting files for home ${homeId}:`, error);
+  }
+};

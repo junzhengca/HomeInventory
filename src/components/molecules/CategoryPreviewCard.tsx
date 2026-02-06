@@ -9,7 +9,7 @@ import type { StyledProps } from '../../utils/styledComponents';
 import { BaseCard } from '../atoms';
 import { useTheme } from '../../theme/ThemeProvider';
 
-const IconContainer = styled(View)<{ backgroundColor: string }>`
+const IconContainer = styled(View) <{ backgroundColor: string }>`
   width: 48px;
   height: 48px;
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.lg}px;
@@ -62,11 +62,11 @@ export const CategoryPreviewCard: React.FC<CategoryPreviewCardProps> = ({
 
   return (
     <BaseCard compact>
-      <IconContainer backgroundColor={getLightColor(category.iconColor || theme.colors.primary)}>
+      <IconContainer backgroundColor={getLightColor(theme.colors.primary)}>
         <Ionicons
           name={category.icon || 'cube-outline'}
           size={24}
-          color={category.iconColor || theme.colors.primary}
+          color={theme.colors.primary}
         />
       </IconContainer>
 

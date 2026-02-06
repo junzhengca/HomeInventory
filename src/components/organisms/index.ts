@@ -62,4 +62,5 @@ export type { PermissionConfigPanelProps } from './PermissionConfigPanel';
 export { ContextMenu } from './ContextMenu/ContextMenu';
 export { ContextMenuProvider } from './ContextMenu/ContextMenuProvider';
 export * from './AddHomeBottomSheet';
+export * from './EditHomeBottomSheet';
 export * from './HomeSwitcher';

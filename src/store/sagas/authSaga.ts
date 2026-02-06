@@ -9,7 +9,7 @@ import {
   setShowNicknameSetup,
   setActiveHomeId,
 } from '../slices/authSlice';
-import { loadItems } from './inventorySaga';
+import { loadItems, syncItemsAction } from './inventorySaga';
 import { loadTodos } from './todoSaga';
 import { loadSettings } from './settingsSaga';
 import {
@@ -136,7 +136,9 @@ function* handleAuthError() {
   yield call(clearAllAuthData);
   yield put(setUser(null));
   yield put(setAuthenticated(false));
-  yield put(setActiveHomeId(null));
+
+  // Instead of setting null, try to select a default home (offline mode)
+  yield call(restoreOrSelectActiveHome);
 }
 
 function* handleAccessDenied(action: { type: string; payload?: string }) {
@@ -149,14 +151,45 @@ function* handleAccessDenied(action: { type: string; payload?: string }) {
   const activeHomeId: string | null = (yield select((state: RootState) => state.auth.activeHomeId)) as string | null;
   if (activeHomeId === deniedUserId) {
     console.warn('[AuthSaga] Active home access denied, switching to default');
-    yield put(setActiveHomeId(null));
-    yield call(removeActiveHomeId);
+    // Try to restore a valid home (this will likely pick the default one if the current one is invalid/denied)
+    yield call(restoreOrSelectActiveHome);
+
+    // If restoreOrSelectActiveHome didn't change it (e.g. it picked the same one?), we might need to force it.
+    // But restoreOrSelectActiveHome only picks from homeService.getHomes(). 
+    // If access is denied, maybe we should remove it from homeService?
+    // That's a separate concern (sync/cleanup). For now, just ensuring SOME home is selected.
 
     const toast = getGlobalToast();
     if (toast) {
       toast('Access to this home has been revoked', 'error');
     }
   }
+}
+
+// Helper to restore or select a default active home
+function* restoreOrSelectActiveHome() {
+  let activeHomeId: string | null = (yield call(getActiveHomeId)) as string | null;
+  const allHomes = homeService.getHomes();
+
+  // Validate the persisted ID
+  if (activeHomeId && !allHomes.find(h => h.id === activeHomeId)) {
+    console.warn(`[AuthSaga] Persisted activeHomeId ${activeHomeId} not found in homes list.`);
+    activeHomeId = null;
+  }
+
+  // Default if null
+  if (!activeHomeId && allHomes.length > 0) {
+    activeHomeId = allHomes[0].id;
+    console.log('[AuthSaga] No valid active home persisted, defaulting to first home:', activeHomeId);
+  }
+
+  if (activeHomeId) {
+    console.log('[AuthSaga] Setting active home ID:', activeHomeId);
+    yield put(setActiveHomeId(activeHomeId));
+    return activeHomeId;
+  }
+
+  return null;
 }
 
 function* checkAuthSaga(): Generator {
@@ -170,6 +203,8 @@ function* checkAuthSaga(): Generator {
     const tokens: { accessToken: string } | null = (yield call(getAuthTokens)) as { accessToken: string } | null;
 
     if (!tokens || !tokens.accessToken) {
+      // Ensure a home is selected even if not logged in (offline mode)
+      yield call(restoreOrSelectActiveHome);
       yield put(setLoading(false));
       return;
     }
@@ -200,20 +235,17 @@ function* checkAuthSaga(): Generator {
           yield put(setShowNicknameSetup(false));
         }
 
-        // Restore active home ID
-        const activeHomeId: string | null = (yield call(getActiveHomeId)) as string | null;
-        if (activeHomeId) {
-          console.log('[AuthSaga] Restoring active home ID:', activeHomeId);
-          yield put(setActiveHomeId(activeHomeId));
-        }
+        // Restore active home ID or select default
+        yield call(restoreOrSelectActiveHome);
 
         // Reload data with correct context
         yield put(loadItems());
         yield put(loadTodos());
         yield put(loadSettings());
 
-        // Sync homes
-        yield call([homeService, homeService.syncHomes], apiClient);
+
+        // Sync everything (Homes + Content)
+        yield put(syncItemsAction());
       } else if (savedUser) {
         yield put(setUser(savedUser));
         yield put(setAuthenticated(true));
@@ -225,20 +257,17 @@ function* checkAuthSaga(): Generator {
           yield put(setShowNicknameSetup(false));
         }
 
-        // Restore active home ID
-        const activeHomeId: string | null = (yield call(getActiveHomeId)) as string | null;
-        if (activeHomeId) {
-          console.log('[AuthSaga] Restoring active home ID:', activeHomeId);
-          yield put(setActiveHomeId(activeHomeId));
-        }
+        // Restore active home ID or select default
+        yield call(restoreOrSelectActiveHome);
 
         // Reload data with correct context
         yield put(loadItems());
         yield put(loadTodos());
         yield put(loadSettings());
 
-        // Sync homes
-        yield call([homeService, homeService.syncHomes], apiClient);
+
+        // Sync everything (Homes + Content)
+        yield put(syncItemsAction());
       } else {
         throw new Error('No user data available from API or storage');
       }
@@ -330,20 +359,17 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     yield put(setError(null)); // Clear error on success
     yield put(setLoading(false));
 
-    // Restore active home ID
-    const activeHomeId: string | null = (yield call(getActiveHomeId)) as string | null;
-    if (activeHomeId) {
-      console.log('[AuthSaga] Restoring active home ID on login:', activeHomeId);
-      yield put(setActiveHomeId(activeHomeId));
-    }
+    // Restore active home ID or select default
+    yield call(restoreOrSelectActiveHome);
 
     // Reload data with correct context
     yield put(loadItems());
     yield put(loadTodos());
     yield put(loadSettings());
 
-    // Sync homes
-    yield call([homeService, homeService.syncHomes], apiClient);
+
+    // Sync everything (Homes + Content)
+    yield put(syncItemsAction());
 
     // Show success toast
     const toast = getGlobalToast();
@@ -416,13 +442,17 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
 
     yield put(setAuthenticated(true));
 
+    // Restore active home ID or select default
+    yield call(restoreOrSelectActiveHome);
+
     // Reload data with correct context
     yield put(loadItems());
     yield put(loadTodos());
     yield put(loadSettings());
 
-    // Sync homes
-    yield call([homeService, homeService.syncHomes], apiClient);
+
+    // Sync everything (Homes + Content)
+    yield put(syncItemsAction());
 
     // Show success toast
     const toast = getGlobalToast();
@@ -511,20 +541,17 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     yield put(setError(null)); // Clear error on success
     yield put(setLoading(false));
 
-    // Restore active home ID
-    const activeHomeId: string | null = (yield call(getActiveHomeId)) as string | null;
-    if (activeHomeId) {
-      console.log('[AuthSaga] Restoring active home ID on Google login:', activeHomeId);
-      yield put(setActiveHomeId(activeHomeId));
-    }
+    // Restore active home ID or select default
+    yield call(restoreOrSelectActiveHome);
 
     // Reload data with correct context
     yield put(loadItems());
     yield put(loadTodos());
     yield put(loadSettings());
 
-    // Sync homes
-    yield call([homeService, homeService.syncHomes], apiClient);
+
+    // Sync everything (Homes + Content)
+    yield put(syncItemsAction());
 
     // Show success toast
     const toast = getGlobalToast();

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Category } from '../../types/inventory';
 import { getAllCategories } from '../../services/CategoryService';
 import { useCategory } from '../../store/hooks';
+import { useHome } from '../../hooks/useHome';
 import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
 
 const Container = styled(View)`
@@ -15,7 +16,7 @@ const ScrollContainer = styled(ScrollView)`
   flex-direction: row;
 `;
 
-const CategoryButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
+const CategoryButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
   padding-horizontal: 16px;
   padding-vertical: 6px;
   border-radius: 18px;
@@ -36,7 +37,7 @@ const CategoryButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
   shadow-radius: 2px;
 `;
 
-const CategoryText = styled(Text)<{ isSelected: boolean }>`
+const CategoryText = styled(Text) <{ isSelected: boolean }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
@@ -58,6 +59,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>(parentSelectedCategory || 'all');
   const [categories, setCategories] = useState<Category[]>([]);
   const { registerRefreshCallback } = useCategory();
+  const { currentHomeId } = useHome();
 
   const loadCategories = useCallback(async () => {
     if (providedCategories) {
@@ -66,13 +68,16 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     }
 
     try {
-      const allCategories = await getAllCategories();
+      const allCategories = await getAllCategories(currentHomeId || undefined);
       // Add "all" category at the beginning
       const allCategory: Category = {
         id: 'all',
         name: 'all',
         label: t('categories.all'),
         isCustom: false,
+        homeId: '',
+        version: 0,
+        clientUpdatedAt: '',
       };
       setCategories([allCategory, ...allCategories]);
     } catch (error) {
@@ -84,10 +89,13 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         name: 'all',
         label: t('categories.all'),
         isCustom: false,
+        homeId: '',
+        version: 0,
+        clientUpdatedAt: '',
       };
       setCategories([allCategory]);
     }
-  }, [providedCategories, t]);
+  }, [providedCategories, t, currentHomeId]);
 
   useEffect(() => {
     loadCategories();

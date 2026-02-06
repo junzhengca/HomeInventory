@@ -3,6 +3,7 @@ import { Settings, defaultSettings } from '../types/settings';
 import { fileExists, writeFile, readFile, deleteFile, listJsonFiles } from './FileSystemService';
 import { itemCategories as defaultItemCategories } from '../data/defaultCategories';
 import { getLocationIdsSet } from '../utils/locationUtils';
+import i18n from '../i18n/i18n';
 
 const ITEMS_FILE = 'items.json';
 const CATEGORIES_FILE = 'categories.json';
@@ -25,74 +26,112 @@ interface TodosData {
 /**
  * Initialize data files with default data if they don't exist
  */
+/**
+ * Initialize data files.
+ * Global files (settings) are initialized here.
+ * Home-specific files should be initialized via initializeHomeData().
+ * For backward compatibility or first-run, this can still ensure global settings exist.
+ */
 export const initializeDataFiles = async (): Promise<void> => {
   try {
-    // Initialize categories
-    if (!(await fileExists(CATEGORIES_FILE))) {
-      // Only save item categories to categories.json (NOT locations)
-      const itemCats: Category[] = defaultItemCategories.map((cat) => ({
-        ...cat,
-        isCustom: false,
-      }));
-
-      await writeFile<CategoriesData>(CATEGORIES_FILE, {
-        categories: itemCats,
-      });
-      console.log('Categories file initialized');
-    } else {
-      // Ensure item categories exist even if file already exists
-      const existingData = await readFile<CategoriesData>(CATEGORIES_FILE);
-      const existingCategories = existingData?.categories || [];
-      const existingIds = new Set(existingCategories.map(cat => cat.id));
-
-      // Filter out any location categories that might have been incorrectly added
-      const locationIds = getLocationIdsSet();
-      const filteredCategories = existingCategories.filter(cat => !locationIds.has(cat.id));
-
-      const missingItemCategories = defaultItemCategories.filter(cat => !existingIds.has(cat.id));
-      if (missingItemCategories.length > 0 || filteredCategories.length !== existingCategories.length) {
-        const updatedCategories = [...filteredCategories, ...missingItemCategories];
-        await writeFile<CategoriesData>(CATEGORIES_FILE, {
-          categories: updatedCategories,
-        });
-        console.log('Added missing item categories and removed location categories');
-      }
-    }
-
-    // Initialize items
-    if (!(await fileExists(ITEMS_FILE))) {
-      // Start with empty array - no mock data
-      await writeFile<ItemsData>(ITEMS_FILE, {
-        items: [],
-      });
-      console.log('Items file initialized');
-    }
-
-    // Initialize settings
+    // Initialize settings (Global)
     if (!(await fileExists(SETTINGS_FILE))) {
       await writeFile<Settings>(SETTINGS_FILE, defaultSettings);
       console.log('Settings file initialized');
     }
 
-    // Initialize todos
-    if (!(await fileExists(TODOS_FILE))) {
-      await writeFile<TodosData>(TODOS_FILE, {
-        todos: [],
-      });
-      console.log('Todos file initialized');
-    }
-
-    // Initialize homes (handled by HomeService, but ensure file exists check here?
-    // Actually, let's just leave it to HomeService or ensure it's clean here)
-    if (!(await fileExists(HOMES_FILE))) {
-      // HomeService.init() will handle this, but for consistency in this file:
-      // We won't write default data here to avoid duplication logic with HomeService
-      // just logging for now or we can import homeService.
-      // Better yet, let's leave initialization to HomeService.init() which is called at app start
-      // but we SHOULD include it in clearAllDataFiles.
-    }
+    // Note: Items, Categories, and Todos are now home-scoped.
+    // They are initialized when a home is created or switched to via initializeHomeData.
   } catch (error) {
     console.error('Error initializing data files:', error);
+    throw error;
+  }
+};
+
+/**
+ * Initialize data files for a specific home
+ */
+export const initializeHomeData = async (homeId: string): Promise<void> => {
+  try {
+    const categoriesFile = CATEGORIES_FILE; // FileSystemService handles suffixing
+
+    // Initialize categories for this home
+    if (!(await fileExists(categoriesFile, homeId))) {
+      // Create defaults with homeId injected
+      const itemCats: Category[] = defaultItemCategories.map((cat) => ({
+        ...cat,
+        homeId: homeId,
+        name: i18n.t(`categories.${cat.id}`), // Use localized name
+        isCustom: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        version: 1,
+        clientUpdatedAt: new Date().toISOString(),
+        pendingCreate: true,
+        pendingUpdate: false,
+        pendingDelete: false,
+      }));
+
+      await writeFile<CategoriesData>(categoriesFile, {
+        categories: itemCats,
+      }, homeId);
+      console.log(`Categories file initialized for home ${homeId}`);
+    } else {
+      // Ensure item categories exist even if file already exists
+      const existingData = await readFile<CategoriesData>(categoriesFile, homeId);
+      const existingCategories = existingData?.categories || [];
+      const existingIds = new Set(existingCategories.map(cat => cat.id));
+
+      // Filter out any location categories that might have been incorrectly added (legacy cleanup)
+      const locationIds = getLocationIdsSet();
+      const filteredCategories = existingCategories.filter(cat => !locationIds.has(cat.id));
+
+      const missingItemCategories = defaultItemCategories.filter(cat => !existingIds.has(cat.id));
+      if (missingItemCategories.length > 0 || filteredCategories.length !== existingCategories.length) {
+        const updatedCategories = [
+          ...filteredCategories,
+          ...missingItemCategories.map(cat => ({
+            ...cat,
+            homeId: homeId,
+            name: i18n.t(`categories.${cat.id}`),
+            isCustom: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            version: 1,
+            clientUpdatedAt: new Date().toISOString(),
+            pendingCreate: true,
+            pendingUpdate: false,
+            pendingDelete: false,
+          }))
+        ];
+
+        await writeFile<CategoriesData>(categoriesFile, {
+          categories: updatedCategories,
+        }, homeId);
+        console.log(`Added missing item categories for home ${homeId}`);
+      }
+    }
+
+    // Initialize items for this home
+    const itemsFile = ITEMS_FILE;
+    if (!(await fileExists(itemsFile, homeId))) {
+      await writeFile<ItemsData>(itemsFile, {
+        items: [],
+      }, homeId);
+      console.log(`Items file initialized for home ${homeId}`);
+    }
+
+    // Initialize todos for this home
+    const todosFile = TODOS_FILE;
+    if (!(await fileExists(todosFile, homeId))) {
+      await writeFile<TodosData>(todosFile, {
+        todos: [],
+      }, homeId);
+      console.log(`Todos file initialized for home ${homeId}`);
+    }
+
+  } catch (error) {
+    console.error(`Error initializing home data for ${homeId}:`, error);
     throw error;
   }
 };
@@ -101,17 +140,10 @@ export const initializeDataFiles = async (): Promise<void> => {
  * Check if data files are initialized
  */
 export const isDataInitialized = async (): Promise<boolean> => {
-  const itemsExist = await fileExists(ITEMS_FILE);
-  const categoriesExist = await fileExists(CATEGORIES_FILE);
   const settingsExist = await fileExists(SETTINGS_FILE);
-  const todosExist = await fileExists(TODOS_FILE);
-
-  return itemsExist && categoriesExist && settingsExist && todosExist;
+  return settingsExist;
 };
 
-/**
- * Clear all data files and re-initialize them with default data
- */
 /**
  * Clear all data files and re-initialize them with default data
  */

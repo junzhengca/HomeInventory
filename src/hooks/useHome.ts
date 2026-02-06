@@ -50,11 +50,21 @@ export const useHome = () => {
         return null;
     };
 
+    const handleUpdateHome = async (id: string, updates: Partial<Home>) => {
+        return await homeService.updateHome(id, updates);
+    };
+
+    const handleDeleteHome = async (id: string) => {
+        return await homeService.deleteHome(id);
+    };
+
     return {
         homes,
         currentHomeId: activeHomeId,
         currentHome,
         createHome: handleCreateHome,
+        updateHome: handleUpdateHome,
+        deleteHome: handleDeleteHome,
         switchHome: handleSwitchHome,
         syncHomes: homeService.syncHomes.bind(homeService),
         init: homeService.init.bind(homeService),

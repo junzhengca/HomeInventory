@@ -3,13 +3,23 @@ import { Ionicons } from '@expo/vector-icons';
 export interface Category {
   id: string;
   name: string;
-  label: string; // Chinese label
+  label?: string; // Chinese label - making optional/deprecated as name will be used
   isCustom: boolean; // Flag to distinguish system vs user-created categories
+  icon?: keyof typeof Ionicons.glyphMap;
+  homeId: string;
+
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
   deletedAt?: string; // ISO date string - marks soft deletion
-  icon?: keyof typeof Ionicons.glyphMap;
-  iconColor?: string;
+
+  // Sync metadata
+  version: number;
+  clientUpdatedAt: string;
+  serverUpdatedAt?: string;
+  lastSyncedAt?: string;
+  pendingCreate?: boolean;
+  pendingUpdate?: boolean;
+  pendingDelete?: boolean;
 }
 
 export interface Location {
@@ -35,6 +45,7 @@ export interface InventoryItem {
   purchaseDate?: string; // ISO date string (optional)
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
+  categoryId?: string;
   deletedAt?: string; // ISO date string - marks soft deletion
 
   // Sync metadata

@@ -27,4 +27,5 @@ export interface Home {
     pendingUpdate?: boolean;
     pendingLeave?: boolean;
     pendingJoin?: boolean;
+    pendingDelete?: boolean;
 }

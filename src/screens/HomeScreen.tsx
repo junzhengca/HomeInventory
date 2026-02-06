@@ -34,6 +34,7 @@ import {
   PageHeader,
   LocationFilter,
   StatusFilter,
+  CategoryFilter,
   ItemCard,
   EmptyState,
   LoginBottomSheet,
@@ -115,6 +116,7 @@ export const HomeScreen: React.FC = () => {
     null
   );
   const [selectedStatusId, setSelectedStatusId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<'location' | 'status'>(
     'location'
   );
@@ -166,6 +168,16 @@ export const HomeScreen: React.FC = () => {
     return counts;
   }, [items]);
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    items.forEach((item) => {
+      if (item.categoryId) {
+        counts[item.categoryId] = (counts[item.categoryId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [items]);
+
   // Filter items based on location and search query
   const filteredItems = useMemo(() => {
     let filtered = items;
@@ -182,8 +194,13 @@ export const HomeScreen: React.FC = () => {
       filtered = filtered.filter((item) => item.status === selectedStatusId);
     }
 
+    // Filter by category
+    if (selectedCategoryId !== null) {
+      filtered = filtered.filter((item) => item.categoryId === selectedCategoryId);
+    }
+
     return filtered;
-  }, [selectedLocationId, selectedStatusId, items]);
+  }, [selectedLocationId, selectedStatusId, selectedCategoryId, items]);
 
   const canAccessInventory = useMemo(() => {
     if (!currentHome) return true; // Default to true if no home context (local only)
@@ -382,6 +399,11 @@ export const HomeScreen: React.FC = () => {
           </LoadingContainer>
         ) : (
           <Content>
+            <CategoryFilter
+              selectedCategoryId={selectedCategoryId}
+              onSelect={setSelectedCategoryId}
+              counts={categoryCounts}
+            />
             <FilterRow>
               <FilterToggleBtn
                 onPress={() => {
@@ -428,7 +450,8 @@ export const HomeScreen: React.FC = () => {
                   title={t('inventory.empty.title')}
                   description={
                     selectedLocationId !== null ||
-                      selectedStatusId !== null
+                      selectedStatusId !== null ||
+                      selectedCategoryId !== null
                       ? t('inventory.empty.filtered')
                       : t('inventory.empty.description')
                   }

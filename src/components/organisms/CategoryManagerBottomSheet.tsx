@@ -13,11 +13,11 @@ import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import type { Category } from '../../types/inventory';
 import { useCategory } from '../../store/hooks';
+import { useHome } from '../../hooks/useHome';
 import { useKeyboardVisibility } from '../../hooks';
 import { BottomSheetHeader, FormSection, MemoizedInput } from '../atoms';
-import { CategoryPreviewCard, IconSelector, ColorPalette, BottomActionBar } from '../molecules';
+import { CategoryPreviewCard, IconSelector, BottomActionBar } from '../molecules';
 import { categoryIcons } from '../../data/categoryIcons';
-import { categoryColors } from '../../data/categoryColors';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -51,7 +51,6 @@ interface CategoryFormData {
   name: string;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
 }
 
 /**
@@ -67,6 +66,7 @@ export const CategoryManagerBottomSheet: React.FC<
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { refreshCategories } = useCategory();
+  const { currentHomeId } = useHome();
   const { isKeyboardVisible, dismissKeyboard } = useKeyboardVisibility();
 
   const [mode, setMode] = useState<FormMode>('list');
@@ -79,7 +79,6 @@ export const CategoryManagerBottomSheet: React.FC<
     name: '',
     label: '',
     icon: categoryIcons[0] || 'cube-outline',
-    iconColor: categoryColors[0] || '#4A90E2',
   });
 
   const snapPoints = useMemo(() => ['100%'], []);
@@ -90,13 +89,13 @@ export const CategoryManagerBottomSheet: React.FC<
   const loadCategories = useCallback(async () => {
     try {
       const { getAllCategories } = await import('../../services/CategoryService');
-      const allCategories = await getAllCategories();
+      const allCategories = await getAllCategories(currentHomeId || undefined);
       const custom = allCategories.filter((cat) => cat.isCustom);
       setCategories(custom);
     } catch (error) {
       console.error('Error loading categories:', error);
     }
-  }, []);
+  }, [currentHomeId]);
 
   useEffect(() => {
     loadCategories();
@@ -112,7 +111,6 @@ export const CategoryManagerBottomSheet: React.FC<
       name: '',
       label: '',
       icon: categoryIcons[0] || 'cube-outline',
-      iconColor: categoryColors[0] || '#4A90E2',
     });
     setEditingId(null);
     setMode('list');
@@ -126,9 +124,8 @@ export const CategoryManagerBottomSheet: React.FC<
   const handleStartEdit = useCallback((category: Category) => {
     setFormData({
       name: category.name,
-      label: category.label,
+      label: category.label || '',
       icon: category.icon || categoryIcons[0] || 'cube-outline',
-      iconColor: category.iconColor || categoryColors[0] || '#4A90E2',
     });
     setEditingId(category.id);
     setMode('edit');
@@ -159,15 +156,14 @@ export const CategoryManagerBottomSheet: React.FC<
           name: formData.name.trim(),
           label: formData.label.trim(),
           icon: formData.icon,
-          iconColor: formData.iconColor,
-        });
+        }, currentHomeId || undefined);
       } else {
         result = await createCategory({
           name: formData.name.trim(),
           label: formData.label.trim(),
           icon: formData.icon,
-          iconColor: formData.iconColor,
-        });
+          isCustom: true,
+        }, currentHomeId || undefined);
       }
 
       if (result) {
@@ -189,9 +185,9 @@ export const CategoryManagerBottomSheet: React.FC<
       Alert.alert(
         t('categoryManager.errors.title'),
         errorMessage ||
-          (editingId
-            ? t('categoryManager.errors.updateFailed')
-            : t('categoryManager.errors.createFailed'))
+        (editingId
+          ? t('categoryManager.errors.updateFailed')
+          : t('categoryManager.errors.createFailed'))
       );
     } finally {
       setIsLoading(false);
@@ -218,19 +214,10 @@ export const CategoryManagerBottomSheet: React.FC<
             style: 'destructive',
             onPress: async () => {
               try {
-                const { deleteCategory, isCategoryInUse } =
+                const { deleteCategory } =
                   await import('../../services/CategoryService');
 
-                const inUse = await isCategoryInUse(categoryId);
-                if (inUse) {
-                  Alert.alert(
-                    t('categoryManager.errors.title'),
-                    t('categoryManager.errors.deleteInUse')
-                  );
-                  return;
-                }
-
-                const success = await deleteCategory(categoryId);
+                const success = await deleteCategory(categoryId, currentHomeId || undefined);
                 if (success) {
                   await loadCategories();
                   refreshCategories();
@@ -413,18 +400,8 @@ export const CategoryManagerBottomSheet: React.FC<
               <FormSection label={t('categoryManager.icon')}>
                 <IconSelector
                   selectedIcon={formData.icon}
-                  iconColor={formData.iconColor}
                   onIconSelect={(icon) =>
                     setFormData((prev) => ({ ...prev, icon }))
-                  }
-                />
-              </FormSection>
-
-              <FormSection label={t('categoryManager.color')}>
-                <ColorPalette
-                  selectedColor={formData.iconColor}
-                  onColorSelect={(color) =>
-                    setFormData((prev) => ({ ...prev, iconColor: color }))
                   }
                 />
               </FormSection>

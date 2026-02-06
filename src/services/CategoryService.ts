@@ -1,77 +1,64 @@
 import { Category } from '../types/inventory';
 import { readFile, writeFile } from './FileSystemService';
-import { generateCategoryId } from '../utils/idGenerator';
+import { generateItemId } from '../utils/idGenerator';
+import { ApiClient } from './ApiClient';
+import {
+  BatchSyncRequest,
+  BatchSyncPullRequest,
+  BatchSyncPushRequest
+} from '../types/api';
 
 const CATEGORIES_FILE = 'categories.json';
 
 interface CategoriesData {
   categories: Category[];
+  lastSyncTime?: string;
+  lastPulledVersion?: number;
 }
 
 /**
- * Get all categories (excluding deleted categories)
+ * Get all categories (excluding deleted items)
  */
-export const getAllCategories = async (userId?: string): Promise<Category[]> => {
-  const data = await readFile<CategoriesData>(CATEGORIES_FILE, userId);
+export const getAllCategories = async (homeId?: string): Promise<Category[]> => {
+  const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
   const categories = data?.categories || [];
-  return categories.filter((category) => !category.deletedAt);
+  return categories.filter((cat) => !cat.deletedAt);
 };
 
 /**
- * Get all categories for sync (including deleted categories)
+ * Get a single category by ID
  */
-export const getAllCategoriesForSync = async (userId?: string): Promise<Category[]> => {
-  const data = await readFile<CategoriesData>(CATEGORIES_FILE, userId);
-  return data?.categories || [];
+export const getCategoryById = async (id: string, homeId?: string): Promise<Category | null> => {
+  const categories = await getAllCategories(homeId);
+  return categories.find((cat) => cat.id === id) || null;
 };
 
 /**
- * Get a single category by ID (excluding deleted categories)
+ * Create a new category
  */
-export const getCategoryById = async (id: string, userId?: string): Promise<Category | null> => {
-  const categories = await getAllCategories(userId);
-  return categories.find((category) => category.id === id && !category.deletedAt) || null;
-};
-
-/**
- * Check if a category is in use by any items
- * Note: Items no longer have categories, so this always returns false
- */
-export const isCategoryInUse = async (_categoryId: string, _userId?: string): Promise<boolean> => {
-  // Items no longer have categories, so categories are never in use by items
-  return false;
-};
-
-/**
- * Create a new custom category
- */
-export const createCategory = async (
-  category: Omit<Category, 'id' | 'isCustom' | 'createdAt' | 'updatedAt'>,
-  userId?: string
-): Promise<Category | null> => {
+export const createCategory = async (category: Omit<Category, 'id' | 'version' | 'clientUpdatedAt' | 'homeId'>, homeId?: string): Promise<Category | null> => {
   try {
-    const categories = await getAllCategories(userId);
-
-    // Check if category name already exists
-    const existingCategory = categories.find(
-      (cat) => cat.name === category.name || cat.label === category.label
-    );
-
-    if (existingCategory) {
-      throw new Error('Category with this name already exists');
-    }
-
+    const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
+    const categories = data?.categories || [];
     const now = new Date().toISOString();
+
     const newCategory: Category = {
       ...category,
-      id: generateCategoryId(),
-      isCustom: true,
+      homeId: homeId || '', // homeId is required
+      id: generateItemId(),
       createdAt: now,
       updatedAt: now,
+
+      // Sync metadata
+      version: 1,
+      clientUpdatedAt: now,
+      pendingCreate: true,
+      pendingUpdate: false,
+      pendingDelete: false
     };
 
     categories.push(newCategory);
-    const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories }, userId);
+    const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { ...data, categories }, homeId);
 
     return success ? newCategory : null;
   } catch (error) {
@@ -85,40 +72,34 @@ export const createCategory = async (
  */
 export const updateCategory = async (
   id: string,
-  updates: Partial<Omit<Category, 'id' | 'isCustom' | 'createdAt' | 'updatedAt'>>,
-  userId?: string
+  updates: Partial<Omit<Category, 'id' | 'version' | 'clientUpdatedAt'>>,
+  homeId?: string
 ): Promise<Category | null> => {
   try {
-    const categories = await getAllCategories(userId);
-    const index = categories.findIndex((category) => category.id === id);
+    const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
+    const categories = data?.categories || [];
+    const index = categories.findIndex((cat) => cat.id === id);
 
     if (index === -1) {
       return null;
     }
 
-    // Prevent updating system categories
-    if (!categories[index].isCustom) {
-      throw new Error('Cannot update system categories');
-    }
+    const now = new Date().toISOString();
+    const isPendingCreate = categories[index].pendingCreate;
 
-    // Check for duplicate names
-    if (updates.name || updates.label) {
-      const duplicate = categories.find(
-        (cat, idx) =>
-          idx !== index &&
-          (cat.name === (updates.name || categories[index].name) ||
-            cat.label === (updates.label || categories[index].label))
-      );
+    categories[index] = {
+      ...categories[index],
+      ...updates,
+      updatedAt: now,
+      // Sync metadata
+      version: categories[index].version + 1,
+      clientUpdatedAt: now,
+      pendingUpdate: !isPendingCreate, // If it's pending create, it stays pending create
+    };
 
-      if (duplicate) {
-        throw new Error('Category with this name already exists');
-      }
-    }
-
-    categories[index] = { ...categories[index], ...updates, updatedAt: new Date().toISOString() };
-    const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories }, userId);
-
+    const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { ...data, categories }, homeId);
     return success ? categories[index] : null;
+
   } catch (error) {
     console.error('Error updating category:', error);
     return null;
@@ -126,49 +107,222 @@ export const updateCategory = async (
 };
 
 /**
- * Delete a category (soft delete - sets deletedAt timestamp)
+ * Delete a category (soft delete)
  */
-export const deleteCategory = async (id: string, userId?: string): Promise<boolean> => {
+export const deleteCategory = async (id: string, homeId?: string): Promise<boolean> => {
   try {
-    const data = await readFile<CategoriesData>(CATEGORIES_FILE, userId);
+    const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
     const categories = data?.categories || [];
-    const category = categories.find((cat) => cat.id === id);
+    const index = categories.findIndex((cat) => cat.id === id);
 
-    if (!category) {
-      return false; // Category not found
+    if (index === -1) {
+      return false;
     }
 
-    // Prevent deleting system categories
-    if (!category.isCustom) {
-      throw new Error('Cannot delete system categories');
-    }
-
-    // Check if category is in use (only check non-deleted items)
-    const inUse = await isCategoryInUse(id, userId);
-    if (inUse) {
-      throw new Error('Cannot delete category that is in use by items');
-    }
-
-    // If already deleted, return true (idempotent)
-    if (category.deletedAt) {
+    if (categories[index].deletedAt) {
       return true;
     }
 
-    // Soft delete: set deletedAt and update updatedAt
-    const index = categories.findIndex((cat) => cat.id === id);
     const now = new Date().toISOString();
-    categories[index] = {
-      ...categories[index],
-      deletedAt: now,
-      updatedAt: now,
-    };
+    const isPendingCreate = categories[index].pendingCreate;
 
-    const success = await writeFile<CategoriesData>(CATEGORIES_FILE, { categories }, userId);
+    if (isPendingCreate) {
+      categories.splice(index, 1);
+    } else {
+      categories[index] = {
+        ...categories[index],
+        deletedAt: now,
+        updatedAt: now,
+        version: categories[index].version + 1,
+        clientUpdatedAt: now,
+        pendingDelete: true,
+        pendingUpdate: false,
+      };
+    }
 
-    return success;
+    return await writeFile<CategoriesData>(CATEGORIES_FILE, { ...data, categories }, homeId);
+
   } catch (error) {
     console.error('Error deleting category:', error);
     return false;
   }
 };
 
+/**
+ * Sync categories with server
+ */
+export const syncCategories = async (
+  homeId: string,
+  apiClient: ApiClient,
+  deviceId: string
+): Promise<void> => {
+  console.log('[CategoryService] Starting category sync...');
+  try {
+    const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
+    let categories = data?.categories || [];
+    const lastSyncTime = data?.lastSyncTime;
+    const lastPulledVersion = data?.lastPulledVersion || 0;
+
+    // 1. Prepare Push Requests
+    const pendingCategories = categories.filter(c => c.pendingCreate || c.pendingUpdate || c.pendingDelete);
+    const pushRequests: BatchSyncPushRequest[] = [];
+
+    if (pendingCategories.length > 0) {
+      console.log(`[CategoryService] Pushing ${pendingCategories.length} pending categories`);
+      pushRequests.push({
+        entityType: 'categories',
+        entities: pendingCategories.map(c => ({
+          entityId: c.id,
+          entityType: 'categories',
+          homeId: homeId,
+          data: {
+            id: c.id,
+            name: c.name,
+            icon: c.icon,
+            isCustom: c.isCustom,
+            label: c.label
+          },
+          version: c.version,
+          clientUpdatedAt: c.clientUpdatedAt,
+          pendingCreate: c.pendingCreate,
+          pendingDelete: c.pendingDelete,
+        })),
+        lastPulledAt: lastSyncTime,
+        checkpoint: { lastPulledVersion }
+      });
+    }
+
+    // 2. Prepare Pull Request
+    const pullRequests: BatchSyncPullRequest[] = [{
+      entityType: 'categories',
+      since: lastSyncTime,
+      includeDeleted: true,
+      checkpoint: { lastPulledVersion }
+    }];
+
+    // 3. Perform Batch Sync
+    const batchRequest: BatchSyncRequest = {
+      homeId,
+      deviceId,
+      pullRequests,
+      pushRequests: pushRequests.length > 0 ? pushRequests : undefined
+    };
+
+    const response = await apiClient.batchSync(batchRequest);
+
+    if (!response.success) {
+      console.error('[CategoryService] Sync failed:', response);
+      return;
+    }
+
+    // 4. Process Push Results
+    if (response.pushResults) {
+      for (const pushResult of response.pushResults) {
+        if (pushResult.entityType === 'categories') {
+          for (const result of pushResult.results) {
+            const index = categories.findIndex(c => c.id === result.entityId);
+            if (index === -1) continue;
+
+            if (result.status === 'created' || result.status === 'updated') {
+              categories[index] = {
+                ...categories[index],
+                pendingCreate: false,
+                pendingUpdate: false,
+                pendingDelete: false,
+                serverUpdatedAt: result.serverUpdatedAt,
+                lastSyncedAt: response.serverTimestamp,
+              };
+              if (result.status === 'created' && result.serverVersion) {
+                categories[index].version = result.serverVersion;
+              }
+            } else if (result.status === 'server_version' && result.winner === 'server') {
+              if (result.serverVersionData) {
+                const serverData = result.serverVersionData.data as any;
+                categories[index] = {
+                  ...categories[index],
+                  name: serverData.name,
+                  icon: serverData.icon,
+                  isCustom: serverData.isCustom,
+                  label: serverData.label,
+                  version: result.serverVersionData.version,
+                  serverUpdatedAt: result.serverVersionData.updatedAt,
+                  lastSyncedAt: response.serverTimestamp,
+                  pendingCreate: false,
+                  pendingUpdate: false,
+                };
+              }
+            } else if (result.status === 'deleted') {
+              categories[index] = {
+                ...categories[index],
+                pendingDelete: false,
+                lastSyncedAt: response.serverTimestamp
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // 5. Process Pull Results
+    if (response.pullResults) {
+      for (const pullResult of response.pullResults) {
+        if (pullResult.entityType === 'categories') {
+          for (const entity of pullResult.entities) {
+            const index = categories.findIndex(c => c.id === entity.entityId);
+            const serverData = entity.data as any;
+
+            const newCategory: Category = {
+              id: entity.entityId,
+              homeId: homeId,
+              name: serverData.name,
+              icon: serverData.icon,
+              isCustom: serverData.isCustom,
+              label: serverData.label,
+              // Common fields
+              createdAt: entity.updatedAt, // Approximate
+              updatedAt: entity.updatedAt,
+              version: entity.version,
+              serverUpdatedAt: entity.updatedAt,
+              clientUpdatedAt: entity.clientUpdatedAt,
+              lastSyncedAt: response.serverTimestamp,
+            };
+
+            if (index >= 0) {
+              if (!categories[index].pendingUpdate && !categories[index].pendingCreate && !categories[index].pendingDelete) {
+                categories[index] = { ...categories[index], ...newCategory };
+              }
+            } else {
+              categories.push(newCategory);
+            }
+          }
+
+          for (const deletedId of pullResult.deletedEntityIds) {
+            const index = categories.findIndex(c => c.id === deletedId);
+            if (index >= 0) {
+              categories[index] = {
+                ...categories[index],
+                deletedAt: response.serverTimestamp,
+                pendingDelete: false
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // 6. Save changes
+    const checkPoint = response.pullResults?.find(r => r.entityType === 'categories')?.checkpoint;
+    const newLastPulledVersion = checkPoint?.lastPulledVersion ?? lastPulledVersion;
+
+    await writeFile<CategoriesData>(CATEGORIES_FILE, {
+      categories,
+      lastSyncTime: response.serverTimestamp,
+      lastPulledVersion: newLastPulledVersion
+    }, homeId);
+
+    console.log('[CategoryService] Category sync complete');
+
+  } catch (error) {
+    console.error('[CategoryService] Error syncing categories:', error);
+  }
+};

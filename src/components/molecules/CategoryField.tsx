@@ -17,21 +17,21 @@ const CategoryGrid = styled.View`
   align-items: flex-start;
 `;
 
-const CategoryButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
+const CategoryButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
   width: 30%;
   aspect-ratio: 1;
   margin-right: 3.33%;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   background-color: ${({
-    theme,
-    isSelected,
-  }: StyledPropsWith<{ isSelected: boolean }>) =>
+  theme,
+  isSelected,
+}: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primaryLightest : theme.colors.surface};
   border-width: 1.5px;
   border-color: ${({
-    theme,
-    isSelected,
-  }: StyledPropsWith<{ isSelected: boolean }>) =>
+      theme,
+      isSelected,
+    }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.border};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
   align-items: center;
@@ -105,11 +105,11 @@ export const CategoryField: React.FC<CategoryFieldProps> = ({
         style={buttonStyle}
       >
         {category.icon && (
-          <CategoryIcon color={category.iconColor}>
+          <CategoryIcon color={theme.colors.primary}>
             <Ionicons
               name={category.icon}
               size={24}
-              color={category.iconColor || theme.colors.primary}
+              color={theme.colors.primary}
             />
           </CategoryIcon>
         )}

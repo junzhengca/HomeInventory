@@ -14,9 +14,14 @@ import {
   deleteItem,
   syncItems,
 } from '../../services/InventoryService';
+import { syncCategories } from '../../services/CategoryService';
+import { syncTodos } from '../../services/TodoService';
+import { initializeHomeData } from '../../services/DataInitializationService';
 import { InventoryItem } from '../../types/inventory';
 import type { RootState } from '../types';
 import { homeService } from '../../services/HomeService';
+import { Home } from '../../types/home';
+import { loadTodos } from './todoSaga';
 import { ApiClient } from '../../services/ApiClient';
 import { getDeviceId } from '../../utils/deviceUtils';
 
@@ -92,21 +97,47 @@ function* silentRefreshItemsSaga() {
 function* syncItemsSaga() {
   try {
     const state: RootState = yield select();
-    const { activeHomeId, apiClient } = state.auth;
+    const { apiClient } = state.auth;
 
-    if (!activeHomeId || !apiClient) return;
+    if (!apiClient) return;
 
-    console.log('[InventorySaga] Starting scheduled/triggered sync sequence');
+    console.log('[InventorySaga] Starting comprehensive sync sequence');
 
     // 1. Sync Homes first
     yield call([homeService, homeService.syncHomes], apiClient);
 
-    // 2. Sync Items
+    // 2. Get all homes to iterate through
+    const homes: Home[] = yield call([homeService, homeService.getHomes]);
     const deviceId: string = yield call(getDeviceId);
-    yield call(syncItems, activeHomeId, apiClient as ApiClient, deviceId);
 
-    // 3. Refresh UI
+    console.log(`[InventorySaga] Syncing content for ${homes.length} homes`);
+
+    // 3. For each household, sync everything inside
+    for (const home of homes) {
+      try {
+        console.log(`[InventorySaga] Processing home: ${home.name} (${home.id})`);
+
+        // Ensure data files exist for this home
+        yield call(initializeHomeData, home.id);
+
+        // Sync Items
+        yield call(syncItems, home.id, apiClient as ApiClient, deviceId);
+
+        // Sync Categories
+        yield call(syncCategories, home.id, apiClient as ApiClient, deviceId);
+
+        // Sync Todos
+        yield call(syncTodos, home.id, apiClient as ApiClient, deviceId);
+
+      } catch (homeError) {
+        console.error(`[InventorySaga] Error syncing home ${home.id}:`, homeError);
+        // Continue to next home even if one fails
+      }
+    }
+
+    // 4. Refresh UI for the currently active home
     yield call(silentRefreshItemsSaga);
+    yield put(loadTodos());
 
   } catch (error) {
     console.error('[InventorySaga] Error in sync sequence:', error);
