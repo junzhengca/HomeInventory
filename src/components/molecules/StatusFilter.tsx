@@ -13,6 +13,7 @@ const StatusContainer = styled(View)`
   justify-content: space-between;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   width: 100%;
+  gap: 4px;
 `;
 
 const StatusButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
@@ -28,7 +29,6 @@ const StatusButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
 }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : 'transparent'};
   flex: 1;
-  margin-horizontal: 2px;
 `;
 
 const StatusText = styled.Text<{ isSelected: boolean }>`
