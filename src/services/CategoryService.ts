@@ -5,8 +5,11 @@ import { ApiClient } from './ApiClient';
 import {
   BatchSyncRequest,
   BatchSyncPullRequest,
-  BatchSyncPushRequest
+  BatchSyncPushRequest,
+  CategoryServerData
 } from '../types/api';
+import { syncLogger } from '../utils/Logger';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const CATEGORIES_FILE = 'categories.json';
 
@@ -62,7 +65,7 @@ export const createCategory = async (category: Omit<Category, 'id' | 'version' |
 
     return success ? newCategory : null;
   } catch (error) {
-    console.error('Error creating category:', error);
+    syncLogger.error('Error creating category:', error);
     return null;
   }
 };
@@ -101,7 +104,7 @@ export const updateCategory = async (
     return success ? categories[index] : null;
 
   } catch (error) {
-    console.error('Error updating category:', error);
+    syncLogger.error('Error updating category:', error);
     return null;
   }
 };
@@ -143,7 +146,7 @@ export const deleteCategory = async (id: string, homeId?: string): Promise<boole
     return await writeFile<CategoriesData>(CATEGORIES_FILE, { ...data, categories }, homeId);
 
   } catch (error) {
-    console.error('Error deleting category:', error);
+    syncLogger.error('Error deleting category:', error);
     return false;
   }
 };
@@ -156,10 +159,10 @@ export const syncCategories = async (
   apiClient: ApiClient,
   deviceId: string
 ): Promise<void> => {
-  console.log('[CategoryService] Starting category sync...');
+  syncLogger.info('Starting category sync...');
   try {
     const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
-    let categories = data?.categories || [];
+    const categories = data?.categories || [];
     const lastSyncTime = data?.lastSyncTime;
     const lastPulledVersion = data?.lastPulledVersion || 0;
 
@@ -168,7 +171,7 @@ export const syncCategories = async (
     const pushRequests: BatchSyncPushRequest[] = [];
 
     if (pendingCategories.length > 0) {
-      console.log(`[CategoryService] Pushing ${pendingCategories.length} pending categories`);
+      syncLogger.info(`Pushing ${pendingCategories.length} pending categories`);
       pushRequests.push({
         entityType: 'categories',
         entities: pendingCategories.map(c => ({
@@ -212,7 +215,7 @@ export const syncCategories = async (
     const response = await apiClient.batchSync(batchRequest);
 
     if (!response.success) {
-      console.error('[CategoryService] Sync failed:', response);
+      syncLogger.error('Sync failed:', response);
       return;
     }
 
@@ -238,11 +241,11 @@ export const syncCategories = async (
               }
             } else if (result.status === 'server_version' && result.winner === 'server') {
               if (result.serverVersionData) {
-                const serverData = result.serverVersionData.data as any;
+                const serverData = result.serverVersionData.data as unknown as CategoryServerData;
                 categories[index] = {
                   ...categories[index],
                   name: serverData.name,
-                  icon: serverData.icon,
+                  icon: serverData.icon as keyof typeof Ionicons.glyphMap | undefined,
                   color: serverData.color,
                   isCustom: serverData.isCustom,
                   label: serverData.label,
@@ -271,13 +274,13 @@ export const syncCategories = async (
         if (pullResult.entityType === 'categories') {
           for (const entity of pullResult.entities) {
             const index = categories.findIndex(c => c.id === entity.entityId);
-            const serverData = entity.data as any;
+            const serverData = entity.data as unknown as CategoryServerData;
 
             const newCategory: Category = {
               id: entity.entityId,
               homeId: homeId,
               name: serverData.name,
-              icon: serverData.icon,
+              icon: serverData.icon as keyof typeof Ionicons.glyphMap | undefined,
               color: serverData.color,
               isCustom: serverData.isCustom,
               label: serverData.label,
@@ -323,9 +326,9 @@ export const syncCategories = async (
       lastPulledVersion: newLastPulledVersion
     }, homeId);
 
-    console.log('[CategoryService] Category sync complete');
+    syncLogger.info('Category sync complete');
 
   } catch (error) {
-    console.error('[CategoryService] Error syncing categories:', error);
+    syncLogger.error('Error syncing categories:', error);
   }
 };

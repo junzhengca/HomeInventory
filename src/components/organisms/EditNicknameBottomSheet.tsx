@@ -20,6 +20,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import { useAuth } from '../../store/hooks';
 import { BottomSheetHeader, FormSection, UncontrolledInput, Button } from '../atoms';
+import { uiLogger } from '../../utils/Logger';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -160,7 +161,7 @@ export const EditNicknameBottomSheet = forwardRef<
       }
 
       // Update nickname
-      console.log('[EditNickname] Updating nickname');
+      uiLogger.info('Updating nickname');
       const updatedUser = await apiClient.updateNickname(currentNickname);
 
       // Update user state
@@ -171,9 +172,9 @@ export const EditNicknameBottomSheet = forwardRef<
       handleSheetClose();
       onNicknameUpdated?.();
     } catch (error) {
-      console.error('Error updating nickname:', error);
+      uiLogger.error('Error updating nickname', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('[EditNickname] Error details:', {
+      uiLogger.error('Error details', {
         message: errorMessage,
         errorType: error instanceof Error ? error.constructor.name : typeof error,
       });

@@ -5,8 +5,11 @@ import { ApiClient } from './ApiClient';
 import {
   BatchSyncRequest,
   BatchSyncPullRequest,
-  BatchSyncPushRequest
+  BatchSyncPushRequest,
+  LocationServerData
 } from '../types/api';
+import { syncLogger } from '../utils/Logger';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const LOCATIONS_FILE = 'locations.json';
 
@@ -62,7 +65,7 @@ export const createLocation = async (location: Omit<Location, 'id' | 'version' |
 
     return success ? newLocation : null;
   } catch (error) {
-    console.error('Error creating location:', error);
+    syncLogger.error('Error creating location:', error);
     return null;
   }
 };
@@ -101,7 +104,7 @@ export const updateLocation = async (
     return success ? locations[index] : null;
 
   } catch (error) {
-    console.error('Error updating location:', error);
+    syncLogger.error('Error updating location:', error);
     return null;
   }
 };
@@ -143,7 +146,7 @@ export const deleteLocation = async (id: string, homeId?: string): Promise<boole
     return await writeFile<LocationsData>(LOCATIONS_FILE, { ...data, locations }, homeId);
 
   } catch (error) {
-    console.error('Error deleting location:', error);
+    syncLogger.error('Error deleting location:', error);
     return false;
   }
 };
@@ -156,10 +159,10 @@ export const syncLocations = async (
   apiClient: ApiClient,
   deviceId: string
 ): Promise<void> => {
-  console.log('[LocationService] Starting location sync...');
+  syncLogger.info('Starting location sync...');
   try {
     const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
-    let locations = data?.locations || [];
+    const locations = data?.locations || [];
     const lastSyncTime = data?.lastSyncTime;
     const lastPulledVersion = data?.lastPulledVersion || 0;
 
@@ -168,7 +171,7 @@ export const syncLocations = async (
     const pushRequests: BatchSyncPushRequest[] = [];
 
     if (pendingLocations.length > 0) {
-      console.log(`[LocationService] Pushing ${pendingLocations.length} pending locations`);
+      syncLogger.info(`Pushing ${pendingLocations.length} pending locations`);
       pushRequests.push({
         entityType: 'locations',
         entities: pendingLocations.map(l => ({
@@ -209,7 +212,7 @@ export const syncLocations = async (
     const response = await apiClient.batchSync(batchRequest);
 
     if (!response.success) {
-      console.error('[LocationService] Sync failed:', response);
+      syncLogger.error('Sync failed:', response);
       return;
     }
 
@@ -235,11 +238,11 @@ export const syncLocations = async (
               }
             } else if (result.status === 'server_version' && result.winner === 'server') {
               if (result.serverVersionData) {
-                const serverData = result.serverVersionData.data as any;
+                const serverData = result.serverVersionData.data as unknown as LocationServerData;
                 locations[index] = {
                   ...locations[index],
                   name: serverData.name,
-                  icon: serverData.icon,
+                  icon: serverData.icon as keyof typeof Ionicons.glyphMap | undefined,
                   version: result.serverVersionData.version,
                   serverUpdatedAt: result.serverVersionData.updatedAt,
                   lastSyncedAt: response.serverTimestamp,
@@ -265,13 +268,13 @@ export const syncLocations = async (
         if (pullResult.entityType === 'locations') {
           for (const entity of pullResult.entities) {
             const index = locations.findIndex(l => l.id === entity.entityId);
-            const serverData = entity.data as any;
+            const serverData = entity.data as unknown as LocationServerData;
 
             const newLocation: Location = {
               id: entity.entityId,
               homeId: homeId,
               name: serverData.name,
-              icon: serverData.icon,
+              icon: serverData.icon as keyof typeof Ionicons.glyphMap | undefined,
               // Common fields
               createdAt: entity.updatedAt, // Approximate
               updatedAt: entity.updatedAt,
@@ -314,9 +317,9 @@ export const syncLocations = async (
       lastPulledVersion: newLastPulledVersion
     }, homeId);
 
-    console.log('[LocationService] Location sync complete');
+    syncLogger.info('Location sync complete');
 
   } catch (error) {
-    console.error('[LocationService] Error syncing locations:', error);
+    syncLogger.error('Error syncing locations:', error);
   }
 };

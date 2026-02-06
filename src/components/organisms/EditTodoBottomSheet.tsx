@@ -9,6 +9,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
 import { useTodos } from '../../store/hooks';
 import { BottomActionBar } from '../molecules';
+import { uiLogger } from '../../utils/Logger';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -223,7 +224,7 @@ export const EditTodoBottomSheet: React.FC<EditTodoBottomSheetProps> = ({
         onTodoUpdated();
       }
     } catch (error) {
-      console.error('Error updating todo:', error);
+      uiLogger.error('Error updating todo', error);
       Alert.alert(t('notes.editTodo.errors.title'), t('notes.editTodo.errors.updateFailed'));
     } finally {
       setIsLoading(false);

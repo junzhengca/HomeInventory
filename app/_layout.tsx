@@ -23,6 +23,9 @@ import { loadTodos } from '../src/store/sagas/todoSaga';
 import { loadItems } from '../src/store/sagas/inventorySaga';
 import { useAppDispatch, useAppSelector } from '../src/store/hooks';
 import { setShowNicknameSetup } from '../src/store/slices/authSlice';
+import { logger } from '../src/utils/Logger';
+
+const appLogger = logger.scoped('general');
 
 // TODO: Configure your API base URL here or use environment variables
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://cluttr-server-v2-production.up.railway.app';
@@ -58,7 +61,7 @@ function AppInner() {
                     }, 100);
                 }
             } catch (error) {
-                console.error('Error handling deep link:', error);
+                appLogger.error('Error handling deep link', error);
             }
         };
 
@@ -155,7 +158,6 @@ function AppInner() {
                 <Stack.Screen name="ExportData" />
                 <Stack.Screen name="ExportDataDetail" />
                 <Stack.Screen name="Profile" />
-                <Stack.Screen name="ContextMenuDemo" />
             </Stack>
             <OfflineBadge onPress={handleOfflineBadgePress} />
             <StatusBar style={darkMode ? 'light' : 'dark'} />
@@ -190,7 +192,7 @@ export default function RootLayout() {
                 await homeService.init();
                 setIsInitialized(true);
             } catch (error) {
-                console.error('Failed to initialize data files:', error);
+                appLogger.error('Failed to initialize data files', error);
                 // Still set initialized to true to allow app to continue
                 setIsInitialized(true);
             }

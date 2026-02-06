@@ -1,16 +1,16 @@
 import React, { forwardRef, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text as RNText } from 'react-native';
 import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import styled, { useTheme } from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from '../atoms/Button';
-import { Text as RNText } from 'react-native';
+import { StyledProps } from '../../utils/styledComponents';
 
 // Styled components
 const Container = styled(BottomSheetView)`
   flex: 1;
-  padding: ${({ theme }: { theme: any }) => theme.spacing.xl}px;
+  padding: ${({ theme }: StyledProps) => theme.spacing.xl}px;
   align-items: center;
 `;
 
@@ -18,30 +18,30 @@ const IconContainer = styled.View`
   width: 80px;
   height: 80px;
   border-radius: 40px;
-  background-color: ${({ theme }: { theme: any }) => theme.colors.surfaceVariant};
+  background-color: ${({ theme }: StyledProps) => theme.colors.backgroundLight};
   justify-content: center;
   align-items: center;
-  margin-bottom: ${({ theme }: { theme: any }) => theme.spacing.lg}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
 `;
 
 const ContentContainer = styled.View`
   width: 100%;
   align-items: center;
-  margin-bottom: ${({ theme }: { theme: any }) => theme.spacing.xxl}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xxl}px;
 `;
 
 const Title = styled(RNText)`
   font-size: 20px;
   font-weight: bold;
   text-align: center;
-  margin-bottom: ${({ theme }: { theme: any }) => theme.spacing.md}px;
-  color: ${({ theme }: { theme: any }) => theme.colors.text};
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  color: ${({ theme }: StyledProps) => theme.colors.text};
 `;
 
 const Description = styled(RNText)`
   font-size: 16px;
   text-align: center;
-  color: ${({ theme }: { theme: any }) => theme.colors.textSecondary};
+  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
   line-height: 24px;
 `;
 

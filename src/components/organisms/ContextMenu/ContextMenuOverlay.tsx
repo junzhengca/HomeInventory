@@ -12,6 +12,7 @@ import { useContextMenu } from './ContextMenuContext';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { ContextMenuItemData } from './types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { uiLogger } from '../../../utils/Logger';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -90,14 +91,14 @@ export const ContextMenuOverlay: React.FC = () => {
                                 try {
                                     item.onPress();
                                 } catch (e) {
-                                    console.error('Context menu action failed:', e);
+                                    uiLogger.error('Context menu action failed', e);
                                 }
                             });
                         }}
                     >
                         {item.icon && (
                             <MaterialCommunityIcons
-                                name={item.icon as any}
+                                name={item.icon as keyof typeof MaterialCommunityIcons.glyphMap}
                                 size={20}
                                 color={item.isDestructive ? theme.colors.error : theme.colors.text}
                                 style={styles.menuIcon}

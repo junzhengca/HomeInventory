@@ -1,5 +1,6 @@
 import { Settings, defaultSettings } from '../types/settings';
 import { readFile, writeFile } from './FileSystemService';
+import { storageLogger } from '../utils/Logger';
 
 const SETTINGS_FILE = 'settings.json';
 
@@ -29,7 +30,7 @@ export const updateSettings = async (updates: Partial<Settings>, userId?: string
 
     return success ? newSettings : null;
   } catch (error) {
-    console.error('Error updating settings:', error);
+    storageLogger.error('Error updating settings:', error);
     return null;
   }
 };
@@ -49,7 +50,7 @@ export const resetToDefaults = async (userId?: string): Promise<Settings | null>
 
     return success ? resetSettings : null;
   } catch (error) {
-    console.error('Error resetting settings:', error);
+    storageLogger.error('Error resetting settings:', error);
     return null;
   }
 };

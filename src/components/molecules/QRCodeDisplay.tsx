@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../../utils/styledComponents';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useToast } from '../../hooks/useToast';
+import { uiLogger } from '../../utils/Logger';
 
 const Container = styled(View)`
   align-items: center;
@@ -69,7 +70,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       showToast(t('share.invite.qrCode.copied'), 'success');
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Error copying to clipboard:', error);
+      uiLogger.error('Error copying to clipboard', error);
       showToast(t('share.invite.qrCode.copyError'), 'error');
     }
   }, [invitationLink, showToast, t]);

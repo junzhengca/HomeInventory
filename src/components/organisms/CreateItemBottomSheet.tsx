@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { InventoryItem } from '../../types/inventory';
 import { useAppDispatch } from '../../store/hooks';
 import { ItemFormBottomSheet } from './ItemFormBottomSheet';
+import { uiLogger } from '../../utils/Logger';
 
 export interface CreateItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
@@ -42,7 +43,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
         if (location) setLastLocation(location);
         if (status) setLastStatus(status);
       } catch (error) {
-        console.error('Failed to load last created item settings', error);
+        uiLogger.error('Failed to load last created item settings', error);
       }
     })();
   }, []);
@@ -82,7 +83,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
         setLastLocation(values.location);
         setLastStatus(values.status);
       } catch (error) {
-        console.error('Failed to save last created item settings', error);
+        uiLogger.error('Failed to save last created item settings', error);
       }
     },
     [dispatch]

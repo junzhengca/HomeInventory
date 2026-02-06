@@ -12,6 +12,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import i18n from '../i18n/i18n';
 import type { StyledProps, StyledPropsWith } from '../utils/styledComponents';
+import { uiLogger } from '../utils/Logger';
 import {
   PageHeader,
   LogoutButton,
@@ -198,7 +199,7 @@ export const ProfileScreen: React.FC = () => {
         setMembers([]);
       }
     } catch (error) {
-      console.error('Error loading members in Profile:', error);
+      uiLogger.error('Error loading members in Profile', error);
     }
   }, [getApiClient, activeHomeId]);
 
@@ -281,7 +282,7 @@ export const ProfileScreen: React.FC = () => {
         t('profile.avatar.uploadSuccess.message')
       );
     } catch (error) {
-      console.error('Avatar upload error:', error);
+      uiLogger.error('Avatar upload error', error);
       Alert.alert(
         t('profile.avatar.uploadError.title'),
         t('profile.avatar.uploadError.message')
@@ -345,7 +346,7 @@ export const ProfileScreen: React.FC = () => {
         signupBottomSheetRef.current?.dismiss();
       }
     } catch (error) {
-      console.error('Google login error:', error);
+      uiLogger.error('Google login error', error);
       Alert.alert(
         t('login.errors.googleLoginFailed.title') || 'Google Login Failed',
         error instanceof Error ? error.message : t('login.errors.googleLoginFailed.message') || 'Failed to sign in with Google. Please try again.'

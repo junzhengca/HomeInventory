@@ -19,6 +19,7 @@ import type { StyledProps } from '../../utils/styledComponents';
 import { useAuth, useAppDispatch } from '../../store/hooks';
 import { BottomSheetHeader, FormSection, UncontrolledInput, Button } from '../atoms';
 import { setShowNicknameSetup } from '../../store/slices/authSlice';
+import { uiLogger } from '../../utils/Logger';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -125,7 +126,7 @@ export const SetupNicknameBottomSheet: React.FC<
       }
 
       // Update nickname
-      console.log('[SetupNickname] Updating nickname');
+      uiLogger.info('Updating nickname');
       const updatedUser = await apiClient.updateNickname(currentNickname);
 
       // Update user state
@@ -138,9 +139,9 @@ export const SetupNicknameBottomSheet: React.FC<
       handleClose();
       onNicknameSet?.();
     } catch (error) {
-      console.error('Error updating nickname:', error);
+      uiLogger.error('Error updating nickname', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('[SetupNickname] Error details:', {
+      uiLogger.error('Error details', {
         message: errorMessage,
         errorType: error instanceof Error ? error.constructor.name : typeof error,
       });

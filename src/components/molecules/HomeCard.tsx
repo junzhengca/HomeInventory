@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
-import type { StyledProps } from '../../utils/styledComponents';
+import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
 import { useTranslation } from 'react-i18next';
 
 const CardContainer = styled(TouchableOpacity) <{ isActive?: boolean; backgroundColor?: string }>`
-  background-color: ${({ isActive, backgroundColor, theme }: any) =>
+  background-color: ${({ isActive, backgroundColor, theme }: StyledPropsWith<{ isActive?: boolean; backgroundColor?: string }>) =>
     isActive ? theme.colors.primary : (backgroundColor || theme.colors.primaryLightest || theme.colors.surface)};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
   padding: ${({ theme }: StyledProps) => theme.spacing.lg}px;
@@ -14,7 +14,7 @@ const CardContainer = styled(TouchableOpacity) <{ isActive?: boolean; background
   align-items: center;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   min-height: 140px;
-  
+
   /* Shadow */
   shadow-color: #000;
   shadow-offset: 0px 4px;
@@ -34,14 +34,14 @@ const HeaderRow = styled(View)`
 `;
 
 const Title = styled(Text) <{ isActive?: boolean }>`
-  color: ${({ isActive, theme }: any) => (isActive ? theme.colors.surface : theme.colors.text)};
+  color: ${({ isActive, theme }: StyledPropsWith<{ isActive?: boolean }>) => (isActive ? theme.colors.surface : theme.colors.text)};
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.xxl}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xs}px;
 `;
 
 const Subtitle = styled(Text) <{ isActive?: boolean }>`
-  color: ${({ isActive, theme }: any) => (isActive ? 'rgba(255, 255, 255, 0.7)' : theme.colors.textSecondary)};
+  color: ${({ isActive, theme }: StyledPropsWith<{ isActive?: boolean }>) => (isActive ? 'rgba(255, 255, 255, 0.7)' : theme.colors.textSecondary)};
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
 `;
 
@@ -106,7 +106,7 @@ export const HomeCard: React.FC<HomeCardProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const handleSwitchPress = (e: any) => {
+  const handleSwitchPress = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
     onSwitchPress?.();
   };

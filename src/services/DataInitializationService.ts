@@ -5,6 +5,7 @@ import { itemCategories as defaultItemCategories } from '../data/defaultCategori
 import { locations as defaultLocations } from '../data/locations';
 import { getLocationIdsSet } from '../utils/locationUtils';
 import i18n from '../i18n/i18n';
+import { storageLogger } from '../utils/Logger';
 
 const ITEMS_FILE = 'items.json';
 const CATEGORIES_FILE = 'categories.json';
@@ -43,13 +44,13 @@ export const initializeDataFiles = async (): Promise<void> => {
     // Initialize settings (Global)
     if (!(await fileExists(SETTINGS_FILE))) {
       await writeFile<Settings>(SETTINGS_FILE, defaultSettings);
-      console.log('Settings file initialized');
+      storageLogger.info('Settings file initialized');
     }
 
     // Note: Items, Categories, and Todos are now home-scoped.
     // They are initialized when a home is created or switched to via initializeHomeData.
   } catch (error) {
-    console.error('Error initializing data files:', error);
+    storageLogger.error('Error initializing data files:', error);
     throw error;
   }
 };
@@ -81,7 +82,7 @@ export const initializeHomeData = async (homeId: string): Promise<void> => {
       await writeFile<CategoriesData>(categoriesFile, {
         categories: itemCats,
       }, homeId);
-      console.log(`Categories file initialized for home ${homeId}`);
+      storageLogger.info(`Categories file initialized for home ${homeId}`);
     } else {
       // Ensure item categories exist even if file already exists
       const existingData = await readFile<CategoriesData>(categoriesFile, homeId);
@@ -114,7 +115,7 @@ export const initializeHomeData = async (homeId: string): Promise<void> => {
         await writeFile<CategoriesData>(categoriesFile, {
           categories: updatedCategories,
         }, homeId);
-        console.log(`Added missing item categories for home ${homeId}`);
+        storageLogger.info(`Added missing item categories for home ${homeId}`);
       }
     }
 
@@ -136,7 +137,7 @@ export const initializeHomeData = async (homeId: string): Promise<void> => {
       await writeFile<LocationsData>(locationsFile, {
         locations: locations,
       }, homeId);
-      console.log(`Locations file initialized for home ${homeId}`);
+      storageLogger.info(`Locations file initialized for home ${homeId}`);
     }
 
     // Initialize items for this home
@@ -145,7 +146,7 @@ export const initializeHomeData = async (homeId: string): Promise<void> => {
       await writeFile<ItemsData>(itemsFile, {
         items: [],
       }, homeId);
-      console.log(`Items file initialized for home ${homeId}`);
+      storageLogger.info(`Items file initialized for home ${homeId}`);
     }
 
     // Initialize todos for this home
@@ -154,11 +155,11 @@ export const initializeHomeData = async (homeId: string): Promise<void> => {
       await writeFile<TodosData>(todosFile, {
         todos: [],
       }, homeId);
-      console.log(`Todos file initialized for home ${homeId}`);
+      storageLogger.info(`Todos file initialized for home ${homeId}`);
     }
 
   } catch (error) {
-    console.error(`Error initializing home data for ${homeId}:`, error);
+    storageLogger.error(`Error initializing home data for ${homeId}:`, error);
     throw error;
   }
 };
@@ -182,20 +183,20 @@ export const clearAllDataFiles = async (): Promise<boolean> => {
     for (const file of files) {
       const deleted = await deleteFile(file);
       if (!deleted) {
-        console.error(`Failed to delete file: ${file}`);
+        storageLogger.error(`Failed to delete file: ${file}`);
         // Continue deleting other files even if one fails
       }
     }
 
-    console.log('All data files deleted successfully');
+    storageLogger.info('All data files deleted successfully');
 
     // Re-initialize with default data
     await initializeDataFiles();
 
-    console.log('Data files re-initialized with defaults');
+    storageLogger.info('Data files re-initialized with defaults');
     return true;
   } catch (error) {
-    console.error('Error clearing data files:', error);
+    storageLogger.error('Error clearing data files:', error);
     return false;
   }
 };

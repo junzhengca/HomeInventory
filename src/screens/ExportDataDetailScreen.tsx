@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { StyledProps } from '../utils/styledComponents';
+import { uiLogger } from '../utils/Logger';
 import { PageHeader, BottomActionBar } from '../components';
 import { readFile } from '../services/FileSystemService';
 import { calculateBottomActionBarPadding } from '../utils/layout';
@@ -82,7 +83,7 @@ export const ExportDataDetailScreen: React.FC = () => {
         setJsonContent(formatted);
       }
     } catch (err) {
-      console.error('Error loading JSON content:', err);
+      uiLogger.error('Error loading JSON content', err);
       setError('Failed to load file content');
     } finally {
       setIsLoading(false);
@@ -102,10 +103,10 @@ export const ExportDataDetailScreen: React.FC = () => {
 
       if (result.action === Share.sharedAction) {
         // User shared successfully
-        console.log('Content shared successfully');
+        uiLogger.info('Content shared successfully');
       }
     } catch (error) {
-      console.error('Error sharing:', error);
+      uiLogger.error('Error sharing', error);
       Alert.alert('Error', 'Failed to share content');
     }
   };

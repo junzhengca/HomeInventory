@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import type { Category } from '../../types/inventory';
+import { uiLogger } from '../../utils/Logger';
 import { useCategory } from '../../store/hooks';
 import { useHome } from '../../hooks/useHome';
 import { useKeyboardVisibility } from '../../hooks';
@@ -93,7 +94,7 @@ export const CategoryManagerBottomSheet: React.FC<
       const custom = allCategories.filter((cat) => cat.isCustom);
       setCategories(custom);
     } catch (error) {
-      console.error('Error loading categories:', error);
+      uiLogger.error('Error loading categories', error);
     }
   }, [currentHomeId]);
 
@@ -180,7 +181,7 @@ export const CategoryManagerBottomSheet: React.FC<
         );
       }
     } catch (error: unknown) {
-      console.error('Error saving category:', error);
+      uiLogger.error('Error saving category', error);
       const errorMessage = error instanceof Error ? error.message : undefined;
       Alert.alert(
         t('categoryManager.errors.title'),
@@ -229,7 +230,7 @@ export const CategoryManagerBottomSheet: React.FC<
                   );
                 }
               } catch (error: unknown) {
-                console.error('Error deleting category:', error);
+                uiLogger.error('Error deleting category', error);
                 const errorMessage =
                   error instanceof Error ? error.message : undefined;
                 Alert.alert(

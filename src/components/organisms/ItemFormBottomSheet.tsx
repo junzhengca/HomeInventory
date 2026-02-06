@@ -16,6 +16,7 @@ import { useKeyboardVisibility } from '../../hooks/useKeyboardVisibility';
 import { useUncontrolledItemForm, type UseUncontrolledItemFormOptions } from '../../hooks/useUncontrolledItemForm';
 import { BottomSheetHeader, Button } from '../atoms';
 import { ItemFormFields } from './ItemFormFields';
+import { uiLogger } from '../../utils/Logger';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -285,7 +286,7 @@ export const ItemFormBottomSheet = forwardRef<
   // Handle submit
   const handleSubmit = useCallback(async () => {
     const formValues = getFormValues();
-    console.log('[ItemFormBottomSheet] handleSubmit formValues:', formValues);
+    uiLogger.info('handleSubmit formValues', formValues);
 
     // Validation
     if (!formValues.name.trim()) {
@@ -313,7 +314,7 @@ export const ItemFormBottomSheet = forwardRef<
       const warningThresholdNum =
         parseInt(formValues.warningThreshold, 10) || 0;
 
-      console.log('[ItemFormBottomSheet] About to call onSubmit with icon:', formValues.icon, 'iconColor:', formValues.iconColor);
+      uiLogger.info(`About to call onSubmit with icon: ${formValues.icon}, iconColor: ${formValues.iconColor}`);
       await onSubmit({
         name: formValues.name.trim(),
         location: formValues.location,
@@ -327,13 +328,13 @@ export const ItemFormBottomSheet = forwardRef<
         purchaseDate: formValues.purchaseDate?.toISOString(),
         expiryDate: formValues.expiryDate?.toISOString(),
       });
-      console.log('[ItemFormBottomSheet] onSubmit completed successfully');
+      uiLogger.info('onSubmit completed successfully');
 
       handleClose(true); // Skip dirty check since we just saved successfully
       resetForm();
       onSuccess?.();
     } catch (error) {
-      console.error(`Error in ${mode} item:`, error);
+      uiLogger.error(`Error in ${mode} item`, error);
       Alert.alert(
         t(`${mode}Item.errors.title`),
         getErrorMessage?.('failed') ??

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, ActivityIndicator, Alert } from 'react-native';
 import styled from 'styled-components/native';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -11,6 +11,7 @@ import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { useToast } from '../../hooks/useToast';
 import type { StyledProps } from '../../utils/styledComponents';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { uiLogger } from '../../utils/Logger';
 import { setActiveHomeId } from '../../store/slices/authSlice';
 import { homeService } from '../../services/HomeService';
 import { loadItems } from '../../store/sagas/inventorySaga';
@@ -169,9 +170,9 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
             } else {
                 setError(data.message || 'Invalid invitation code');
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to validate invitation');
-            console.error('Validate invitation error:', err);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to validate invitation');
+            uiLogger.error('Validate invitation error', err);
         } finally {
             setLoading(false);
         }
@@ -186,7 +187,7 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
     const processAccept = async () => {
         if (!apiClient || !inviteCode) return;
         setLoading(true);
-        console.log('[Invitation] Accepting invite:', inviteCode);
+        uiLogger.info(`Accepting invite: ${inviteCode}`);
         try {
             await apiClient.acceptInvitation(inviteCode);
 
@@ -200,9 +201,9 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
             onDismiss?.();
             bottomSheetRef.current?.dismiss();
 
-        } catch (err: any) {
-            console.error('Accept invitation error:', err);
-            showToast(err.message || t('share.invite.acceptError'), 'error');
+        } catch (err: unknown) {
+            uiLogger.error('Accept invitation error', err);
+            showToast(err instanceof Error ? err.message : t('share.invite.acceptError'), 'error');
         } finally {
             setLoading(false);
         }
@@ -214,7 +215,7 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
     }, [bottomSheetRef, onDismiss]);
 
     const renderBackdrop = useCallback(
-        (props: any) => (
+        (props: BottomSheetBackdropProps) => (
             <BottomSheetBackdrop
                 {...props}
                 disappearsOnIndex={-1}

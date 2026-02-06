@@ -26,6 +26,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
+import { uiLogger } from '../utils/Logger';
 
 import {
   PageHeader,
@@ -314,7 +315,7 @@ export const HomeScreen: React.FC = () => {
 
       createItemBottomSheetRef.current?.present();
     } catch (error) {
-      console.error('AI automatic image capture error:', error);
+      uiLogger.error('AI automatic image capture error', error);
       Alert.alert(
         t('createItem.errors.title'),
         error instanceof Error

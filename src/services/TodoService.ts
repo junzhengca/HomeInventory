@@ -7,8 +7,10 @@ import {
   BatchSyncResponse,
   SyncEntity,
   BatchSyncPullRequest,
-  BatchSyncPushRequest
+  BatchSyncPushRequest,
+  TodoItemServerData
 } from '../types/api';
+import { syncLogger } from '../utils/Logger';
 
 const TODOS_FILE = 'todos.json';
 
@@ -49,7 +51,7 @@ export const getTodoById = async (id: string, homeId?: string): Promise<TodoItem
 export const createTodo = async (text: string, homeId: string, note?: string): Promise<TodoItem | null> => {
   try {
     if (!homeId) {
-      console.error('Error creating todo: homeId is required');
+      syncLogger.error('Error creating todo: homeId is required');
       return null;
     }
 
@@ -76,7 +78,7 @@ export const createTodo = async (text: string, homeId: string, note?: string): P
 
     return success ? newTodo : null;
   } catch (error) {
-    console.error('Error creating todo:', error);
+    syncLogger.error('Error creating todo:', error);
     return null;
   }
 };
@@ -117,7 +119,7 @@ export const updateTodo = async (
 
     return success ? todos[index] : null;
   } catch (error) {
-    console.error('Error updating todo:', error);
+    syncLogger.error('Error updating todo:', error);
     return null;
   }
 };
@@ -163,7 +165,7 @@ export const deleteTodo = async (id: string, homeId?: string): Promise<boolean> 
 
     return success;
   } catch (error) {
-    console.error('Error deleting todo:', error);
+    syncLogger.error('Error deleting todo:', error);
     return false;
   }
 };
@@ -199,7 +201,7 @@ export const toggleTodo = async (id: string, homeId?: string): Promise<TodoItem 
 
     return success ? todos[index] : null;
   } catch (error) {
-    console.error('Error toggling todo:', error);
+    syncLogger.error('Error toggling todo:', error);
     return null;
   }
 };
@@ -212,10 +214,10 @@ export const syncTodos = async (
   apiClient: ApiClient,
   deviceId: string
 ): Promise<void> => {
-  console.log('[TodoService] Starting todo sync...');
+  syncLogger.info('Starting todo sync...');
   try {
     const data = await readFile<TodosData>(TODOS_FILE, homeId);
-    let todos = data?.todos || [];
+    const todos = data?.todos || [];
     const lastSyncTime = data?.lastSyncTime;
     const lastPulledVersion = data?.lastPulledVersion || 0;
 
@@ -224,7 +226,7 @@ export const syncTodos = async (
     const pushRequests: BatchSyncPushRequest[] = [];
 
     if (pendingTodos.length > 0) {
-      console.log(`[TodoService] Pushing ${pendingTodos.length} pending todos`);
+      syncLogger.info(`Pushing ${pendingTodos.length} pending todos`);
       pushRequests.push({
         entityType: 'todoItems',
         entities: pendingTodos.map(t => ({
@@ -266,7 +268,7 @@ export const syncTodos = async (
     const response = await apiClient.batchSync(batchRequest);
 
     if (!response.success) {
-      console.error('[TodoService] Sync failed:', response);
+      syncLogger.error('Sync failed:', response);
       return;
     }
 
@@ -293,7 +295,7 @@ export const syncTodos = async (
             } else if (result.status === 'server_version' && result.winner === 'server') {
               // Server won, update local with server data
               if (result.serverVersionData) {
-                const serverData = result.serverVersionData.data as any;
+                const serverData = result.serverVersionData.data as unknown as TodoItemServerData;
                 todos[index] = {
                   ...todos[index],
                   text: serverData.text,
@@ -333,7 +335,7 @@ export const syncTodos = async (
           // Handle new/updated entities
           for (const entity of pullResult.entities) {
             const index = todos.findIndex(t => t.id === entity.entityId);
-            const serverData = entity.data as any;
+            const serverData = entity.data as unknown as TodoItemServerData;
 
             const newTodo: TodoItem = {
               id: entity.entityId,
@@ -371,9 +373,8 @@ export const syncTodos = async (
               todos[index] = {
                 ...todos[index],
                 deletedAt: response.serverTimestamp, // Mark deleted
-                updatedBy: 'server', // optional tracking
                 pendingDelete: false // Server told us it's deleted
-              } as any;
+              };
             }
           }
         }
@@ -390,10 +391,10 @@ export const syncTodos = async (
       lastPulledVersion: newLastPulledVersion
     }, homeId);
 
-    console.log('[TodoService] Todo sync complete');
+    syncLogger.info('Todo sync complete');
 
   } catch (error) {
-    console.error('[TodoService] Error syncing todos:', error);
+    syncLogger.error('Error syncing todos:', error);
   }
 };
 

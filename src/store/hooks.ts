@@ -5,6 +5,7 @@ import { selectPendingTodos, selectCompletedTodos } from './slices/todoSlice';
 import { clearUpdateResult } from './slices/settingsSlice';
 import { User } from '../types/api';
 import { Settings } from '../types/settings';
+import { reduxLogger } from '../utils/Logger';
 
 // Typed hooks
 export const useAppDispatch = () => useDispatch<AppDispatch>();
@@ -243,7 +244,7 @@ export const useInventory = () => {
 
   const updateItem = useCallback(
     (id: string, updates: Partial<Omit<import('../types/inventory').InventoryItem, 'id'>>) => {
-      console.log('[useInventory] updateItem called with id:', id, 'updates:', updates);
+      reduxLogger.info(`updateItem called with id: ${id}`, updates);
       dispatch({ type: 'inventory/UPDATE_ITEM', payload: { id, updates } });
     },
     [dispatch]

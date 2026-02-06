@@ -2,8 +2,10 @@ import { BehaviorSubject, map } from 'rxjs';
 import { readFile, writeFile, deleteHomeFiles } from './FileSystemService';
 import { Home } from '../types/home';
 import { generateItemId } from '../utils/idGenerator';
-import { SyncHomesResponse, PushHomesResponse } from '../types/api';
+import { SyncHomesResponse, PushHomesResponse, HomeSyncData } from '../types/api';
 import { initializeHomeData } from './DataInitializationService';
+import { syncLogger } from '../utils/Logger';
+import { ApiClient } from './ApiClient';
 
 const HOMES_FILE = 'homes.json';
 
@@ -31,7 +33,7 @@ class HomeService {
         let data = await readFile<HomesData>(HOMES_FILE);
 
         if (!data || !data.homes || data.homes.length === 0) {
-            console.log('[HomeService] No homes found, creating default home...');
+            syncLogger.info('No homes found, creating default home...');
             const defaultHome: Home = {
                 id: generateItemId(),
                 name: 'My Home',
@@ -43,7 +45,7 @@ class HomeService {
             data = { homes: [defaultHome] };
             const success = await writeFile(HOMES_FILE, data);
             if (!success) {
-                console.error('[HomeService] Failed to write default home');
+                syncLogger.error('Failed to write default home');
                 return;
             }
             // Initialize home-specific data files for the default home
@@ -56,7 +58,7 @@ class HomeService {
             data.homes = data.homes.map(home => {
                 // If a home has no server timestamp and isn't marked for creation/joining, it's a "lost" local home
                 if (!home.serverUpdatedAt && !home.pendingCreate && !home.pendingJoin) {
-                    console.log(`[HomeService] Repaired home ${home.id} (missing sync flags)`);
+                    syncLogger.info(`Repaired home ${home.id} (missing sync flags)`);
                     dataChanged = true;
                     return {
                         ...home,
@@ -87,8 +89,8 @@ class HomeService {
     /**
      * Sync homes with server
      */
-    async syncHomes(apiClient: any): Promise<void> {
-        console.log('[HomeService] Starting home sync...');
+    async syncHomes(apiClient: ApiClient): Promise<void> {
+        syncLogger.info('Starting home sync...');
         try {
             const data = await readFile<HomesData>(HOMES_FILE);
             const lastSyncTime = data?.lastSyncTime;
@@ -100,7 +102,7 @@ class HomeService {
             let syncResponse: SyncHomesResponse | PushHomesResponse;
 
             if (pendingHomes.length > 0) {
-                console.log(`[HomeService] Pushing ${pendingHomes.length} pending changes...`);
+                syncLogger.info(`Pushing ${pendingHomes.length} pending changes...`);
                 const pushResponse = await apiClient.pushHomes({
                     homes: pendingHomes.map(h => ({
                         homeId: h.id,
@@ -119,7 +121,7 @@ class HomeService {
 
                 // Handle results of push
                 for (const result of pushResponse.results) {
-                    const localIndex = currentHomes.findIndex(h => h != null && h.id === (result as any).homeId);
+                    const localIndex = currentHomes.findIndex(h => h != null && h.id === result.homeId);
                     if (localIndex >= 0) {
                         if (result.status === 'created' || result.status === 'updated') {
                             // Clear pending flags on success
@@ -132,15 +134,18 @@ class HomeService {
                             };
                         } else if (result.status === 'deleted') {
                             // Home deleted on server, remove locally
-                            await deleteHomeFiles((result as any).homeId);
-                            // Set to null to filter out later
-                            (currentHomes as any)[localIndex] = null;
+                            await deleteHomeFiles(result.homeId);
+                            // Mark for deletion by setting pendingDelete
+                            currentHomes[localIndex] = {
+                                ...currentHomes[localIndex],
+                                pendingDelete: true,
+                            };
                         } else if (result.status === 'server_version' && result.winner === 'server') {
                             // Server won conflict, update local data
                             currentHomes[localIndex] = {
                                 ...currentHomes[localIndex],
-                                ...(result as any).serverVersion,
-                                id: (result as any).homeId,
+                                ...(result.serverVersion ?? {}),
+                                id: result.homeId,
                                 pendingCreate: false,
                                 pendingUpdate: false,
                                 serverUpdatedAt: result.serverUpdatedAt,
@@ -150,17 +155,17 @@ class HomeService {
                     }
                 }
 
-                // Filter out nulls (deleted homes)
-                const finalValues = currentHomes.filter(h => h !== null) as Home[];
+                // Filter out homes marked for deletion
+                const filteredHomes = currentHomes.filter(h => !h.pendingDelete);
                 // Update array in place
                 currentHomes.length = 0;
-                currentHomes.push(...finalValues);
+                currentHomes.push(...filteredHomes);
 
                 // Handle errors (like homeId collisions)
                 if ((syncResponse as PushHomesResponse).errors) {
-                    (syncResponse as PushHomesResponse).errors.forEach((error: any) => {
+                    (syncResponse as PushHomesResponse).errors.forEach((error) => {
                         if (error.code === 'homeId_exists' && error.suggestedHomeId) {
-                            console.log(`[HomeService] homeId collision for ${error.homeId}, retrying with ${error.suggestedHomeId}`);
+                            syncLogger.info(`homeId collision for ${error.homeId}, retrying with ${error.suggestedHomeId}`);
                             const localIndex = currentHomes.findIndex(h => h != null && h.id === error.homeId);
                             if (localIndex >= 0) {
                                 currentHomes[localIndex] = {
@@ -173,15 +178,18 @@ class HomeService {
                     });
                 }
             } else {
-                console.log('[HomeService] No pending changes, pulling updates...');
+                syncLogger.info('No pending changes, pulling updates...');
                 syncResponse = await apiClient.syncHomes(lastSyncTime, true);
             }
 
             // 2. Process updates from server (new homes found on server)
-            const serverHomes = (syncResponse as any).homes || (syncResponse as any).newHomesFromServer || [];
-            serverHomes.forEach((serverHome: any) => {
-                const homeId = serverHome.homeId || serverHome.id;
+            const serverHomes: HomeSyncData[] = 'homes' in syncResponse
+                ? (syncResponse as SyncHomesResponse).homes
+                : (syncResponse as PushHomesResponse).newHomesFromServer;
+            serverHomes.forEach((serverHome) => {
+                const homeId = serverHome.homeId;
                 const existingIndex = currentHomes.findIndex(h => h.id === homeId);
+                const now = new Date().toISOString();
                 const mappedHome: Home = {
                     id: homeId,
                     name: serverHome.name,
@@ -190,10 +198,10 @@ class HomeService {
                     owner: serverHome.owner,
                     settings: serverHome.settings,
                     invitationCode: serverHome.invitationCode,
-                    createdAt: serverHome.createdAt,
-                    updatedAt: serverHome.updatedAt,
+                    createdAt: serverHome.createdAt || now,
+                    updatedAt: serverHome.updatedAt || now,
                     serverUpdatedAt: serverHome.serverUpdatedAt || serverHome.updatedAt,
-                    lastSyncedAt: syncResponse.serverTimestamp || (syncResponse as any).timestamp,
+                    lastSyncedAt: syncResponse.serverTimestamp,
                 };
 
                 if (existingIndex >= 0) {
@@ -214,7 +222,7 @@ class HomeService {
             const deletedHomeIds = syncResponse.deletedHomeIds || [];
             let finalHomes = currentHomes;
             if (deletedHomeIds.length > 0) {
-                console.log(`[HomeService] Removing ${deletedHomeIds.length} deleted homes`);
+                syncLogger.info(`Removing ${deletedHomeIds.length} deleted homes`);
                 finalHomes = currentHomes.filter(h => !deletedHomeIds.includes(h.id));
                 for (const deletedId of deletedHomeIds) {
                     await deleteHomeFiles(deletedId);
@@ -224,7 +232,7 @@ class HomeService {
             // 4. Ensure at least one home exists after sync
             const availableAfterSync = finalHomes.filter(h => !h.pendingDelete && !h.pendingLeave);
             if (availableAfterSync.length === 0) {
-                console.log('[HomeService] No homes remaining after sync, creating new default home...');
+                syncLogger.info('No homes remaining after sync, creating new default home...');
                 const now = new Date().toISOString();
                 const defaultHome: Home = {
                     id: generateItemId(),
@@ -240,7 +248,7 @@ class HomeService {
             // 5. Persist
             const newData: HomesData = {
                 homes: finalHomes,
-                lastSyncTime: syncResponse.serverTimestamp || (syncResponse as any).timestamp,
+                lastSyncTime: syncResponse.serverTimestamp,
             };
 
             await writeFile(HOMES_FILE, newData);
@@ -254,15 +262,15 @@ class HomeService {
                 // Find next available home
                 const nextHome = finalHomes.find(h => !h.pendingDelete && !h.pendingLeave);
                 if (nextHome) {
-                    console.log('[HomeService] Active home was deleted or unavailable, switching...');
+                    syncLogger.info('Active home was deleted or unavailable, switching...');
                     this.switchHome(nextHome.id);
                 }
             }
 
-            console.log('[HomeService] Sync complete');
+            syncLogger.info('Sync complete');
 
         } catch (error) {
-            console.error('[HomeService] Error syncing homes:', error);
+            syncLogger.error('Error syncing homes:', error);
         }
     }
 
@@ -355,7 +363,7 @@ class HomeService {
         // If this was the last available home, create a new default home
         const availableAfterDelete = currentHomes.filter(h => !h.pendingDelete && !h.pendingLeave);
         if (availableAfterDelete.length === 0) {
-            console.log('[HomeService] Last home deleted, creating new default home...');
+            syncLogger.info('Last home deleted, creating new default home...');
             const defaultHome: Home = {
                 id: generateItemId(),
                 name: 'My Home',
@@ -395,7 +403,7 @@ class HomeService {
         if (home) {
             this.currentHomeIdSubject.next(id);
         } else {
-            console.warn(`[HomeService] Attempted to switch to non-existent homeId: ${id}`);
+            syncLogger.warn(`Attempted to switch to non-existent homeId: ${id}`);
         }
     }
 

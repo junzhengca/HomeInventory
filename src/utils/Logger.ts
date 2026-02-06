@@ -35,6 +35,7 @@ export type LogCategory =
   | 'ui'        // UI events and interactions
   | 'redux'     // Redux state changes
   | 'saga'      // Redux saga operations
+  | 'sync'      // Data sync operations
   | 'network'   // Network status and connectivity
   | 'image'     // Image processing and uploads
   | 'ai'        // AI recognition operations
@@ -64,6 +65,7 @@ const CATEGORY_EMOJIS: Record<LogCategory, string> = {
   ui:         '🎨',
   redux:      '🗂️',
   saga:       '⚙️',
+  sync:       '🔄',
   network:    '📡',
   image:      '🖼️',
   ai:         '🤖',
@@ -566,6 +568,7 @@ export const storageLogger = logger.scoped('storage');
 export const uiLogger = logger.scoped('ui');
 export const reduxLogger = logger.scoped('redux');
 export const sagaLogger = logger.scoped('saga');
+export const syncLogger = logger.scoped('sync');
 export const networkLogger = logger.scoped('network');
 export const imageLogger = logger.scoped('image');
 export const aiLogger = logger.scoped('ai');

@@ -8,7 +8,8 @@ import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withSpring,
-    withTiming
+    withTiming,
+    MeasuredDimensions
 } from 'react-native-reanimated';
 import { useContextMenu } from './ContextMenuContext';
 import { ContextMenuItemData, ContextMenuLayout } from './types';
@@ -24,7 +25,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ children, items }) => 
     const animatedRef = useAnimatedRef<View>();
     const isPressed = useSharedValue(false);
 
-    const onShowMenu = (layout: any) => {
+    const onShowMenu = (layout: MeasuredDimensions) => {
         showMenu({
             layout: {
                 x: layout.x,

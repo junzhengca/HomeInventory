@@ -1,4 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import { storageLogger } from '../utils/Logger';
 
 const DATA_DIRECTORY = 'data';
 
@@ -62,7 +63,7 @@ export const readFile = async <T>(filename: string, userId?: string): Promise<T 
     const content = await FileSystem.readAsStringAsync(filePath);
     return JSON.parse(content) as T;
   } catch (error) {
-    console.error(`Error reading file ${filename} (user: ${userId || 'default'}):`, error);
+    storageLogger.error(`Error reading file ${filename} (user: ${userId || 'default'}):`, error);
     return null;
   }
 };
@@ -78,7 +79,7 @@ export const writeFile = async <T>(filename: string, data: T, userId?: string): 
     await FileSystem.writeAsStringAsync(filePath, content);
     return true;
   } catch (error) {
-    console.error(`Error writing file ${filename} (user: ${userId || 'default'}):`, error);
+    storageLogger.error(`Error writing file ${filename} (user: ${userId || 'default'}):`, error);
     return false;
   }
 };
@@ -96,7 +97,7 @@ export const deleteFile = async (filename: string): Promise<boolean> => {
     }
     return true;
   } catch (error) {
-    console.error(`Error deleting file ${filename}:`, error);
+    storageLogger.error(`Error deleting file ${filename}:`, error);
     return false;
   }
 };
@@ -119,7 +120,7 @@ export const listJsonFiles = async (): Promise<string[]> => {
     // Filter to only JSON files
     return files.filter(file => file.endsWith('.json'));
   } catch (error) {
-    console.error('Error listing JSON files:', error);
+    storageLogger.error('Error listing JSON files:', error);
     return [];
   }
 };
@@ -133,12 +134,12 @@ export const deleteHomeFiles = async (homeId: string): Promise<void> => {
     const files = await listJsonFiles();
     const filesToDelete = files.filter(file => file.endsWith(`_${homeId}.json`));
 
-    console.log(`[FileSystemService] Deleting ${filesToDelete.length} files for home ${homeId}`);
+    storageLogger.info(`Deleting ${filesToDelete.length} files for home ${homeId}`);
 
     for (const file of filesToDelete) {
       await deleteFile(file);
     }
   } catch (error) {
-    console.error(`[FileSystemService] Error deleting files for home ${homeId}:`, error);
+    storageLogger.error(`Error deleting files for home ${homeId}:`, error);
   }
 };

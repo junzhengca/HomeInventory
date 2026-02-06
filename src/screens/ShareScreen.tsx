@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import type { StyledProps } from '../utils/styledComponents';
+import { uiLogger } from '../utils/Logger';
 import {
   PageHeader,
   PermissionConfigPanel,
@@ -107,7 +108,7 @@ export const ShareScreen: React.FC = () => {
       const response = await apiClient.listMembers(currentHome.id);
       setMembers(response.members);
     } catch (error) {
-      console.error('Error loading members:', error);
+      uiLogger.error('Error loading members', error);
       setMembersError('Failed to load members');
     } finally {
       setIsLoadingMembers(false);
@@ -137,7 +138,7 @@ export const ShareScreen: React.FC = () => {
         showToast(t('share.members.removeSuccess', 'Member removed successfully'), 'success');
         loadMembers();
       } catch (error) {
-        console.error('Error removing member:', error);
+        uiLogger.error('Error removing member', error);
         showToast(t('share.members.removeError', 'Failed to remove member'), 'error');
       }
     },
@@ -173,10 +174,10 @@ export const ShareScreen: React.FC = () => {
 
       await apiClient.updateHomeSettings(currentHome.id, { canShareInventory: newValue });
       showToast(t('share.settings.updateSuccess', 'Settings updated'), 'success');
-      // HomeService will sync and update settings automatically? 
+      // HomeService will sync and update settings automatically?
       // For now we might need to manually trigger a sync or wait for background sync
     } catch (error) {
-      console.error('Error updating inventory settings:', error);
+      uiLogger.error('Error updating inventory settings', error);
       showToast(t('share.settings.updateError', 'Failed to update settings'), 'error');
     }
   }, [canShareInventory, currentHome?.id, currentHome?.pendingCreate, getApiClient, showToast, t]);
@@ -198,7 +199,7 @@ export const ShareScreen: React.FC = () => {
       await apiClient.updateHomeSettings(currentHome.id, { canShareTodos: newValue });
       showToast(t('share.settings.updateSuccess', 'Settings updated'), 'success');
     } catch (error) {
-      console.error('Error updating todos settings:', error);
+      uiLogger.error('Error updating todos settings', error);
       showToast(t('share.settings.updateError', 'Failed to update settings'), 'error');
     }
   }, [canShareTodos, currentHome?.id, currentHome?.pendingCreate, getApiClient, showToast, t]);

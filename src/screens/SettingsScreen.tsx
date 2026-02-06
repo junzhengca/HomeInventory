@@ -8,6 +8,7 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useTranslation } from 'react-i18next';
 import Constants from 'expo-constants';
 import type { StyledProps } from '../utils/styledComponents';
+import { uiLogger } from '../utils/Logger';
 
 import {
   PageHeader,
@@ -97,7 +98,10 @@ export const SettingsScreen: React.FC = () => {
           onPress: async () => {
             const success = await deleteHome(currentHome.id);
             if (success) {
-              user && getApiClient() && syncHomes(getApiClient()).catch(console.error);
+              const apiClient = getApiClient();
+              if (user && apiClient) {
+                syncHomes(apiClient).catch((err: unknown) => uiLogger.error('Error syncing homes', err));
+              }
               toast.showToast(t('settings.deleteHome.success'));
             } else {
               Alert.alert(t('common.error'), t('settings.deleteHome.error'));
@@ -118,28 +122,28 @@ export const SettingsScreen: React.FC = () => {
   const handleThemeChange = async (themeId: string) => {
     const success = await updateSettings({ theme: themeId });
     if (!success) {
-      console.error('Failed to update theme setting');
+      uiLogger.error('Failed to update theme setting');
     }
   };
 
   const handleCurrencyChange = async (currencyId: string) => {
     const success = await updateSettings({ currency: currencyId });
     if (!success) {
-      console.error('Failed to update currency setting');
+      uiLogger.error('Failed to update currency setting');
     }
   };
 
   const handleLanguageChange = async (languageId: string) => {
     const success = await updateSettings({ language: languageId });
     if (!success) {
-      console.error('Failed to update language setting');
+      uiLogger.error('Failed to update language setting');
     }
   };
 
   const handleDarkModeChange = async (value: boolean) => {
     const success = await updateSettings({ darkMode: value });
     if (!success) {
-      console.error('Failed to update dark mode setting');
+      uiLogger.error('Failed to update dark mode setting');
     }
   };
 

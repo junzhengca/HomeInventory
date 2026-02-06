@@ -10,6 +10,7 @@ import { PageHeader } from '../components';
 import { listJsonFiles } from '../services/FileSystemService';
 import { calculateBottomPadding } from '../utils/layout';
 import type { RootStackParamList } from '../navigation/types';
+import { uiLogger } from '../utils/Logger';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ExportData'>;
 
@@ -95,7 +96,7 @@ export const ExportDataScreen: React.FC = () => {
       const files = await listJsonFiles();
       setJsonFiles(files.sort());
     } catch (error) {
-      console.error('Error loading JSON files:', error);
+      uiLogger.error('Error loading JSON files', error);
     } finally {
       setIsLoading(false);
     }

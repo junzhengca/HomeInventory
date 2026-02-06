@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Keyboard, TextInput } from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetView, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -11,6 +11,7 @@ import { BottomSheetHeader, Button, FormSection, UncontrolledInput } from '../at
 import { StyledProps } from '../../utils/styledComponents';
 import { useKeyboardVisibility } from '../../hooks/useKeyboardVisibility';
 import { Home } from '../../types/home';
+import { uiLogger } from '../../utils/Logger';
 
 const ContentContainer = styled.View`
   flex: 1;
@@ -89,7 +90,7 @@ export const EditHomeBottomSheet: React.FC<EditHomeBottomSheetProps> = ({
                 if (isAuthenticated) {
                     const apiClient = getApiClient();
                     if (apiClient) {
-                        syncHomes(apiClient).catch((err: any) => console.error('Background sync failed:', err));
+                        syncHomes(apiClient).catch((err: unknown) => uiLogger.error('Background sync failed', err));
                     }
                 }
 
@@ -97,14 +98,14 @@ export const EditHomeBottomSheet: React.FC<EditHomeBottomSheetProps> = ({
                 onHomeUpdated?.();
             }
         } catch (error) {
-            console.error('Failed to update home', error);
+            uiLogger.error('Failed to update home', error);
         } finally {
             setIsLoading(false);
         }
     };
 
     const renderBackdrop = useCallback(
-        (props: any) => (
+        (props: BottomSheetBackdropProps) => (
             <BottomSheetBackdrop
                 {...props}
                 disappearsOnIndex={-1}

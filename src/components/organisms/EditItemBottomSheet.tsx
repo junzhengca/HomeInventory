@@ -6,6 +6,7 @@ import { useAppDispatch } from '../../store/hooks';
 import type { RootState } from '../../store';
 import { useStore } from 'react-redux';
 import { ItemFormBottomSheet } from './ItemFormBottomSheet';
+import { uiLogger } from '../../utils/Logger';
 
 export interface EditItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
@@ -49,20 +50,20 @@ export const EditItemBottomSheet = forwardRef<
       purchaseDate?: string;
       expiryDate?: string;
     }) => {
-      console.log('[EditItemBottomSheet] handleSubmit called with icon:', values.icon, 'iconColor:', values.iconColor);
+      uiLogger.info(`handleSubmit called with icon: ${values.icon}`, { iconColor: values.iconColor });
       const itemId = currentItemIdRef.current;
-      console.log('[EditItemBottomSheet] currentItemIdRef.current:', itemId);
+      uiLogger.info('currentItemIdRef.current', itemId);
       if (!itemId) {
-        console.log('[EditItemBottomSheet] NO itemId - returning early!');
+        uiLogger.info('NO itemId - returning early!');
         return;
       }
-      console.log('[EditItemBottomSheet] About to call updateItem with itemId:', itemId);
+      uiLogger.info('About to call updateItem with itemId', itemId);
       // updateItem(itemId, values);
       dispatch({ type: 'inventory/UPDATE_ITEM', payload: { id: itemId, updates: values } });
 
       // Clear the ref after update is dispatched
       currentItemIdRef.current = null;
-      console.log('[EditItemBottomSheet] updateItem called');
+      uiLogger.info('updateItem called');
     },
     [dispatch]
   );
@@ -82,19 +83,19 @@ export const EditItemBottomSheet = forwardRef<
     ref,
     () => ({
       present: (itemId: string) => {
-        console.log('[EditItemBottomSheet] present called with itemId:', itemId);
+        uiLogger.info('present called with itemId', itemId);
         const state = store.getState() as RootState;
         const items = state.inventory.items;
-        console.log('[EditItemBottomSheet] items length:', items.length);
+        uiLogger.info('items length', items.length);
 
         const item = items.find((i) => i.id === itemId);
         if (!item) {
-          console.log('[EditItemBottomSheet] Item not found!');
+          uiLogger.info('Item not found!');
           return;
         }
 
-        console.log('[EditItemBottomSheet] Item found:', item);
-        console.log('[EditItemBottomSheet] bottomSheetRef.current:', bottomSheetRef.current);
+        uiLogger.info('Item found', item);
+        uiLogger.info('bottomSheetRef.current', bottomSheetRef.current);
 
         // Store the current item ID
         currentItemIdRef.current = itemId;
@@ -105,7 +106,7 @@ export const EditItemBottomSheet = forwardRef<
         // Present the bottom sheet immediately
         // The form will be populated on the next render cycle
         setTimeout(() => {
-          console.log('[EditItemBottomSheet] Calling present()');
+          uiLogger.info('Calling present()');
           bottomSheetRef.current?.present();
         }, 0);
       },

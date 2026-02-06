@@ -25,6 +25,7 @@ import { Home } from '../../types/home';
 import { loadTodos } from './todoSaga';
 import { ApiClient } from '../../services/ApiClient';
 import { getDeviceId } from '../../utils/deviceUtils';
+import { syncLogger } from '../../utils/Logger';
 
 // Action types
 const LOAD_ITEMS = 'inventory/LOAD_ITEMS';
@@ -70,7 +71,7 @@ function* loadItemsSaga() {
     });
     yield put(setItems(allItems));
   } catch (error) {
-    console.error('[InventorySaga] Error loading items:', error);
+    syncLogger.error('Error loading items', error);
   } finally {
     yield put(setLoading(false));
   }
@@ -90,7 +91,7 @@ function* silentRefreshItemsSaga() {
     // Use silentSetItems to update without touching loading state
     yield put(silentSetItems(allItems));
   } catch (error) {
-    console.error('[InventorySaga] Error silently refreshing items:', error);
+    syncLogger.error('Error silently refreshing items', error);
     // Don't throw - silent refresh should fail silently
   }
 }
@@ -102,7 +103,7 @@ function* syncItemsSaga() {
 
     if (!apiClient || !isAuthenticated) return;
 
-    console.log('[InventorySaga] Starting comprehensive sync sequence');
+    syncLogger.info('Starting comprehensive sync sequence');
 
     // 1. Sync Homes first
     yield call([homeService, homeService.syncHomes], apiClient);
@@ -111,12 +112,12 @@ function* syncItemsSaga() {
     const homes: Home[] = yield call([homeService, homeService.getHomes]);
     const deviceId: string = yield call(getDeviceId);
 
-    console.log(`[InventorySaga] Syncing content for ${homes.length} homes`);
+    syncLogger.info(`Syncing content for ${homes.length} homes`);
 
     // 3. For each household, sync everything inside
     for (const home of homes) {
       try {
-        console.log(`[InventorySaga] Processing home: ${home.name} (${home.id})`);
+        syncLogger.info(`Processing home: ${home.name} (${home.id})`);
 
         // Ensure data files exist for this home
         yield call(initializeHomeData, home.id);
@@ -134,7 +135,7 @@ function* syncItemsSaga() {
         yield call(syncTodos, home.id, apiClient as ApiClient, deviceId);
 
       } catch (homeError) {
-        console.error(`[InventorySaga] Error syncing home ${home.id}:`, homeError);
+        syncLogger.error(`Error syncing home ${home.id}`, homeError);
         // Continue to next home even if one fails
       }
     }
@@ -144,7 +145,7 @@ function* syncItemsSaga() {
     yield put(loadTodos());
 
   } catch (error) {
-    console.error('[InventorySaga] Error in sync sequence:', error);
+    syncLogger.error('Error in sync sequence', error);
   }
 }
 
@@ -171,7 +172,7 @@ function* createItemSaga(action: { type: string; payload: Omit<InventoryItem, 'i
       yield put(syncItemsAction());
     }
   } catch (error) {
-    console.error('[InventorySaga] Error creating item:', error);
+    syncLogger.error('Error creating item', error);
     // Revert on error by refreshing
     yield loadItemsSaga();
   }
@@ -179,7 +180,7 @@ function* createItemSaga(action: { type: string; payload: Omit<InventoryItem, 'i
 
 function* updateItemSaga(action: { type: string; payload: { id: string; updates: Partial<Omit<InventoryItem, 'id'>> } }) {
   const { id, updates } = action.payload;
-  console.log('[InventorySaga] updateItemSaga called with id:', id, 'updates:', updates);
+  syncLogger.info(`updateItemSaga called with id: ${id}`, updates);
 
   try {
     const userId: string | undefined = yield call(getFileUserId);
@@ -198,7 +199,7 @@ function* updateItemSaga(action: { type: string; payload: { id: string; updates:
     // Refresh to ensure sync (but don't set loading)
     const allItems: InventoryItem[] = yield call(getAllItems, userId);
     const updatedItemFromStorage = allItems.find((item) => item.id === id);
-    console.log('[InventorySaga] Item from storage after update:', updatedItemFromStorage);
+    syncLogger.info('Item from storage after update', updatedItemFromStorage);
     allItems.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -209,7 +210,7 @@ function* updateItemSaga(action: { type: string; payload: { id: string; updates:
     // Trigger sync
     yield put(syncItemsAction());
   } catch (error) {
-    console.error('[InventorySaga] Error updating item:', error);
+    syncLogger.error('Error updating item', error);
     // Revert on error by refreshing
     yield loadItemsSaga();
   }
@@ -239,7 +240,7 @@ function* deleteItemSaga(action: { type: string; payload: string }) {
     // Trigger sync
     yield put(syncItemsAction());
   } catch (error) {
-    console.error('[InventorySaga] Error deleting item:', error);
+    syncLogger.error('Error deleting item', error);
     // Revert on error by refreshing
     yield loadItemsSaga();
   }
@@ -264,7 +265,7 @@ function* periodicSyncSaga() {
     yield delay(5 * 60 * 1000);
     const state: RootState = yield select();
     if (state.auth.isAuthenticated) {
-      console.log('[InventorySaga] Triggering periodic sync');
+      syncLogger.info('Triggering periodic sync');
       yield put(syncItemsAction());
     }
   }

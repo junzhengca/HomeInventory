@@ -5,6 +5,7 @@ import { getSettings, updateSettings as updateSettingsService } from '../../serv
 import { Settings } from '../../types/settings';
 import i18n from '../../i18n/i18n';
 import type { RootState } from '../types';
+import { sagaLogger } from '../../utils/Logger';
 
 // Action types
 const LOAD_SETTINGS = 'settings/LOAD_SETTINGS';
@@ -31,7 +32,7 @@ function* loadSettingsSaga() {
     // Update i18n language when settings are loaded
     i18n.changeLanguage(loadedSettings.language);
   } catch (error) {
-    console.error('[SettingsSaga] Error loading settings:', error);
+    sagaLogger.error('Error loading settings', error);
   } finally {
     yield put(setLoading(false));
   }
@@ -50,10 +51,10 @@ function* updateSettingsSaga(action: { type: string; payload: Partial<Settings> 
       }
     } else {
       yield put(setUpdateResult(false));
-      console.error('[SettingsSaga] Failed to update settings: updateSettingsService returned null');
+      sagaLogger.error('Failed to update settings: updateSettingsService returned null');
     }
   } catch (error) {
-    console.error('[SettingsSaga] Error updating settings:', error);
+    sagaLogger.error('Error updating settings', error);
     yield put(setUpdateResult(false));
   }
 }

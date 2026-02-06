@@ -20,6 +20,7 @@ import type { RootState } from '../types';
 import { homeService } from '../../services/HomeService';
 import { ApiClient } from '../../services/ApiClient';
 import { getDeviceId } from '../../utils/deviceUtils';
+import { sagaLogger } from '../../utils/Logger';
 
 // Action types
 const LOAD_TODOS = 'todo/LOAD_TODOS';
@@ -63,7 +64,7 @@ function* loadTodosSaga() {
     // But loading often implies "I just opened this screen", so a pull is good.
     // However, authSaga already triggers home sync.
   } catch (error) {
-    console.error('[TodoSaga] Error loading todos:', error);
+    sagaLogger.error('Error loading todos', error);
   } finally {
     yield put(setLoading(false));
   }
@@ -79,7 +80,7 @@ function* silentRefreshTodosSaga() {
     // Use silentSetTodos to update without touching loading state
     yield put(silentSetTodos(allTodos));
   } catch (error) {
-    console.error('[TodoSaga] Error silently refreshing todos:', error);
+    sagaLogger.error('Error silently refreshing todos', error);
     // Don't throw - silent refresh should fail silently
   }
 }
@@ -91,7 +92,7 @@ function* syncTodosSaga() {
 
     if (!activeHomeId || !apiClient || !isAuthenticated) return;
 
-    console.log('[TodoSaga] Starting scheduled/triggered sync sequence');
+    sagaLogger.info('Starting scheduled/triggered sync sequence');
 
     // 1. Sync Homes first (Important rule)
     yield call([homeService, homeService.syncHomes], apiClient);
@@ -104,7 +105,7 @@ function* syncTodosSaga() {
     yield call(silentRefreshTodosSaga);
 
   } catch (error) {
-    console.error('[TodoSaga] Error in sync sequence:', error);
+    sagaLogger.error('Error in sync sequence', error);
   }
 }
 
@@ -115,7 +116,7 @@ function* addTodoSaga(action: { type: string; payload: { text: string; note?: st
   try {
     const userId: string | undefined = yield call(getFileUserId);
     if (!userId) {
-      console.error('[TodoSaga] Cannot create todo: No active home selected');
+      sagaLogger.error('Cannot create todo: No active home selected');
       return;
     }
     // userId here IS the homeId because getFileUserId returns activeHomeId
@@ -133,7 +134,7 @@ function* addTodoSaga(action: { type: string; payload: { text: string; note?: st
       yield put(syncTodosAction());
     }
   } catch (error) {
-    console.error('[TodoSaga] Error adding todo:', error);
+    sagaLogger.error('Error adding todo', error);
     // Revert on error by refreshing
     yield loadTodosSaga();
   }
@@ -164,7 +165,7 @@ function* toggleTodoSaga(action: { type: string; payload: string }) {
     // Trigger sync
     yield put(syncTodosAction());
   } catch (error) {
-    console.error('[TodoSaga] Error toggling todo:', error);
+    sagaLogger.error('Error toggling todo', error);
     // Revert on error by refreshing
     yield loadTodosSaga();
   }
@@ -190,7 +191,7 @@ function* deleteTodoSaga(action: { type: string; payload: string }) {
     // Trigger sync
     yield put(syncTodosAction());
   } catch (error) {
-    console.error('[TodoSaga] Error deleting todo:', error);
+    sagaLogger.error('Error deleting todo', error);
     // Revert on error by refreshing
     yield loadTodosSaga();
   }
@@ -221,7 +222,7 @@ function* updateTodoSaga(action: { type: string; payload: { id: string; text: st
     // Trigger sync
     yield put(syncTodosAction());
   } catch (error) {
-    console.error('[TodoSaga] Error updating todo:', error);
+    sagaLogger.error('Error updating todo', error);
     // Revert on error by refreshing
     yield loadTodosSaga();
   }
@@ -233,7 +234,7 @@ function* periodicSyncSaga() {
     yield delay(5 * 60 * 1000);
     const state: RootState = yield select();
     if (state.auth.isAuthenticated) {
-      console.log('[TodoSaga] Triggering periodic sync');
+      sagaLogger.info('Triggering periodic sync');
       yield put(syncTodosAction());
     }
   }

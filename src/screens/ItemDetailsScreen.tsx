@@ -27,6 +27,7 @@ import { getLightColor } from '../utils/colors';
 import { calculateBottomActionBarPadding } from '../utils/layout';
 import type { Theme } from '../theme/types';
 import type { StyledProps } from '../utils/styledComponents';
+import { uiLogger } from '../utils/Logger';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProp = {
@@ -215,7 +216,7 @@ export const ItemDetailsScreen: React.FC = () => {
           navigation.goBack();
         }
       } catch (error) {
-        console.error('Error loading item:', error);
+        uiLogger.error('Error loading item', error);
         Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.loadFailed'));
         navigation.goBack();
       } finally {

@@ -10,6 +10,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import { ErrorDetails } from '../../types/api';
 import { BottomActionBar } from '../molecules';
+import { uiLogger } from '../../utils/Logger';
 
 const Header = styled(View)`
   flex-direction: row;
@@ -204,7 +205,7 @@ export const ErrorBottomSheet: React.FC<ErrorBottomSheetProps> = ({
       // Reset copied state after 3 seconds
       setTimeout(() => setCopied(false), 3000);
     } catch (error) {
-      console.error('Error copying to clipboard:', error);
+      uiLogger.error('Error copying to clipboard', error);
       Alert.alert(
         t('errorBottomSheet.copyError.title'),
         t('errorBottomSheet.copyError.message')

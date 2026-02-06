@@ -30,6 +30,7 @@ import { User, ErrorDetails } from '../../types/api';
 import type { RootState } from '../types';
 import { getGlobalToast } from '../../components/organisms/ToastProvider';
 import i18n from '../../i18n/i18n';
+import { authLogger } from '../../utils/Logger';
 
 // Global error handler - will be set by App.tsx
 let globalErrorHandler: ((errorDetails: ErrorDetails) => void) | null = null;
@@ -73,7 +74,9 @@ export const initializeApiClient = (apiBaseUrl: string) => ({
 export const authError = (endpoint?: string) => ({ type: AUTH_ERROR, payload: endpoint });
 export const accessDenied = (resourceId?: string) => ({ type: ACCESS_DENIED, payload: resourceId });
 
-function createAuthChannel(apiClient: ApiClient): EventChannel<any> {
+type AuthChannelEvent = { type: string; payload?: string };
+
+function createAuthChannel(apiClient: ApiClient): EventChannel<AuthChannelEvent> {
   return eventChannel((emit) => {
     const onAuthError = (endpoint: string) => {
       emit(authError(endpoint));
@@ -99,19 +102,19 @@ function* initializeApiClientSaga(action: { type: string; payload: string }) {
 
     // Set up error callback for API errors (when all retries are exhausted)
     apiClient.setOnError((errorDetails: ErrorDetails) => {
-      console.log('[AuthSaga] API error callback triggered, showing error bottom sheet');
+      authLogger.info('API error callback triggered, showing error bottom sheet');
       if (globalErrorHandler) {
         globalErrorHandler(errorDetails);
       } else {
-        console.warn('[AuthSaga] Global error handler not set, cannot show error bottom sheet');
+        authLogger.warn('Global error handler not set, cannot show error bottom sheet');
       }
     });
 
     // Create event channel for auth events (401, 403)
-    const authChannel: EventChannel<any> = yield call(createAuthChannel, apiClient);
+    const authChannel: EventChannel<AuthChannelEvent> = yield call(createAuthChannel, apiClient);
     yield fork(function* () {
       while (true) {
-        const action: { type: string } = (yield take(authChannel)) as { type: string };
+        const action: AuthChannelEvent = (yield take(authChannel)) as AuthChannelEvent;
         yield put(action);
       }
     });
@@ -126,13 +129,13 @@ function* initializeApiClientSaga(action: { type: string; payload: string }) {
     // Start auth check after API client is ready
     yield put(checkAuth());
   } catch (error) {
-    console.error('[AuthSaga] Error initializing API client:', error);
+    authLogger.error('Error initializing API client', error);
     yield put(setLoading(false));
   }
 }
 
 function* clearAuthAndLogout() {
-  console.log('[AuthSaga] Clearing auth data');
+  authLogger.info('Clearing auth data');
   yield call(clearAllAuthData);
 
   // Clear the apiClient's auth token to prevent stale authenticated requests
@@ -154,7 +157,7 @@ function* handleAuthError(action: { type: string; payload?: string }) {
   // Only invalidate auth when /me endpoint returns 401
   // Other 401s (e.g. expired sharing tokens) should not log the user out
   if (endpoint !== '/api/auth/me') {
-    console.log('[AuthSaga] 401 on non-/me endpoint, ignoring:', endpoint);
+    authLogger.info(`401 on non-/me endpoint, ignoring: ${endpoint}`);
     return;
   }
 
@@ -163,14 +166,14 @@ function* handleAuthError(action: { type: string; payload?: string }) {
 
 function* handleAccessDenied(action: { type: string; payload?: string }) {
   const deniedUserId = action.payload;
-  console.log('[AuthSaga] Access denied for user:', deniedUserId);
+  authLogger.info('Access denied for user', deniedUserId);
 
   if (!deniedUserId) return;
 
   // If current active home is the denied one, switch to personal or null
   const activeHomeId: string | null = (yield select((state: RootState) => state.auth.activeHomeId)) as string | null;
   if (activeHomeId === deniedUserId) {
-    console.warn('[AuthSaga] Active home access denied, switching to default');
+    authLogger.warn('Active home access denied, switching to default');
     // Try to restore a valid home (this will likely pick the default one if the current one is invalid/denied)
     yield call(restoreOrSelectActiveHome);
 
@@ -193,18 +196,18 @@ function* restoreOrSelectActiveHome() {
 
   // Validate the persisted ID
   if (activeHomeId && !allHomes.find(h => h.id === activeHomeId)) {
-    console.warn(`[AuthSaga] Persisted activeHomeId ${activeHomeId} not found in homes list.`);
+    authLogger.warn(`Persisted activeHomeId ${activeHomeId} not found in homes list.`);
     activeHomeId = null;
   }
 
   // Default if null
   if (!activeHomeId && allHomes.length > 0) {
     activeHomeId = allHomes[0].id;
-    console.log('[AuthSaga] No valid active home persisted, defaulting to first home:', activeHomeId);
+    authLogger.info(`No valid active home persisted, defaulting to first home: ${activeHomeId}`);
   }
 
   if (activeHomeId) {
-    console.log('[AuthSaga] Setting active home ID:', activeHomeId);
+    authLogger.info('Setting active home ID', activeHomeId);
     yield put(setActiveHomeId(activeHomeId));
     return activeHomeId;
   }
@@ -237,7 +240,7 @@ function* checkAuthSaga(): Generator {
       const currentUser: User = (yield call(apiClient.getCurrentUser.bind(apiClient))) as User;
       const savedUser: User | null = (yield call(getUser)) as User | null;
 
-      console.log('[AuthSaga] /me endpoint response:', {
+      authLogger.info('/me endpoint response', {
         hasAvatar: !!currentUser?.avatarUrl,
         avatarUrl: currentUser?.avatarUrl,
       });
@@ -294,11 +297,11 @@ function* checkAuthSaga(): Generator {
     } catch (error) {
       // If /me returns 401, user is not authenticated
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[AuthSaga] Auth verification failed:', errorMessage, error);
+      authLogger.error(`Auth verification failed: ${errorMessage}`, error);
       yield call(clearAuthAndLogout);
     }
   } catch (error) {
-    console.error('[AuthSaga] Error checking auth:', error);
+    authLogger.error('Error checking auth', error);
     yield call(clearAuthAndLogout);
   } finally {
     yield put(setLoading(false));
@@ -325,7 +328,7 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
 
     // Validate token before saving
     if (!response?.accessToken) {
-      console.error('[AuthSaga] Invalid login response:', response);
+      authLogger.error('Invalid login response', response);
       const errorMessage = 'Invalid login response: missing accessToken';
       yield put(setError(errorMessage));
       yield put(setLoading(false));
@@ -356,7 +359,7 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     // Always get full user info from /me endpoint to ensure we have complete data including avatar
     const userData: User = (yield call(apiClient.getCurrentUser.bind(apiClient))) as User;
 
-    console.log('[AuthSaga] User data from /me endpoint:', {
+    authLogger.info('User data from /me endpoint', {
       hasAvatar: !!userData?.avatarUrl,
       avatarUrl: userData?.avatarUrl,
       email: userData?.email,
@@ -397,9 +400,9 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
       toast(i18n.t('toast.loginSuccess'), 'success');
     }
 
-    console.log('[AuthSaga] Login successful');
+    authLogger.info('Login successful');
   } catch (error) {
-    console.error('[AuthSaga] Login error:', error);
+    authLogger.error('Login error', error);
     const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
     yield put(setError(errorMessage));
     yield put(setLoading(false));
@@ -419,7 +422,7 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
 
     // Validate token before saving
     if (!response?.accessToken) {
-      console.error('[AuthSaga] Invalid signup response:', response);
+      authLogger.error('Invalid signup response', response);
       throw new Error('Invalid signup response: missing accessToken');
     }
 
@@ -441,7 +444,7 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
     // Always get full user info from /me endpoint to ensure we have complete data including avatar
     const userData: User = (yield call(apiClient.getCurrentUser.bind(apiClient))) as User;
 
-    console.log('[AuthSaga] User data from /me endpoint:', {
+    authLogger.info('User data from /me endpoint', {
       hasAvatar: !!userData?.avatarUrl,
       avatarUrl: userData?.avatarUrl,
       email: userData?.email,
@@ -480,9 +483,9 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
       toast(i18n.t('toast.signupSuccess'), 'success');
     }
 
-    console.log('[AuthSaga] Signup successful');
+    authLogger.info('Signup successful');
   } catch (error) {
-    console.error('[AuthSaga] Signup error:', error);
+    authLogger.error('Signup error', error);
     throw error;
   }
 }
@@ -507,7 +510,7 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
 
     // Validate token before saving
     if (!response?.accessToken) {
-      console.error('[AuthSaga] Invalid Google login response:', response);
+      authLogger.error('Invalid Google login response', response);
       const errorMessage = 'Invalid Google login response: missing accessToken';
       yield put(setError(errorMessage));
       yield put(setLoading(false));
@@ -538,7 +541,7 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     // Always get full user info from /me endpoint to ensure we have complete data including avatar
     const userData: User = (yield call(apiClient.getCurrentUser.bind(apiClient))) as User;
 
-    console.log('[AuthSaga] User data from /me endpoint:', {
+    authLogger.info('User data from /me endpoint', {
       hasAvatar: !!userData?.avatarUrl,
       avatarUrl: userData?.avatarUrl,
       email: userData?.email,
@@ -579,9 +582,9 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
       toast(i18n.t('toast.loginSuccess'), 'success');
     }
 
-    console.log('[AuthSaga] Google login successful');
+    authLogger.info('Google login successful');
   } catch (error) {
-    console.error('[AuthSaga] Google login error:', error);
+    authLogger.error('Google login error', error);
     const errorMessage = error instanceof Error ? error.message : 'Google login failed. Please try again.';
 
     // Handle specific error cases
@@ -601,7 +604,7 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
 }
 
 function* logoutSaga() {
-  console.log('[AuthSaga] logout() called - clearing auth');
+  authLogger.info('logout() called - clearing auth');
 
   try {
     yield call(clearAuthAndLogout);
@@ -612,9 +615,9 @@ function* logoutSaga() {
       toast(i18n.t('toast.logoutSuccess'), 'success');
     }
 
-    console.log('[AuthSaga] Logout successful');
+    authLogger.info('Logout successful');
   } catch (error) {
-    console.error('[AuthSaga] Error during logout:', error);
+    authLogger.error('Error during logout', error);
     yield call(clearAuthAndLogout);
   }
 }
@@ -624,7 +627,7 @@ function* updateUserSaga(action: { type: string; payload: User }) {
     yield call(saveUser, action.payload);
     yield put(setUser(action.payload));
   } catch (error) {
-    console.error('[AuthSaga] Error updating user:', error);
+    authLogger.error('Error updating user', error);
     throw error;
   }
 }
@@ -633,7 +636,7 @@ function* updateUserSaga(action: { type: string; payload: User }) {
 function* handleActiveHomeIdChange(action: { type: string; payload: string | null }) {
   const apiClient: ApiClient = (yield select((state: RootState) => state.auth.apiClient)) as ApiClient;
 
-  console.log('[AuthSaga] Active home ID changed, persisting:', action.payload);
+  authLogger.info('Active home ID changed, persisting', action.payload);
 
   if (action.payload) {
     yield call(saveActiveHomeId, action.payload);
@@ -644,7 +647,7 @@ function* handleActiveHomeIdChange(action: { type: string; payload: string | nul
     homeService.switchHome(action.payload);
 
     // Reload data for the new home
-    console.log('[AuthSaga] Reloading data for new home:', action.payload);
+    authLogger.info('Reloading data for new home', action.payload);
     yield put(loadItems());
     yield put(loadTodos());
     yield put(loadSettings());

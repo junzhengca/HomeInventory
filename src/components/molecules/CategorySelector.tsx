@@ -7,6 +7,7 @@ import { getAllCategories } from '../../services/CategoryService';
 import { useCategory } from '../../store/hooks';
 import { useHome } from '../../hooks/useHome';
 import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
+import { uiLogger } from '../../utils/Logger';
 
 const Container = styled(View)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
@@ -91,7 +92,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       };
       setCategories([allCategory, ...allCategories]);
     } catch (error) {
-      console.error('Error loading categories:', error);
+      uiLogger.error('Error loading categories', error);
       // Categories will remain empty array if loading fails
       // Only show "all" category as fallback
       const allCategory: Category = {

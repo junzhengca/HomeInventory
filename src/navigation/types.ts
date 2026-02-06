@@ -29,7 +29,6 @@ export type RootStackParamList = {
   ExportData: undefined;
   ExportDataDetail: { filename: string };
   Profile: undefined;
-  ContextMenuDemo: undefined;
 };
 
 declare global {

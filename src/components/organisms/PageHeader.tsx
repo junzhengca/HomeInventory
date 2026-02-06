@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { StyledProps } from '../../utils/styledComponents';
+import { uiLogger } from '../../utils/Logger';
 
 export interface PageHeaderProps {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -190,7 +191,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     if (onAvatarPress) {
       onAvatarPress();
     } else {
-      console.log('Avatar button pressed');
+      uiLogger.info('Avatar button pressed');
     }
   };
 

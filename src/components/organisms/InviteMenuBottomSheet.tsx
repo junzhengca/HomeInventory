@@ -9,6 +9,7 @@ import type { StyledProps } from '../../utils/styledComponents';
 import { useTheme } from '../../theme/ThemeProvider';
 import { BottomSheetHeader } from '../atoms';
 import { QRCodeDisplay } from '../molecules';
+import { uiLogger } from '../../utils/Logger';
 
 const ContentContainer = styled(View)`
   flex: 1;
@@ -120,7 +121,7 @@ export const InviteMenuBottomSheet: React.FC<InviteMenuBottomSheetProps> = ({
         handleClose();
       }
     } catch (error) {
-      console.error('Error sharing invitation link:', error);
+      uiLogger.error('Error sharing invitation link', error);
     }
   }, [invitationCode, invitationLink, handleClose, t]);
 

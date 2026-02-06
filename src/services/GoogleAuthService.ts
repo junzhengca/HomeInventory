@@ -1,6 +1,7 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
+import { authLogger } from '../utils/Logger';
 
 // Complete the auth session for web browsers
 WebBrowser.maybeCompleteAuthSession();
@@ -40,7 +41,7 @@ const getRedirectUri = (): string => {
   // Use custom scheme (not proxy) - this works with iOS/Android client IDs
   const redirectUri = AuthSession.makeRedirectUri({});
 
-  console.log('[GoogleAuth] Redirect URI (custom scheme):', redirectUri);
+  authLogger.info('Redirect URI (custom scheme):', redirectUri);
 
   if (!redirectUri || !redirectUri.includes('://')) {
     throw new Error(
@@ -61,16 +62,16 @@ export const signInWithGoogle = async (): Promise<string | null> => {
     const clientId = getGoogleClientId();
     const platform = Platform.OS;
 
-    console.log(
-      `[GoogleAuth] Using ${platform} client ID:`,
+    authLogger.info(
+      `Using ${platform} client ID:`,
       clientId.substring(0, 20) + '...'
     );
 
     // Get redirect URI using custom scheme
     const redirectUri = getRedirectUri();
 
-    console.log('[GoogleAuth] Redirect URI:', redirectUri);
-    console.log('[GoogleAuth] Platform:', platform);
+    authLogger.info('Redirect URI:', redirectUri);
+    authLogger.info('Platform:', platform);
 
     // Create the auth request using Authorization Code flow with PKCE
     // iOS/Android client IDs require code flow, not implicit flow (IdToken)
@@ -83,8 +84,8 @@ export const signInWithGoogle = async (): Promise<string | null> => {
     });
 
     // Prompt for authentication
-    console.log(
-      '[GoogleAuth] Starting OAuth flow with Authorization Code + PKCE...'
+    authLogger.info(
+      'Starting OAuth flow with Authorization Code + PKCE...'
     );
 
     // Manually specify auth and token endpoints for Google
@@ -93,16 +94,16 @@ export const signInWithGoogle = async (): Promise<string | null> => {
       tokenEndpoint: 'https://oauth2.googleapis.com/token',
     } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    console.log('[GoogleAuth] OAuth result type:', result.type);
-    console.log('[GoogleAuth] OAuth result:', JSON.stringify(result, null, 2));
+    authLogger.info('OAuth result type:', result.type);
+    authLogger.info('OAuth result:', JSON.stringify(result, null, 2));
 
     if (result.type === 'success') {
       // With code flow, we get an authorization code that needs to be exchanged for tokens
       const code = result.params.code;
 
       if (!code) {
-        console.error(
-          '[GoogleAuth] Authorization code not found in response params:',
+        authLogger.error(
+          'Authorization code not found in response params:',
           result.params
         );
         throw new Error(
@@ -110,8 +111,8 @@ export const signInWithGoogle = async (): Promise<string | null> => {
         );
       }
 
-      console.log(
-        '[GoogleAuth] Received authorization code, exchanging for ID token...'
+      authLogger.info(
+        'Received authorization code, exchanging for ID token...'
       );
 
       // Exchange the authorization code for tokens
@@ -141,15 +142,15 @@ export const signInWithGoogle = async (): Promise<string | null> => {
 
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
-        console.error('[GoogleAuth] Token exchange failed:', errorText);
+        authLogger.error('Token exchange failed:', errorText);
         throw new Error(
           `Token exchange failed: ${tokenResponse.status} ${tokenResponse.statusText}`
         );
       }
 
       const tokenData = await tokenResponse.json();
-      console.log(
-        '[GoogleAuth] Token exchange result:',
+      authLogger.info(
+        'Token exchange result:',
         JSON.stringify({ ...tokenData, id_token: '***' }, null, 2)
       );
 
@@ -157,11 +158,11 @@ export const signInWithGoogle = async (): Promise<string | null> => {
       const idToken = tokenData.id_token;
 
       if (idToken) {
-        console.log('[GoogleAuth] Successfully received ID token');
+        authLogger.info('Successfully received ID token');
         return idToken;
       } else {
-        console.error(
-          '[GoogleAuth] ID token not found in token response:',
+        authLogger.error(
+          'ID token not found in token response:',
           tokenData
         );
         throw new Error(
@@ -171,7 +172,7 @@ export const signInWithGoogle = async (): Promise<string | null> => {
     } else if (result.type === 'error') {
       const errorMessage = result.error?.message || 'Unknown error';
       const errorCode = result.error?.code;
-      console.error('[GoogleAuth] OAuth error:', {
+      authLogger.error('OAuth error:', {
         errorMessage,
         errorCode,
         error: result.error,
@@ -181,11 +182,11 @@ export const signInWithGoogle = async (): Promise<string | null> => {
       );
     } else {
       // User cancelled or dismissed
-      console.log('[GoogleAuth] User cancelled or dismissed OAuth flow');
+      authLogger.info('User cancelled or dismissed OAuth flow');
       return null;
     }
   } catch (error) {
-    console.error('[GoogleAuth] Error:', error);
+    authLogger.error('Error:', error);
     throw error;
   }
 };

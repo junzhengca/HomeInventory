@@ -1,4 +1,5 @@
 import { InventoryItem } from './inventory';
+import { Ionicons } from '@expo/vector-icons';
 
 // =============================================================================
 // Request Types
@@ -51,6 +52,50 @@ export interface UpdateUserRequest {
   avatarUrl?: string;
   currentPassword?: string;
   newPassword?: string;
+}
+
+// =============================================================================
+// Server Data Types (typed shapes of entity.data in sync responses)
+// =============================================================================
+
+export interface InventoryItemServerData {
+  id: string;
+  name: string;
+  location: string;
+  detailedLocation: string;
+  status: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  price: number;
+  amount?: number;
+  warningThreshold?: number;
+  expiryDate?: string;
+  purchaseDate?: string;
+}
+
+export interface TodoItemServerData {
+  id: string;
+  homeId: string;
+  text: string;
+  completed: boolean;
+  note?: string;
+}
+
+export interface CategoryServerData {
+  id: string;
+  name: string;
+  label?: string;
+  isCustom: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
+  color?: string;
+  homeId: string;
+}
+
+export interface LocationServerData {
+  id: string;
+  name: string;
+  homeId: string;
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
 // =============================================================================

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Category } from '../types/inventory';
 import { getAllCategories } from '../services/CategoryService';
 import { useHome } from './useHome';
+import { uiLogger } from '../utils/Logger';
 
 export const useCategories = () => {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -19,7 +20,7 @@ export const useCategories = () => {
             const data = await getAllCategories(currentHomeId);
             setCategories(data);
         } catch (error) {
-            console.error('Failed to load categories', error);
+            uiLogger.error('Failed to load categories', error);
         } finally {
             setLoading(false);
         }

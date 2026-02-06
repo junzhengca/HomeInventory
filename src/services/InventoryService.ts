@@ -6,8 +6,11 @@ import { ApiClient } from './ApiClient';
 import {
   BatchSyncRequest,
   BatchSyncPullRequest,
-  BatchSyncPushRequest
+  BatchSyncPushRequest,
+  InventoryItemServerData
 } from '../types/api';
+import { syncLogger } from '../utils/Logger';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const ITEMS_FILE = 'items.json';
 
@@ -68,7 +71,7 @@ export const createItem = async (item: Omit<InventoryItem, 'id'>, userId?: strin
 
     return success ? newItem : null;
   } catch (error) {
-    console.error('Error creating item:', error);
+    syncLogger.error('Error creating item:', error);
     return null;
   }
 };
@@ -82,7 +85,7 @@ export const updateItem = async (
   userId?: string
 ): Promise<InventoryItem | null> => {
   try {
-    console.log('[InventoryService] updateItem called with id:', id, 'updates:', updates);
+    syncLogger.info(`updateItem called with id: ${id}`, updates);
     const data = await readFile<ItemsData>(ITEMS_FILE, userId);
     const items = data?.items || [];
     const index = items.findIndex((item) => item.id === id);
@@ -103,12 +106,12 @@ export const updateItem = async (
       clientUpdatedAt: now,
       pendingUpdate: !isPendingCreate, // If it's pending create, it stays pending create
     };
-    console.log('[InventoryService] Updated item to be written:', items[index]);
+    syncLogger.info('Updated item to be written:', items[index]);
     const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, userId);
 
     return success ? items[index] : null;
   } catch (error) {
-    console.error('Error updating item:', error);
+    syncLogger.error('Error updating item:', error);
     return null;
   }
 };
@@ -154,7 +157,7 @@ export const deleteItem = async (id: string, userId?: string): Promise<boolean> 
 
     return success;
   } catch (error) {
-    console.error('Error deleting item:', error);
+    syncLogger.error('Error deleting item:', error);
     return false;
   }
 };
@@ -197,10 +200,10 @@ export const syncItems = async (
   apiClient: ApiClient,
   deviceId: string
 ): Promise<void> => {
-  console.log('[InventoryService] Starting item sync...');
+  syncLogger.info('Starting item sync...');
   try {
     const data = await readFile<ItemsData>(ITEMS_FILE, homeId);
-    let items = data?.items || [];
+    const items = data?.items || [];
     const lastSyncTime = data?.lastSyncTime;
     const lastPulledVersion = data?.lastPulledVersion || 0;
 
@@ -209,7 +212,7 @@ export const syncItems = async (
     const pushRequests: BatchSyncPushRequest[] = [];
 
     if (pendingItems.length > 0) {
-      console.log(`[InventoryService] Pushing ${pendingItems.length} pending items`);
+      syncLogger.info(`Pushing ${pendingItems.length} pending items`);
       pushRequests.push({
         entityType: 'inventoryItems',
         entities: pendingItems.map(t => ({
@@ -259,7 +262,7 @@ export const syncItems = async (
     const response = await apiClient.batchSync(batchRequest);
 
     if (!response.success) {
-      console.error('[InventoryService] Sync failed:', response);
+      syncLogger.error('Sync failed:', response);
       return;
     }
 
@@ -286,14 +289,14 @@ export const syncItems = async (
             } else if (result.status === 'server_version' && result.winner === 'server') {
               // Server won, update local with server data
               if (result.serverVersionData) {
-                const serverData = result.serverVersionData.data as any;
+                const serverData = result.serverVersionData.data as unknown as InventoryItemServerData;
                 items[index] = {
                   ...items[index],
                   name: serverData.name,
                   location: serverData.location,
                   detailedLocation: serverData.detailedLocation,
                   status: serverData.status,
-                  icon: serverData.icon,
+                  icon: serverData.icon as keyof typeof Ionicons.glyphMap,
                   iconColor: serverData.iconColor,
                   price: serverData.price,
                   amount: serverData.amount,
@@ -327,7 +330,7 @@ export const syncItems = async (
           // Handle new/updated entities
           for (const entity of pullResult.entities) {
             const index = items.findIndex(t => t.id === entity.entityId);
-            const serverData = entity.data as any;
+            const serverData = entity.data as unknown as InventoryItemServerData;
 
             const newItem: InventoryItem = {
               id: entity.entityId,
@@ -335,7 +338,7 @@ export const syncItems = async (
               location: serverData.location,
               detailedLocation: serverData.detailedLocation,
               status: serverData.status,
-              icon: serverData.icon,
+              icon: serverData.icon as keyof typeof Ionicons.glyphMap,
               iconColor: serverData.iconColor,
               price: serverData.price,
               amount: serverData.amount,
@@ -384,10 +387,10 @@ export const syncItems = async (
       lastPulledVersion: newLastPulledVersion
     }, homeId);
 
-    console.log('[InventoryService] Item sync complete');
+    syncLogger.info('Item sync complete');
 
   } catch (error) {
-    console.error('[InventoryService] Error syncing items:', error);
+    syncLogger.error('Error syncing items:', error);
   }
 };
 

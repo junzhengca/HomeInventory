@@ -2,6 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import { generateId } from './idGenerator';
 import { Platform } from 'react-native';
 import * as Application from 'expo-application';
+import { storageLogger } from './Logger';
 
 const DEVICE_ID_KEY = 'device_id';
 
@@ -24,7 +25,7 @@ export const getDeviceId = async (): Promise<string> => {
 
         return deviceId;
     } catch (error) {
-        console.error('Error getting device ID:', error);
+        storageLogger.error('Error getting device ID', error);
         // Fallback if SecureStore fails (e.g. dev client issues)
         return 'fallback-device-' + Date.now();
     }
