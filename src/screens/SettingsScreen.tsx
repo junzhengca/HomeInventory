@@ -83,23 +83,23 @@ export const SettingsScreen: React.FC = () => {
     if (!currentHome) return;
 
     Alert.alert(
-      t('settings.deleteHome.title', 'Delete Home'),
-      t('settings.deleteHome.message', 'Are you sure you want to delete this home? This action cannot be undone and will remove the home for all members.'),
+      t('settings.deleteHome.title'),
+      t('settings.deleteHome.message'),
       [
         {
-          text: t('common.cancel', 'Cancel'),
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: t('common.delete', 'Delete'),
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             const success = await deleteHome(currentHome.id);
             if (success) {
               user && getApiClient() && syncHomes(getApiClient()).catch(console.error);
-              toast.showToast(t('settings.deleteHome.success', 'Home deleted'));
+              toast.showToast(t('settings.deleteHome.success'));
             } else {
-              Alert.alert(t('common.error'), t('settings.deleteHome.error', 'Failed to delete home'));
+              Alert.alert(t('common.error'), t('settings.deleteHome.error'));
             }
           },
         },
@@ -206,12 +206,12 @@ export const SettingsScreen: React.FC = () => {
           <SettingsSection>
             <SectionTitle>{t('settings.homeSettings')}</SectionTitle>
             <SettingsItem
-              label={t('settings.editHome', 'Edit Home')}
+              label={t('settings.editHome')}
               icon="home-outline"
               onPress={handleEditHomePress}
             />
             <SettingsItem
-              label={t('settings.deleteHome', 'Delete Home')}
+              label={t('settings.deleteHome.title')}
               icon="trash-outline"
               onPress={handleDeleteHomePress}
               variant="destructive"

@@ -23,6 +23,11 @@
       "noAddress": "无地址",
       "addProperty": "添加新房产"
     },
+    "edit": {
+      "title": "修改房产",
+      "subtitle": "更新房产信息",
+      "submit": "保存修改"
+    },
     "create": {
       "title": "添加新房产",
       "subtitle": "添加多个房产以便轻松管理",
@@ -152,6 +157,15 @@
   "settings": {
     "title": "设置",
     "subtitle": "让您的家更舒适",
+    "globalSettings": "全局设置",
+    "homeSettings": "小家设置",
+    "editHome": "修改小家",
+    "deleteHome": {
+      "title": "删除小家",
+      "message": "您确定要删除这个小家吗？此操作无法撤销，且将为所有成员删除此小家。",
+      "success": "小家已删除",
+      "error": "删除小家失败"
+    },
     "preferences": "偏好设置",
     "dataAndSecurity": "数据与安全",
     "experimental": "实验性功能",

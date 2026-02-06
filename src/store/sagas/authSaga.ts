@@ -70,13 +70,13 @@ export const initializeApiClient = (apiBaseUrl: string) => ({
   type: INITIALIZE_API_CLIENT,
   payload: apiBaseUrl,
 });
-export const authError = () => ({ type: AUTH_ERROR });
+export const authError = (endpoint?: string) => ({ type: AUTH_ERROR, payload: endpoint });
 export const accessDenied = (resourceId?: string) => ({ type: ACCESS_DENIED, payload: resourceId });
 
 function createAuthChannel(apiClient: ApiClient): EventChannel<any> {
   return eventChannel((emit) => {
-    const onAuthError = () => {
-      emit(authError());
+    const onAuthError = (endpoint: string) => {
+      emit(authError(endpoint));
     };
     const onAccessDenied = (resourceId?: string) => {
       emit(accessDenied(resourceId));
@@ -131,14 +131,34 @@ function* initializeApiClientSaga(action: { type: string; payload: string }) {
   }
 }
 
-function* handleAuthError() {
-  console.log('[AuthSaga] Clearing auth data due to error');
+function* clearAuthAndLogout() {
+  console.log('[AuthSaga] Clearing auth data');
   yield call(clearAllAuthData);
+
+  // Clear the apiClient's auth token to prevent stale authenticated requests
+  const apiClient: ApiClient | null = yield select((state: RootState) => state.auth.apiClient);
+  if (apiClient) {
+    apiClient.setAuthToken('');
+  }
+
   yield put(setUser(null));
   yield put(setAuthenticated(false));
 
   // Instead of setting null, try to select a default home (offline mode)
   yield call(restoreOrSelectActiveHome);
+}
+
+function* handleAuthError(action: { type: string; payload?: string }) {
+  const endpoint = action.payload;
+
+  // Only invalidate auth when /me endpoint returns 401
+  // Other 401s (e.g. expired sharing tokens) should not log the user out
+  if (endpoint !== '/api/auth/me') {
+    console.log('[AuthSaga] 401 on non-/me endpoint, ignoring:', endpoint);
+    return;
+  }
+
+  yield call(clearAuthAndLogout);
 }
 
 function* handleAccessDenied(action: { type: string; payload?: string }) {
@@ -275,11 +295,11 @@ function* checkAuthSaga(): Generator {
       // If /me returns 401, user is not authenticated
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('[AuthSaga] Auth verification failed:', errorMessage, error);
-      yield call(handleAuthError);
+      yield call(clearAuthAndLogout);
     }
   } catch (error) {
     console.error('[AuthSaga] Error checking auth:', error);
-    yield call(handleAuthError);
+    yield call(clearAuthAndLogout);
   } finally {
     yield put(setLoading(false));
   }
@@ -584,7 +604,7 @@ function* logoutSaga() {
   console.log('[AuthSaga] logout() called - clearing auth');
 
   try {
-    yield call(handleAuthError);
+    yield call(clearAuthAndLogout);
 
     // Show success toast
     const toast = getGlobalToast();
@@ -595,7 +615,7 @@ function* logoutSaga() {
     console.log('[AuthSaga] Logout successful');
   } catch (error) {
     console.error('[AuthSaga] Error during logout:', error);
-    yield call(handleAuthError);
+    yield call(clearAuthAndLogout);
   }
 }
 

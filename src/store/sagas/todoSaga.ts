@@ -87,9 +87,9 @@ function* silentRefreshTodosSaga() {
 function* syncTodosSaga() {
   try {
     const state: RootState = yield select();
-    const { activeHomeId, apiClient } = state.auth;
+    const { activeHomeId, apiClient, isAuthenticated } = state.auth;
 
-    if (!activeHomeId || !apiClient) return;
+    if (!activeHomeId || !apiClient || !isAuthenticated) return;
 
     console.log('[TodoSaga] Starting scheduled/triggered sync sequence');
 
@@ -231,8 +231,11 @@ function* periodicSyncSaga() {
   while (true) {
     // Wait 5 minutes
     yield delay(5 * 60 * 1000);
-    console.log('[TodoSaga] Triggering periodic sync');
-    yield put(syncTodosAction());
+    const state: RootState = yield select();
+    if (state.auth.isAuthenticated) {
+      console.log('[TodoSaga] Triggering periodic sync');
+      yield put(syncTodosAction());
+    }
   }
 }
 

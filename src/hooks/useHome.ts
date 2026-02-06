@@ -34,6 +34,14 @@ export const useHome = () => {
         }
     }, [activeHomeId, homes]);
 
+    // Auto-correct stale activeHomeId: if the active home no longer exists
+    // in the available homes list (e.g. removed by sync), switch to the first available
+    useEffect(() => {
+        if (activeHomeId && homes.length > 0 && !homes.find(h => h.id === activeHomeId)) {
+            dispatch(setActiveHomeId(homes[0].id));
+        }
+    }, [activeHomeId, homes, dispatch]);
+
     const handleSwitchHome = (homeId: string) => {
         // Just dispatch the action, the saga will handle persistence and service sync
         dispatch(setActiveHomeId(homeId));
@@ -55,7 +63,16 @@ export const useHome = () => {
     };
 
     const handleDeleteHome = async (id: string) => {
-        return await homeService.deleteHome(id);
+        const wasActiveHome = activeHomeId === id;
+        const success = await homeService.deleteHome(id);
+        if (success && wasActiveHome) {
+            // HomeService has already switched internally; sync Redux with the next available home
+            const availableHomes = homeService.getHomes();
+            if (availableHomes.length > 0) {
+                dispatch(setActiveHomeId(availableHomes[0].id));
+            }
+        }
+        return success;
     };
 
     return {

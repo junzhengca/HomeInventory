@@ -108,15 +108,40 @@ Redux store contains non-serializable values (ignored in serializableCheck):
 - `sync.syncService` - SyncService class instance
 - `refresh.categoryCallbacks` - Set of callback functions
 
-### Data Synchronization
+### Home-Scoped Data Architecture
 
-The sync system (`src/services/SyncService.ts`) handles:
-- Pull/push data to server
-- Local file system backup (JSON files)
-- Household sharing with permission-based access
-- Conflict resolution and retry logic
+All data (inventory items, todos, categories) is scoped to the **active home**. This is the fundamental data isolation model.
 
-Sync file types: `categories`, `locations`, `inventoryItems`, `todoItems`, `settings`
+- `activeHomeId` in Redux `auth` state is the source of truth for which home is selected
+- `useHome()` hook (`src/hooks/useHome.ts`) manages home CRUD and switching via `HomeService`
+- `HomeService` (`src/services/HomeService.ts`) uses RxJS `BehaviorSubject` for reactive home state
+- `FileSystemService` scopes files by appending `_{homeId}` to filenames (e.g., `items_abc123.json`)
+- Global files (like `settings.json`, `homes.json`) are NOT home-scoped
+
+**File scoping in sagas**: Each saga uses `getFileUserId()` to extract `activeHomeId` for file operations:
+```typescript
+function* getFileUserId() {
+  const state: RootState = yield select();
+  return state.auth.activeHomeId || undefined;
+}
+```
+
+### Sync Architecture
+
+**Sync ordering** (in `inventorySaga.ts`): Homes sync first, then per-home content:
+1. `homeService.syncHomes(apiClient)` - sync home list
+2. For each home: `syncItems()` → `syncCategories()` → `syncTodos()`
+3. Silent refresh of active home's UI state
+
+**Pending-state pattern**: All entities (Home, InventoryItem, TodoItem, Category) carry sync metadata:
+- `pendingCreate`, `pendingUpdate`, `pendingDelete` - offline operation flags
+- `clientUpdatedAt` / `serverUpdatedAt` - conflict detection timestamps
+- `version` - optimistic concurrency (on items/todos)
+- `lastSyncedAt` - last successful sync timestamp
+
+Homes also have `pendingJoin` and `pendingLeave` flags. The `homes$` observable filters out pending-delete/leave homes so UI updates immediately.
+
+**Device identification**: `getDeviceId()` from `src/utils/deviceUtils.ts` provides a persistent device ID (stored in SecureStore) passed to batch sync requests.
 
 ### Household Sharing
 
@@ -321,33 +346,33 @@ const handleClose = useCallback((skipDirtyCheck: boolean) => {
 ```
 
 ### Reanimated & Interactions
-324: 
-325: **CRITICAL**: Reanimated Worklets run on the UI thread. In production (Hermes), you cannot pass functions across the UI -> JS bridge.
-326: 
-327: **Worklet Function Passing**:
-328: ```typescript
-329: // CRASHES IN PRODUCTION (Hermes) - items contains functions
-330: runOnJS(showMenu)({ items, layout });
-331: 
-332: // CORRECT - Use a closure on JS thread
-333: const onShowMenu = (layout) => showMenu({ items, layout });
-334: runOnJS(onShowMenu)(layout);
-335: ```
-336: 
-337: **Press Interactions & Unmounting**:
-338: When a `Pressable` action causes the parent to unmount (e.g., closing a context menu), execution can crash if the action modifies state synchronously during the touch event.
-339: 
-340: **Pattern**: Defer "destructive" or "hiding" actions to the next frame.
-341: ```typescript
-342: onPress={() => {
-343:   hideMenu(); // State update
-344:   requestAnimationFrame(() => { // Defer action
-345:     try { item.onPress(); } catch (e) { console.error(e); }
-346:   });
-347: }}
-348: ```
-349: 
-350: ### Error Handling
+
+**CRITICAL**: Reanimated Worklets run on the UI thread. In production (Hermes), you cannot pass functions across the UI -> JS bridge.
+
+**Worklet Function Passing**:
+```typescript
+// CRASHES IN PRODUCTION (Hermes) - items contains functions
+runOnJS(showMenu)({ items, layout });
+
+// CORRECT - Use a closure on JS thread
+const onShowMenu = (layout) => showMenu({ items, layout });
+runOnJS(onShowMenu)(layout);
+```
+
+**Press Interactions & Unmounting**:
+When a `Pressable` action causes the parent to unmount (e.g., closing a context menu), execution can crash if the action modifies state synchronously during the touch event.
+
+**Pattern**: Defer "destructive" or "hiding" actions to the next frame.
+```typescript
+onPress={() => {
+  hideMenu(); // State update
+  requestAnimationFrame(() => { // Defer action
+    try { item.onPress(); } catch (e) { console.error(e); }
+  });
+}}
+```
+
+### Error Handling
 
 Global error handler displays errors in a bottom sheet. Set up in `App.tsx`:
 ```typescript

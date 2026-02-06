@@ -39,6 +39,11 @@
       "noAddress": "No address",
       "addProperty": "Add New Property"
     },
+    "edit": {
+      "title": "Edit Property",
+      "subtitle": "Update property information",
+      "submit": "Save Changes"
+    },
     "create": {
       "title": "Add New Property",
       "subtitle": "Add multiple properties for easy management",
@@ -168,6 +173,15 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Make your home more comfortable",
+    "globalSettings": "Global Settings",
+    "homeSettings": "Home Settings",
+    "editHome": "Edit Home",
+    "deleteHome": {
+      "title": "Delete Home",
+      "message": "Are you sure you want to delete this home? This action cannot be undone and will remove the home for all members.",
+      "success": "Home deleted",
+      "error": "Failed to delete home"
+    },
     "preferences": "Preferences",
     "dataAndSecurity": "Data & Security",
     "experimental": "Experimental",

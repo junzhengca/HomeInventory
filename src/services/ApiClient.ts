@@ -51,7 +51,7 @@ export class ApiClient {
   private activeUserId: string | null = null;
   private baseUrl: string;
   private authToken: string | null = null;
-  private onAuthError?: () => void;
+  private onAuthError?: (endpoint: string) => void;
   private onAccessDenied?: (resourceId?: string) => void;
   private onError?: (errorDetails: ErrorDetails) => void;
   private maxRetries: number = 3;
@@ -87,7 +87,7 @@ export class ApiClient {
   /**
    * Set callback for authentication errors
    */
-  setOnAuthError(callback: () => void): void {
+  setOnAuthError(callback: (endpoint: string) => void): void {
     this.onAuthError = callback;
   }
 
@@ -230,7 +230,7 @@ export class ApiClient {
         if (response.status === 401 && options.requiresAuth) {
           apiLogger.warn('401 Unauthorized', { endpoint, url });
           if (this.onAuthError) {
-            this.onAuthError();
+            this.onAuthError(endpoint);
           }
 
           // Don't retry on 401

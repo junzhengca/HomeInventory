@@ -97,9 +97,9 @@ function* silentRefreshItemsSaga() {
 function* syncItemsSaga() {
   try {
     const state: RootState = yield select();
-    const { apiClient } = state.auth;
+    const { apiClient, isAuthenticated } = state.auth;
 
-    if (!apiClient) return;
+    if (!apiClient || !isAuthenticated) return;
 
     console.log('[InventorySaga] Starting comprehensive sync sequence');
 
@@ -258,8 +258,11 @@ function* periodicSyncSaga() {
   while (true) {
     // Wait 5 minutes
     yield delay(5 * 60 * 1000);
-    console.log('[InventorySaga] Triggering periodic sync');
-    yield put(syncItemsAction());
+    const state: RootState = yield select();
+    if (state.auth.isAuthenticated) {
+      console.log('[InventorySaga] Triggering periodic sync');
+      yield put(syncItemsAction());
+    }
   }
 }
 

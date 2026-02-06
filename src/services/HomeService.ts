@@ -116,7 +116,7 @@ class HomeService {
 
                 // Handle results of push
                 for (const result of pushResponse.results) {
-                    const localIndex = currentHomes.findIndex(h => h.id === (result as any).homeId);
+                    const localIndex = currentHomes.findIndex(h => h != null && h.id === (result as any).homeId);
                     if (localIndex >= 0) {
                         if (result.status === 'created' || result.status === 'updated') {
                             // Clear pending flags on success
@@ -158,7 +158,7 @@ class HomeService {
                     (syncResponse as PushHomesResponse).errors.forEach((error: any) => {
                         if (error.code === 'homeId_exists' && error.suggestedHomeId) {
                             console.log(`[HomeService] homeId collision for ${error.homeId}, retrying with ${error.suggestedHomeId}`);
-                            const localIndex = currentHomes.findIndex(h => h.id === error.homeId);
+                            const localIndex = currentHomes.findIndex(h => h != null && h.id === error.homeId);
                             if (localIndex >= 0) {
                                 currentHomes[localIndex] = {
                                     ...currentHomes[localIndex],
@@ -218,7 +218,23 @@ class HomeService {
                 }
             }
 
-            // 4. Persist
+            // 4. Ensure at least one home exists after sync
+            const availableAfterSync = finalHomes.filter(h => !h.pendingDelete && !h.pendingLeave);
+            if (availableAfterSync.length === 0) {
+                console.log('[HomeService] No homes remaining after sync, creating new default home...');
+                const now = new Date().toISOString();
+                const defaultHome: Home = {
+                    id: generateItemId(),
+                    name: 'My Home',
+                    createdAt: now,
+                    updatedAt: now,
+                    clientUpdatedAt: now,
+                    pendingCreate: true,
+                };
+                finalHomes.push(defaultHome);
+            }
+
+            // 5. Persist
             const newData: HomesData = {
                 homes: finalHomes,
                 lastSyncTime: syncResponse.serverTimestamp || (syncResponse as any).timestamp,
@@ -227,7 +243,7 @@ class HomeService {
             await writeFile(HOMES_FILE, newData);
             this.homesSubject.next(finalHomes);
 
-            // 5. Handle active home switch if needed
+            // 6. Handle active home switch if needed
             const activeId = this.currentHomeIdSubject.value;
             // Check if active home was permanently deleted or is now pending delete/leave
             const activeHome = finalHomes.find(h => h.id === activeId);
@@ -237,8 +253,6 @@ class HomeService {
                 if (nextHome) {
                     console.log('[HomeService] Active home was deleted or unavailable, switching...');
                     this.switchHome(nextHome.id);
-                } else {
-                    this.currentHomeIdSubject.next(null);
                 }
             }
 
@@ -333,18 +347,30 @@ class HomeService {
             };
         }
 
+        // If this was the last available home, create a new default home
+        const availableAfterDelete = currentHomes.filter(h => !h.pendingDelete && !h.pendingLeave);
+        if (availableAfterDelete.length === 0) {
+            console.log('[HomeService] Last home deleted, creating new default home...');
+            const defaultHome: Home = {
+                id: generateItemId(),
+                name: 'My Home',
+                createdAt: now,
+                updatedAt: now,
+                clientUpdatedAt: now,
+                pendingCreate: true,
+            };
+            currentHomes.push(defaultHome);
+        }
+
         const success = await writeFile<HomesData>(HOMES_FILE, { homes: currentHomes });
         if (success) {
             this.homesSubject.next(currentHomes);
 
-            // If we're deleting/leaving the current home, switch to another one or null
-            // We consider the home "gone" for UI purposes immediately
+            // If we're deleting/leaving the current home, switch to another one
             if (this.currentHomeIdSubject.value === id) {
                 const availableHome = currentHomes.find(h => h.id !== id && !h.pendingLeave && !h.pendingDelete);
                 if (availableHome) {
                     this.switchHome(availableHome.id);
-                } else {
-                    this.currentHomeIdSubject.next(null);
                 }
             }
             return true;

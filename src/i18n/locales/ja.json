@@ -29,6 +29,11 @@
             "noAddress": "住所なし",
             "addProperty": "新しい物件を追加"
         },
+        "edit": {
+            "title": "物件を編集",
+            "subtitle": "物件情報を更新",
+            "submit": "変更を保存"
+        },
         "create": {
             "title": "新しい物件を追加",
             "subtitle": "複数の物件を追加して簡単に管理",
@@ -157,6 +162,15 @@
     "settings": {
         "title": "設定",
         "subtitle": "ホームをより快適に",
+        "globalSettings": "基本設定",
+        "homeSettings": "ホーム設定",
+        "editHome": "ホームを編集",
+        "deleteHome": {
+            "title": "ホームを削除",
+            "message": "本当にこのホームを削除しますか？この操作は取り消せません。また、すべてのメンバーからホームが削除されます。",
+            "success": "ホームを削除しました",
+            "error": "ホームの削除に失敗しました"
+        },
         "preferences": "環境設定",
         "dataAndSecurity": "データとセキュリティ",
         "experimental": "実験的機能",
