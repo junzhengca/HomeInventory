@@ -1,14 +1,11 @@
 import { Location } from '../types/inventory';
 
-export const locations: Location[] = [
-  { id: 'living-room', name: '客厅' },
-  { id: 'kitchen', name: '厨房' },
-  { id: 'bedroom', name: '卧室' },
-  { id: 'study', name: '书房' },
-  { id: 'storage', name: '储物' },
-  { id: 'fridge', name: '冰箱' },
-  { id: 'freezer', name: '冷冻' },
-  { id: 'bathroom', name: '卫生间' },
-  { id: 'medical-cabinet', name: '药箱' },
+// Note: These are templates for initialization. homeId will be injected during creation.
+export const locations: Omit<Location, 'homeId'>[] = [
+  { id: 'kitchen', name: 'Kitchen', icon: 'restaurant-outline', version: 1, clientUpdatedAt: new Date().toISOString() },
+  { id: 'medical-cabinet', name: 'Medical Cabinet', icon: 'medkit-outline', version: 1, clientUpdatedAt: new Date().toISOString() },
+  { id: 'bookshelf', name: 'Bookshelf', icon: 'book-outline', version: 1, clientUpdatedAt: new Date().toISOString() },
+  { id: 'bedroom', name: 'Bedroom', icon: 'bed-outline', version: 1, clientUpdatedAt: new Date().toISOString() },
+  { id: 'living-room', name: 'Living Room', icon: 'tv-outline', version: 1, clientUpdatedAt: new Date().toISOString() },
 ];
 

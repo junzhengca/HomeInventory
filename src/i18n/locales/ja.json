@@ -83,7 +83,8 @@
         "fridge": "冷蔵庫",
         "freezer": "冷凍庫",
         "bathroom": "バスルーム",
-        "medical-cabinet": "薬棚"
+        "medical-cabinet": "薬棚",
+        "bookshelf": "本棚"
     },
     "statuses": {
         "using": "使用中",

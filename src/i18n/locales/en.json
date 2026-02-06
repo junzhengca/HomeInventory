@@ -93,7 +93,8 @@
     "fridge": "Fridge",
     "freezer": "Freezer",
     "bathroom": "Bathroom",
-    "medical-cabinet": "Medical Cabinet"
+    "medical-cabinet": "Medical Cabinet",
+    "bookshelf": "Bookshelf"
   },
   "statuses": {
     "using": "Using",

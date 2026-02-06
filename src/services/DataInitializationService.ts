@@ -1,7 +1,8 @@
-import { Category, InventoryItem, TodoItem } from '../types/inventory';
+import { Category, InventoryItem, TodoItem, Location } from '../types/inventory';
 import { Settings, defaultSettings } from '../types/settings';
 import { fileExists, writeFile, readFile, deleteFile, listJsonFiles } from './FileSystemService';
 import { itemCategories as defaultItemCategories } from '../data/defaultCategories';
+import { locations as defaultLocations } from '../data/locations';
 import { getLocationIdsSet } from '../utils/locationUtils';
 import i18n from '../i18n/i18n';
 
@@ -9,6 +10,7 @@ const ITEMS_FILE = 'items.json';
 const CATEGORIES_FILE = 'categories.json';
 const SETTINGS_FILE = 'settings.json';
 const TODOS_FILE = 'todos.json';
+const LOCATIONS_FILE = 'locations.json';
 const HOMES_FILE = 'homes.json';
 
 interface ItemsData {
@@ -17,6 +19,10 @@ interface ItemsData {
 
 interface CategoriesData {
   categories: Category[];
+}
+
+interface LocationsData {
+  locations: Location[];
 }
 
 interface TodosData {
@@ -110,6 +116,27 @@ export const initializeHomeData = async (homeId: string): Promise<void> => {
         }, homeId);
         console.log(`Added missing item categories for home ${homeId}`);
       }
+    }
+
+    // Initialize locations for this home
+    const locationsFile = LOCATIONS_FILE;
+    if (!(await fileExists(locationsFile, homeId))) {
+      const locations: Location[] = defaultLocations.map((loc) => ({
+        ...loc,
+        homeId: homeId,
+        name: i18n.t(`locations.${loc.id}`), // Use localized name
+        // Sync metadata
+        version: 1,
+        clientUpdatedAt: new Date().toISOString(),
+        pendingCreate: true,
+        pendingUpdate: false,
+        pendingDelete: false
+      }));
+
+      await writeFile<LocationsData>(locationsFile, {
+        locations: locations,
+      }, homeId);
+      console.log(`Locations file initialized for home ${homeId}`);
     }
 
     // Initialize items for this home

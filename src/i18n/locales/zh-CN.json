@@ -77,7 +77,8 @@
     "fridge": "冰箱",
     "freezer": "冷冻",
     "bathroom": "卫生间",
-    "medical-cabinet": "药箱"
+    "medical-cabinet": "药箱",
+    "bookshelf": "书架"
   },
   "statuses": {
     "using": "使用中",

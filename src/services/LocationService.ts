@@ -1,67 +1,64 @@
 import { Location } from '../types/inventory';
 import { readFile, writeFile } from './FileSystemService';
-import { generateLocationId } from '../utils/idGenerator';
+import { generateItemId } from '../utils/idGenerator';
+import { ApiClient } from './ApiClient';
+import {
+  BatchSyncRequest,
+  BatchSyncPullRequest,
+  BatchSyncPushRequest
+} from '../types/api';
 
 const LOCATIONS_FILE = 'locations.json';
 
 interface LocationsData {
   locations: Location[];
+  lastSyncTime?: string;
+  lastPulledVersion?: number;
 }
 
 /**
- * Get all locations (excluding deleted locations)
+ * Get all locations (excluding deleted items)
  */
-export const getAllLocations = async (userId?: string): Promise<Location[]> => {
-  const data = await readFile<LocationsData>(LOCATIONS_FILE, userId);
+export const getAllLocations = async (homeId?: string): Promise<Location[]> => {
+  const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
   const locations = data?.locations || [];
-  return locations.filter((location) => !location.deletedAt);
+  return locations.filter((loc) => !loc.deletedAt);
 };
 
 /**
- * Get all locations for sync (including deleted locations)
+ * Get a single location by ID
  */
-export const getAllLocationsForSync = async (userId?: string): Promise<Location[]> => {
-  const data = await readFile<LocationsData>(LOCATIONS_FILE, userId);
-  return data?.locations || [];
-};
-
-/**
- * Get a single location by ID (excluding deleted locations)
- */
-export const getLocationById = async (id: string, userId?: string): Promise<Location | null> => {
-  const locations = await getAllLocations(userId);
-  return locations.find((location) => location.id === id && !location.deletedAt) || null;
+export const getLocationById = async (id: string, homeId?: string): Promise<Location | null> => {
+  const locations = await getAllLocations(homeId);
+  return locations.find((loc) => loc.id === id) || null;
 };
 
 /**
  * Create a new location
  */
-export const createLocation = async (
-  location: Omit<Location, 'id' | 'createdAt' | 'updatedAt'>,
-  userId?: string
-): Promise<Location | null> => {
+export const createLocation = async (location: Omit<Location, 'id' | 'version' | 'clientUpdatedAt' | 'homeId'>, homeId?: string): Promise<Location | null> => {
   try {
-    const locations = await getAllLocations(userId);
-
-    // Check if location name already exists
-    const existingLocation = locations.find(
-      (loc) => loc.name === location.name
-    );
-
-    if (existingLocation) {
-      throw new Error('Location with this name already exists');
-    }
-
+    const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
+    const locations = data?.locations || [];
     const now = new Date().toISOString();
+
     const newLocation: Location = {
       ...location,
-      id: generateLocationId(),
+      homeId: homeId || '', // homeId is required
+      id: generateItemId(),
       createdAt: now,
       updatedAt: now,
+
+      // Sync metadata
+      version: 1,
+      clientUpdatedAt: now,
+      pendingCreate: true,
+      pendingUpdate: false,
+      pendingDelete: false
     };
 
     locations.push(newLocation);
-    const success = await writeFile<LocationsData>(LOCATIONS_FILE, { locations }, userId);
+    const success = await writeFile<LocationsData>(LOCATIONS_FILE, { ...data, locations }, homeId);
 
     return success ? newLocation : null;
   } catch (error) {
@@ -75,34 +72,34 @@ export const createLocation = async (
  */
 export const updateLocation = async (
   id: string,
-  updates: Partial<Omit<Location, 'id' | 'createdAt' | 'updatedAt'>>,
-  userId?: string
+  updates: Partial<Omit<Location, 'id' | 'version' | 'clientUpdatedAt'>>,
+  homeId?: string
 ): Promise<Location | null> => {
   try {
-    const locations = await getAllLocations(userId);
-    const index = locations.findIndex((location) => location.id === id);
+    const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
+    const locations = data?.locations || [];
+    const index = locations.findIndex((loc) => loc.id === id);
 
     if (index === -1) {
       return null;
     }
 
-    // Check for duplicate names
-    if (updates.name) {
-      const duplicate = locations.find(
-        (loc, idx) =>
-          idx !== index &&
-          loc.name === updates.name
-      );
+    const now = new Date().toISOString();
+    const isPendingCreate = locations[index].pendingCreate;
 
-      if (duplicate) {
-        throw new Error('Location with this name already exists');
-      }
-    }
+    locations[index] = {
+      ...locations[index],
+      ...updates,
+      updatedAt: now,
+      // Sync metadata
+      version: locations[index].version + 1,
+      clientUpdatedAt: now,
+      pendingUpdate: !isPendingCreate, // If it's pending create, it stays pending create
+    };
 
-    locations[index] = { ...locations[index], ...updates, updatedAt: new Date().toISOString() };
-    const success = await writeFile<LocationsData>(LOCATIONS_FILE, { locations }, userId);
-
+    const success = await writeFile<LocationsData>(LOCATIONS_FILE, { ...data, locations }, homeId);
     return success ? locations[index] : null;
+
   } catch (error) {
     console.error('Error updating location:', error);
     return null;
@@ -110,47 +107,216 @@ export const updateLocation = async (
 };
 
 /**
- * Delete a location (soft delete - sets deletedAt timestamp)
+ * Delete a location (soft delete)
  */
-export const deleteLocation = async (id: string, userId?: string): Promise<boolean> => {
+export const deleteLocation = async (id: string, homeId?: string): Promise<boolean> => {
   try {
-    const data = await readFile<LocationsData>(LOCATIONS_FILE, userId);
+    const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
     const locations = data?.locations || [];
-    const location = locations.find((loc) => loc.id === id);
+    const index = locations.findIndex((loc) => loc.id === id);
 
-    if (!location) {
-      return false; // Location not found
+    if (index === -1) {
+      return false;
     }
 
-    // Check if location is in use by items (only check non-deleted items)
-    const { getAllItems } = await import('./InventoryService');
-    const items = await getAllItems(userId);
-    const inUse = items.some((item) => item.location === id);
-
-    if (inUse) {
-      throw new Error('Cannot delete location that is in use by items');
-    }
-
-    // If already deleted, return true (idempotent)
-    if (location.deletedAt) {
+    if (locations[index].deletedAt) {
       return true;
     }
 
-    // Soft delete: set deletedAt and update updatedAt
-    const index = locations.findIndex((loc) => loc.id === id);
     const now = new Date().toISOString();
-    locations[index] = {
-      ...locations[index],
-      deletedAt: now,
-      updatedAt: now,
-    };
+    const isPendingCreate = locations[index].pendingCreate;
 
-    const success = await writeFile<LocationsData>(LOCATIONS_FILE, { locations }, userId);
+    if (isPendingCreate) {
+      locations.splice(index, 1);
+    } else {
+      locations[index] = {
+        ...locations[index],
+        deletedAt: now,
+        updatedAt: now,
+        version: locations[index].version + 1,
+        clientUpdatedAt: now,
+        pendingDelete: true,
+        pendingUpdate: false,
+      };
+    }
 
-    return success;
+    return await writeFile<LocationsData>(LOCATIONS_FILE, { ...data, locations }, homeId);
+
   } catch (error) {
     console.error('Error deleting location:', error);
     return false;
   }
 };
 
+/**
+ * Sync locations with server
+ */
+export const syncLocations = async (
+  homeId: string,
+  apiClient: ApiClient,
+  deviceId: string
+): Promise<void> => {
+  console.log('[LocationService] Starting location sync...');
+  try {
+    const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
+    let locations = data?.locations || [];
+    const lastSyncTime = data?.lastSyncTime;
+    const lastPulledVersion = data?.lastPulledVersion || 0;
+
+    // 1. Prepare Push Requests
+    const pendingLocations = locations.filter(l => l.pendingCreate || l.pendingUpdate || l.pendingDelete);
+    const pushRequests: BatchSyncPushRequest[] = [];
+
+    if (pendingLocations.length > 0) {
+      console.log(`[LocationService] Pushing ${pendingLocations.length} pending locations`);
+      pushRequests.push({
+        entityType: 'locations',
+        entities: pendingLocations.map(l => ({
+          entityId: l.id,
+          entityType: 'locations',
+          homeId: homeId,
+          data: {
+            id: l.id,
+            name: l.name,
+            icon: l.icon
+          },
+          version: l.version,
+          clientUpdatedAt: l.clientUpdatedAt,
+          pendingCreate: l.pendingCreate,
+          pendingDelete: l.pendingDelete,
+        })),
+        lastPulledAt: lastSyncTime,
+        checkpoint: { lastPulledVersion }
+      });
+    }
+
+    // 2. Prepare Pull Request
+    const pullRequests: BatchSyncPullRequest[] = [{
+      entityType: 'locations',
+      since: lastSyncTime,
+      includeDeleted: true,
+      checkpoint: { lastPulledVersion }
+    }];
+
+    // 3. Perform Batch Sync
+    const batchRequest: BatchSyncRequest = {
+      homeId,
+      deviceId,
+      pullRequests,
+      pushRequests: pushRequests.length > 0 ? pushRequests : undefined
+    };
+
+    const response = await apiClient.batchSync(batchRequest);
+
+    if (!response.success) {
+      console.error('[LocationService] Sync failed:', response);
+      return;
+    }
+
+    // 4. Process Push Results
+    if (response.pushResults) {
+      for (const pushResult of response.pushResults) {
+        if (pushResult.entityType === 'locations') {
+          for (const result of pushResult.results) {
+            const index = locations.findIndex(l => l.id === result.entityId);
+            if (index === -1) continue;
+
+            if (result.status === 'created' || result.status === 'updated') {
+              locations[index] = {
+                ...locations[index],
+                pendingCreate: false,
+                pendingUpdate: false,
+                pendingDelete: false,
+                serverUpdatedAt: result.serverUpdatedAt,
+                lastSyncedAt: response.serverTimestamp,
+              };
+              if (result.status === 'created' && result.serverVersion) {
+                locations[index].version = result.serverVersion;
+              }
+            } else if (result.status === 'server_version' && result.winner === 'server') {
+              if (result.serverVersionData) {
+                const serverData = result.serverVersionData.data as any;
+                locations[index] = {
+                  ...locations[index],
+                  name: serverData.name,
+                  icon: serverData.icon,
+                  version: result.serverVersionData.version,
+                  serverUpdatedAt: result.serverVersionData.updatedAt,
+                  lastSyncedAt: response.serverTimestamp,
+                  pendingCreate: false,
+                  pendingUpdate: false,
+                };
+              }
+            } else if (result.status === 'deleted') {
+              locations[index] = {
+                ...locations[index],
+                pendingDelete: false,
+                lastSyncedAt: response.serverTimestamp
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // 5. Process Pull Results
+    if (response.pullResults) {
+      for (const pullResult of response.pullResults) {
+        if (pullResult.entityType === 'locations') {
+          for (const entity of pullResult.entities) {
+            const index = locations.findIndex(l => l.id === entity.entityId);
+            const serverData = entity.data as any;
+
+            const newLocation: Location = {
+              id: entity.entityId,
+              homeId: homeId,
+              name: serverData.name,
+              icon: serverData.icon,
+              // Common fields
+              createdAt: entity.updatedAt, // Approximate
+              updatedAt: entity.updatedAt,
+              version: entity.version,
+              serverUpdatedAt: entity.updatedAt,
+              clientUpdatedAt: entity.clientUpdatedAt,
+              lastSyncedAt: response.serverTimestamp,
+            };
+
+            if (index >= 0) {
+              if (!locations[index].pendingUpdate && !locations[index].pendingCreate && !locations[index].pendingDelete) {
+                locations[index] = { ...locations[index], ...newLocation };
+              }
+            } else {
+              locations.push(newLocation);
+            }
+          }
+
+          for (const deletedId of pullResult.deletedEntityIds) {
+            const index = locations.findIndex(l => l.id === deletedId);
+            if (index >= 0) {
+              locations[index] = {
+                ...locations[index],
+                deletedAt: response.serverTimestamp,
+                pendingDelete: false
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // 6. Save changes
+    const checkPoint = response.pullResults?.find(r => r.entityType === 'locations')?.checkpoint;
+    const newLastPulledVersion = checkPoint?.lastPulledVersion ?? lastPulledVersion;
+
+    await writeFile<LocationsData>(LOCATIONS_FILE, {
+      locations,
+      lastSyncTime: response.serverTimestamp,
+      lastPulledVersion: newLastPulledVersion
+    }, homeId);
+
+    console.log('[LocationService] Location sync complete');
+
+  } catch (error) {
+    console.error('[LocationService] Error syncing locations:', error);
+  }
+};

@@ -25,9 +25,21 @@ export interface Category {
 export interface Location {
   id: string;
   name: string; // Chinese label (will be i18n'd in future)
+  homeId: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
   deletedAt?: string; // ISO date string - marks soft deletion
+
+  // Sync metadata
+  version: number;
+  clientUpdatedAt: string;
+  serverUpdatedAt?: string;
+  lastSyncedAt?: string;
+  pendingCreate?: boolean;
+  pendingUpdate?: boolean;
+  pendingDelete?: boolean;
 }
 
 export interface InventoryItem {

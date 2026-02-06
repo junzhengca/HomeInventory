@@ -15,6 +15,7 @@ import {
   syncItems,
 } from '../../services/InventoryService';
 import { syncCategories } from '../../services/CategoryService';
+import { syncLocations } from '../../services/LocationService';
 import { syncTodos } from '../../services/TodoService';
 import { initializeHomeData } from '../../services/DataInitializationService';
 import { InventoryItem } from '../../types/inventory';
@@ -125,6 +126,9 @@ function* syncItemsSaga() {
 
         // Sync Categories
         yield call(syncCategories, home.id, apiClient as ApiClient, deviceId);
+
+        // Sync Locations
+        yield call(syncLocations, home.id, apiClient as ApiClient, deviceId);
 
         // Sync Todos
         yield call(syncTodos, home.id, apiClient as ApiClient, deviceId);
