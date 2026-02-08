@@ -283,11 +283,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
             position: 'absolute',
             bottom: 0,
             right: 0,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 12,
-            elevation: 6,
           }}
           pointerEvents="auto"
         >

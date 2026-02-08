@@ -3,10 +3,13 @@ import { TouchableOpacity, View, Text } from 'react-native';
 import { Image } from 'expo-image';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { StyledProps } from '../../utils/styledComponents';
 import { uiLogger } from '../../utils/Logger';
+import { useTheme } from '../../theme/ThemeProvider';
+import { GlassButton } from '../atoms/GlassButton';
 
 export interface PageHeaderProps {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -87,24 +90,15 @@ const ActionButton = styled(TouchableOpacity)`
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   align-items: center;
   justify-content: center;
-  elevation: 2;
-  shadow-color: #000;
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.05;
-  shadow-radius: 4px;
 `;
 
-const BackButton = styled(ActionButton)`
-  margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;
-`;
-
-const BackIcon = styled(Ionicons)`
-  color: ${({ theme }: StyledProps) => theme.colors.textLight};
-`;
-
-const AvatarButton = styled(ActionButton)`
-  overflow: hidden;
+const AvatarButton = styled(View)`
   border: 2px solid ${({ theme }: StyledProps) => theme.colors.primary};
+  width: 40px;
+  height: 40px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
+  align-items: center;
+  justify-content: center;
 `;
 
 const AvatarImage = styled(Image)`
@@ -132,7 +126,6 @@ const MainAvatarWrapper = styled(View)`
   border-width: 2px;
   border-color: ${({ theme }: StyledProps) => theme.colors.primary};
   background-color: ${({ theme }: StyledProps) => theme.colors.primaryLight};
-  overflow: hidden;
   position: absolute;
   top: 0;
   left: 0;
@@ -146,7 +139,6 @@ const OwnerAvatarWrapper = styled(View)`
   border-width: 2px;
   border-color: ${({ theme }: StyledProps) => theme.colors.primaryLightest};
   background-color: ${({ theme }: StyledProps) => theme.colors.primaryExtraLight};
-  overflow: hidden;
   position: absolute;
   bottom: 0;
   right: 0;
@@ -156,6 +148,7 @@ const OwnerAvatarWrapper = styled(View)`
 const StackedAvatarImage = styled(Image)`
   width: 100%;
   height: 100%;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
 `;
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
@@ -174,6 +167,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const theme = useTheme();
 
   const _handleSharePress = () => {
     if (onSharePress) {
@@ -207,9 +201,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <HeaderContainer topInset={insets.top}>
       <LeftSection>
         {showBackButton ? (
-          <BackButton onPress={handleBackPress}>
-            <BackIcon name="arrow-back" size={24} />
-          </BackButton>
+          <GlassButton
+            onPress={handleBackPress}
+            icon="arrow-back"
+            style={{ marginRight: theme.spacing.md }}
+          />
         ) : icon ? (
           <IconContainer>
             <Icon name={icon} size={22} />
@@ -222,44 +218,54 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       </LeftSection>
       {showRightButtons && (
         <RightSection>
-          <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8}>
-            {ownerAvatarUrl ? (
-              <StackedContainer>
-                <MainAvatarWrapper>
-                  {avatarUrl ? (
+          <GlassView
+            glassEffectStyle="regular"
+            isInteractive={true}
+            style={{
+              borderRadius: 50,
+              padding: theme.spacing.xs,
+            }}
+          >
+            <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8}>
+              {ownerAvatarUrl ? (
+                <StackedContainer>
+                  <MainAvatarWrapper>
+                    {avatarUrl ? (
+                      <StackedAvatarImage
+                        source={{ uri: avatarUrl }}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                      />
+                    ) : (
+                      <Ionicons name="person" size={18} color="white" style={{ alignSelf: 'center', marginTop: 6 }} />
+                    )}
+                  </MainAvatarWrapper>
+                  <OwnerAvatarWrapper>
                     <StackedAvatarImage
-                      source={{ uri: avatarUrl }}
+                      source={{ uri: ownerAvatarUrl }}
                       contentFit="cover"
                       cachePolicy="memory-disk"
                     />
+                  </OwnerAvatarWrapper>
+                </StackedContainer>
+              ) : (
+                <AvatarButton>
+                  {avatarUrl ? (
+                    <AvatarImage
+                      source={{ uri: avatarUrl }}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      style={{ borderRadius: 20 }}
+                    />
                   ) : (
-                    <Ionicons name="person" size={18} color="white" style={{ alignSelf: 'center', marginTop: 6 }} />
+                    <AvatarPlaceholder>
+                      <Ionicons name="person" size={20} color="white" />
+                    </AvatarPlaceholder>
                   )}
-                </MainAvatarWrapper>
-                <OwnerAvatarWrapper>
-                  <StackedAvatarImage
-                    source={{ uri: ownerAvatarUrl }}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                  />
-                </OwnerAvatarWrapper>
-              </StackedContainer>
-            ) : (
-              <AvatarButton disabled={true} style={{ pointerEvents: 'none' }}>
-                {avatarUrl ? (
-                  <AvatarImage
-                    source={{ uri: avatarUrl }}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                  />
-                ) : (
-                  <AvatarPlaceholder>
-                    <Ionicons name="person" size={20} color="white" />
-                  </AvatarPlaceholder>
-                )}
-              </AvatarButton>
-            )}
-          </TouchableOpacity>
+                </AvatarButton>
+              )}
+            </TouchableOpacity>
+          </GlassView>
         </RightSection>
       )}
     </HeaderContainer>

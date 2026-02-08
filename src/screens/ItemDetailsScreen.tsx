@@ -423,7 +423,7 @@ export const ItemDetailsScreen: React.FC = () => {
             label: t('itemDetails.actions.modify'),
             onPress: handleModify,
             variant: 'filled',
-            icon: <Ionicons name="create-outline" size={18} color={theme.colors.surface} />,
+            icon: <Ionicons name="create-outline" size={18} color={theme.colors.primary} />,
           },
         ]}
       />
