@@ -1,5 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { TouchableOpacity, View, Text, Pressable, ActivityIndicator } from 'react-native';
+import {
+  TouchableOpacity,
+  View,
+  Text,
+  Pressable,
+  ActivityIndicator,
+  StyleSheet,
+  ViewStyle,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
@@ -11,7 +19,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import styled from 'styled-components/native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useSettings } from '../../store/hooks';
 import type { StyledProps } from '../../utils/styledComponents';
 import { useTranslation } from 'react-i18next';
 
@@ -47,26 +57,16 @@ const ActionButtonWrapper = styled(Animated.View)`
   pointer-events: auto;
 `;
 
-const ActionButton = styled(TouchableOpacity)`
-  pointer-events: auto;
-`;
-
-const ActionButtonContainer = styled(Animated.View)`
+// Simplified content container inside TouchableOpacity
+const ActionContent = styled(View)`
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
-  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
   padding-left: ${({ theme }: StyledProps) => theme.spacing.md}px;
   padding-right: ${({ theme }: StyledProps) => theme.spacing.xs}px;
   padding-vertical: ${({ theme }: StyledProps) => theme.spacing.xs}px;
   height: 56px;
   min-width: 56px;
-  shadow-color: #000;
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.25;
-  shadow-radius: 4px;
-  elevation: 4;
 `;
 
 const ActionLabelText = styled(Text)`
@@ -86,19 +86,11 @@ const ActionIconContainer = styled(View)`
   justify-content: center;
 `;
 
-const MainFAB = styled(Animated.View)`
+const MainFABContent = styled(View)`
   width: 56px;
   height: 56px;
-  border-radius: 28px;
-  background-color: ${({ theme }: StyledProps) => theme.colors.primary};
   align-items: center;
   justify-content: center;
-  shadow-color: #000;
-  shadow-offset: 0px 4px;
-  shadow-opacity: 0.3;
-  shadow-radius: 8px;
-  elevation: 6;
-  pointer-events: auto;
 `;
 
 export interface FloatingActionButtonProps {
@@ -115,6 +107,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   isAIRecognizing = false,
 }) => {
   const theme = useTheme();
+  const { settings } = useSettings();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -122,7 +115,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   // Animation values
   const expandAnimation = useSharedValue(0);
   const backdropOpacity = useSharedValue(0);
-  const iconRotation = useSharedValue(0);
 
   const toggleExpanded = useCallback(() => {
     const newExpanded = !isExpanded;
@@ -133,13 +125,11 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     if (newExpanded) {
       expandAnimation.value = withTiming(1, { duration: 250, easing });
       backdropOpacity.value = withTiming(1, { duration: 250, easing });
-      iconRotation.value = withTiming(45, { duration: 250, easing });
     } else {
       expandAnimation.value = withTiming(0, { duration: 250, easing });
       backdropOpacity.value = withTiming(0, { duration: 250, easing });
-      iconRotation.value = withTiming(0, { duration: 250, easing });
     }
-  }, [isExpanded, expandAnimation, backdropOpacity, iconRotation]);
+  }, [isExpanded, expandAnimation, backdropOpacity]);
 
   const handleBackdropPress = useCallback(() => {
     if (isExpanded) {
@@ -156,17 +146,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     toggleExpanded();
     onAIAutomatic();
   }, [toggleExpanded, onAIAutomatic]);
-
-  // Main FAB animated style
-  const mainFABStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        {
-          rotate: `${iconRotation.value}deg`,
-        },
-      ],
-    };
-  });
 
   // Icon opacity animation for add/close transition
   const addIconOpacity = useAnimatedStyle(() => {
@@ -197,7 +176,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   });
 
   // First action button (Manual Add) animated style - closest to main FAB
-  // Positioned directly above main FAB (56px FAB + 8px gap = 64px)
   const firstActionStyle = useAnimatedStyle(() => {
     const bottom = interpolate(
       expandAnimation.value,
@@ -214,7 +192,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   });
 
   // Second action button (AI Automatic) animated style
-  // Positioned above first button (64px + 56px button + 8px gap = 128px)
   const secondActionStyle = useAnimatedStyle(() => {
     const bottom = interpolate(
       expandAnimation.value,
@@ -230,30 +207,26 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     };
   });
 
-  // Action button container animated styles
-  const firstContainerStyle = useAnimatedStyle(() => {
-    const opacity = expandAnimation.value;
-
-    return {
-      opacity,
-    };
-  });
-
-  const secondContainerStyle = useAnimatedStyle(() => {
-    const opacity = expandAnimation.value;
-
-    return {
-      opacity,
-    };
-  });
-
-  const bottomPosition = insets.bottom + 100 + bottomOffset; // 80px for nav bar height + spacing
+  const bottomPosition = insets.bottom + 100 + bottomOffset;
 
   const actionsContainerStyle = useAnimatedStyle(() => {
     return {
       bottom: bottomPosition,
     };
   });
+
+  const iconColor = theme.colors.primary;
+
+  // Styles for the GlassView wrappers
+  const mainFabGlassStyle: ViewStyle = {
+    borderRadius: 28,
+    backgroundColor: theme.colors.primary + '20', // Faint primary for liquid effect
+  };
+
+  const actionGlassStyle: ViewStyle = {
+    borderRadius: 9999, // full
+    backgroundColor: theme.colors.surface + 'CC',
+  };
 
   return (
     <FABContainer>
@@ -262,19 +235,25 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       </Animated.View>
 
       <ActionsContainer style={actionsContainerStyle}>
-        {/* Manual Add Button - closest to main FAB */}
+        {/* Manual Add Button */}
         <ActionButtonWrapper
           style={firstActionStyle}
           pointerEvents={isExpanded ? 'auto' : 'none'}
         >
-          <ActionButton onPress={handleManualAdd} activeOpacity={0.7}>
-            <ActionButtonContainer style={firstContainerStyle}>
-              <ActionLabelText>{t('fab.manuallyAdd', 'Manually Add')}</ActionLabelText>
-              <ActionIconContainer>
-                <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
-              </ActionIconContainer>
-            </ActionButtonContainer>
-          </ActionButton>
+          <GlassView
+            style={actionGlassStyle}
+            glassEffectStyle="regular"
+            isInteractive={true}
+          >
+            <TouchableOpacity onPress={handleManualAdd} activeOpacity={0.7}>
+              <ActionContent>
+                <ActionLabelText>{t('fab.manuallyAdd', 'Manually Add')}</ActionLabelText>
+                <ActionIconContainer>
+                  <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+                </ActionIconContainer>
+              </ActionContent>
+            </TouchableOpacity>
+          </GlassView>
         </ActionButtonWrapper>
 
         {/* AI Automatic Button */}
@@ -282,38 +261,63 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           style={secondActionStyle}
           pointerEvents={isExpanded ? 'auto' : 'none'}
         >
-          <ActionButton onPress={handleAIAutomatic} activeOpacity={0.7}>
-            <ActionButtonContainer style={secondContainerStyle}>
-              <ActionLabelText>{t('fab.aiAutomatic', 'AI Automatic')}</ActionLabelText>
-              <ActionIconContainer>
-                <MaterialCommunityIcons name="auto-fix" size={20} color={theme.colors.primary} />
-              </ActionIconContainer>
-            </ActionButtonContainer>
-          </ActionButton>
+          <GlassView
+            style={actionGlassStyle}
+            glassEffectStyle="regular"
+            isInteractive={true}
+          >
+            <TouchableOpacity onPress={handleAIAutomatic} activeOpacity={0.7}>
+              <ActionContent>
+                <ActionLabelText>{t('fab.aiAutomatic', 'AI Automatic')}</ActionLabelText>
+                <ActionIconContainer>
+                  <MaterialCommunityIcons name="auto-fix" size={20} color={theme.colors.primary} />
+                </ActionIconContainer>
+              </ActionContent>
+            </TouchableOpacity>
+          </GlassView>
         </ActionButtonWrapper>
 
         {/* Main FAB */}
-        <TouchableOpacity
-          onPress={toggleExpanded}
-          activeOpacity={0.8}
-          style={{ position: 'absolute', bottom: 0, right: 0 }}
-          disabled={isAIRecognizing}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            right: 0,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 12,
+            elevation: 6,
+          }}
+          pointerEvents="auto"
         >
-          <MainFAB style={mainFABStyle}>
-            {isAIRecognizing ? (
-              <ActivityIndicator size="small" color={theme.colors.surface} />
-            ) : (
-              <>
-                <Animated.View style={[{ position: 'absolute' }, addIconOpacity]}>
-                  <Ionicons name="add" size={32} color={theme.colors.surface} />
-                </Animated.View>
-                <Animated.View style={[{ position: 'absolute' }, closeIconOpacity]}>
-                  <Ionicons name="close" size={32} color={theme.colors.surface} />
-                </Animated.View>
-              </>
-            )}
-          </MainFAB>
-        </TouchableOpacity>
+          <GlassView
+            style={mainFabGlassStyle}
+            glassEffectStyle="regular"
+            isInteractive={true}
+          >
+            <TouchableOpacity
+              onPress={toggleExpanded}
+              activeOpacity={0.8}
+              disabled={isAIRecognizing}
+            >
+              <MainFABContent>
+                {isAIRecognizing ? (
+                  <ActivityIndicator size="small" color={iconColor} />
+                ) : (
+                  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <Animated.View style={[{ position: 'absolute' }, addIconOpacity]}>
+                      <Ionicons name="add" size={32} color={iconColor} />
+                    </Animated.View>
+                    <Animated.View style={[{ position: 'absolute' }, closeIconOpacity]}>
+                      <Ionicons name="close" size={32} color={iconColor} />
+                    </Animated.View>
+                  </View>
+                )}
+              </MainFABContent>
+            </TouchableOpacity>
+          </GlassView>
+        </Animated.View>
       </ActionsContainer>
     </FABContainer>
   );
