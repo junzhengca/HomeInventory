@@ -1,78 +1,40 @@
-import React, { useState, useCallback, useMemo, useEffect, memo } from 'react';
-import { TouchableOpacity, View, Text, Keyboard } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect, memo, useRef } from 'react';
+import { TouchableOpacity, View, Text, Keyboard, TextInput } from 'react-native';
 import styled from 'styled-components/native';
-import { BottomSheetModal, BottomSheetBackdrop, BottomSheetTextInput, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetTextInput, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import { useAuth, useAppDispatch } from '../../store/hooks';
+import { useKeyboardVisibility } from '../../hooks/useKeyboardVisibility';
 import { setError } from '../../store/slices/authSlice';
-import { BottomActionBar } from '../molecules';
+import { BottomSheetHeader, UncontrolledInput, FormSection, Button } from '../atoms';
 
-const Header = styled(View)`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
-`;
-
-const HeaderLeft = styled(View)`
+const ContentContainer = styled.View`
   flex: 1;
+  border-top-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  border-top-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  overflow: hidden;
 `;
 
-const Title = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.xxl}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-`;
-
-const Subtitle = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
-`;
-
-const CloseButton = styled(TouchableOpacity)`
-  width: 32px;
-  height: 32px;
-  border-radius: 16px;
-  background-color: ${({ theme }: StyledProps) => theme.colors.borderLight};
-  align-items: center;
-  justify-content: center;
-`;
-
-const ContentContainer = styled(View)`
-  flex: 1;
+const FooterContainer = styled(View) <{
+  bottomInset: number;
+  showSafeArea: boolean;
+}>`
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-`;
-
-const FormSection = styled(View)`
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.lg}px;
-`;
-
-const Label = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
-
-const Input = styled(BottomSheetTextInput)`
-  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-width: 1px;
-  border-color: ${({ theme }: StyledProps) => theme.colors.border};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
   padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-`;
-
-const ErrorText = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  color: ${({ theme }: StyledProps) => theme.colors.error};
-  margin-top: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  padding-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  padding-bottom: ${({ bottomInset, showSafeArea, theme }: any) =>
+    showSafeArea ? bottomInset + theme.spacing.md : theme.spacing.md}px;
+  border-top-width: 1px;
+  border-top-color: ${({ theme }: StyledProps) => theme.colors.borderLight};
+  shadow-color: #000;
+  shadow-offset: 0px -4px;
+  shadow-opacity: 0.05;
+  shadow-radius: 12px;
+  elevation: 8;
 `;
 
 const LinkText = styled(Text)`
@@ -84,98 +46,10 @@ const LinkText = styled(Text)`
 
 const LinkButton = styled(TouchableOpacity)`
   margin-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
-`;
-
-const BenefitsSection = styled(View)`
-  background-color: ${({ theme }: StyledProps) => theme.colors.primaryLightest};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
-const BenefitItem = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
 
-const BenefitItemLast = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 0px;
-`;
-
-const BenefitIconContainer = styled(View)`
-  width: 36px;
-  height: 36px;
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
-  background-color: ${({ theme }: StyledProps) => theme.colors.primary};
-  align-items: center;
-  justify-content: center;
-  margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  flex-shrink: 0;
-`;
-
-const BenefitText = styled(Text)`
-  flex: 1;
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-  line-height: ${({ theme }: StyledProps) => theme.typography.fontSize.sm * 1.4}px;
-`;
-
-// Memoized input components to prevent re-renders that interrupt IME composition
-const MemoizedEmailInput = memo<{
-  value: string;
-  onChangeText: (text: string) => void;
-  placeholder: string;
-  placeholderTextColor: string;
-  editable: boolean;
-}>(({ value, onChangeText, placeholder, placeholderTextColor, editable }) => {
-  return (
-    <Input
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={placeholder}
-      placeholderTextColor={placeholderTextColor}
-      keyboardType="email-address"
-      autoCapitalize="none"
-      autoCorrect={false}
-      spellCheck={false}
-      textContentType="none"
-      autoComplete="off"
-      editable={editable}
-    />
-  );
-});
-
-const MemoizedPasswordInput = memo<{
-  value: string;
-  onChangeText: (text: string) => void;
-  onSubmitEditing: () => void;
-  placeholder: string;
-  placeholderTextColor: string;
-  editable: boolean;
-}>(({ value, onChangeText, onSubmitEditing, placeholder, placeholderTextColor, editable }) => {
-  return (
-    <Input
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={placeholder}
-      placeholderTextColor={placeholderTextColor}
-      secureTextEntry
-      autoCapitalize="none"
-      autoCorrect={false}
-      spellCheck={false}
-      textContentType="none"
-      autoComplete="off"
-      editable={editable}
-      onSubmitEditing={onSubmitEditing}
-    />
-  );
-});
-
-MemoizedEmailInput.displayName = 'MemoizedEmailInput';
-MemoizedPasswordInput.displayName = 'MemoizedPasswordInput';
 
 export interface LoginBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
@@ -196,40 +70,10 @@ export const LoginBottomSheet: React.FC<LoginBottomSheetProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [loginAttempted, setLoginAttempted] = useState(false);
-
-  const snapPoints = useMemo(() => ['100%'], []);
-
-  // Use 'extend' to prevent IME composition interruption
-  const keyboardBehavior = useMemo(() => 'extend' as const, []);
-  const keyboardBlurBehavior = useMemo(() => 'restore' as const, []);
-
-  // Track keyboard visibility to adjust footer padding
-  useEffect(() => {
-    const keyboardWillShowListener = Keyboard.addListener('keyboardWillShow', () => {
-      setIsKeyboardVisible(true);
-    });
-
-    const keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', () => {
-      setIsKeyboardVisible(false);
-    });
-
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-      setIsKeyboardVisible(true);
-    });
-
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      setIsKeyboardVisible(false);
-    });
-
-    return () => {
-      keyboardWillShowListener.remove();
-      keyboardWillHideListener.remove();
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
+  const { isKeyboardVisible } = useKeyboardVisibility();
+  const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
 
   const renderBackdrop = useCallback(
     (props: Parameters<typeof BottomSheetBackdrop>[0]) => (
@@ -244,11 +88,14 @@ export const LoginBottomSheet: React.FC<LoginBottomSheetProps> = ({
   );
 
   const handleClose = useCallback(() => {
+    Keyboard.dismiss();
     bottomSheetRef.current?.dismiss();
     setEmail('');
     setPassword('');
     setLocalError(null);
     setLoginAttempted(false);
+    emailInputRef.current?.clear();
+    passwordInputRef.current?.clear();
   }, [bottomSheetRef]);
 
   // Stable onChangeText handlers to prevent IME composition interruption
@@ -306,114 +153,85 @@ export const LoginBottomSheet: React.FC<LoginBottomSheetProps> = ({
 
   const renderFooter = useCallback(
     () => (
-      <BottomActionBar
-        actions={[
-          {
-            label: authLoading ? t('login.submitting') : t('login.submit'),
-            onPress: handleSubmit,
-            variant: 'filled',
-            icon: <Ionicons name="log-in" size={18} color={theme.colors.surface} />,
-            disabled: authLoading,
-          },
-        ]}
-        safeArea={!isKeyboardVisible}
-        inBottomSheet={true}
-      />
+      <FooterContainer
+        bottomInset={insets.bottom}
+        showSafeArea={!isKeyboardVisible}
+      >
+        <Button
+          label={authLoading ? t('login.submitting') : t('login.submit')}
+          onPress={handleSubmit}
+          variant="primary"
+          icon={<Ionicons name="log-in" size={18} color={theme.colors.surface} />}
+          disabled={authLoading}
+          fullWidth={true}
+        />
+      </FooterContainer>
     ),
-    [handleSubmit, authLoading, theme, t, isKeyboardVisible]
+    [handleSubmit, authLoading, theme, t, isKeyboardVisible, insets.bottom]
   );
 
   // Combine local and auth errors for display
   const displayError = localError || authError;
 
+  // Calculate footer height: button height (approx 50) + vertical padding (32) + safe area
+  const footerHeight = 82 + (isKeyboardVisible ? 0 : insets.bottom);
+
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
+      enableDynamicSizing={true}
+      handleComponent={null}
       enablePanDownToClose={true}
-      enableContentPanningGesture={false}
-      enableHandlePanningGesture={false}
       onDismiss={handleClose}
       backdropComponent={renderBackdrop}
-      keyboardBehavior={keyboardBehavior}
-      keyboardBlurBehavior={keyboardBlurBehavior}
       android_keyboardInputMode="adjustResize"
-      topInset={insets.top}
-      enableDynamicSizing={false}
       footerComponent={renderFooter}
+      backgroundStyle={{ backgroundColor: theme.colors.surface }}
     >
       <ContentContainer>
-        <BottomSheetScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ 
-            paddingHorizontal: theme.spacing.md, 
-            paddingTop: theme.spacing.lg,
-            paddingBottom: theme.spacing.lg 
-          }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          enableOnPanDownToDismiss={false}
-        >
-        <Header>
-          <HeaderLeft>
-            <Title>{t('login.title')}</Title>
-            <Subtitle>{t('login.subtitle')}</Subtitle>
-          </HeaderLeft>
-          <CloseButton onPress={handleClose}>
-            <Ionicons name="close" size={20} color={theme.colors.text} />
-          </CloseButton>
-        </Header>
-
-        <BenefitsSection>
-          <BenefitItem>
-            <BenefitIconContainer>
-              <Ionicons name="cloud-upload" size={20} color="white" />
-            </BenefitIconContainer>
-            <BenefitText>{t('login.benefits.sync')}</BenefitText>
-          </BenefitItem>
-          <BenefitItem>
-            <BenefitIconContainer>
-              <Ionicons name="sparkles" size={20} color="white" />
-            </BenefitIconContainer>
-            <BenefitText>{t('login.benefits.premium')}</BenefitText>
-          </BenefitItem>
-          <BenefitItemLast>
-            <BenefitIconContainer>
-              <Ionicons name="people" size={20} color="white" />
-            </BenefitIconContainer>
-            <BenefitText>{t('login.benefits.share')}</BenefitText>
-          </BenefitItemLast>
-        </BenefitsSection>
-
-        <FormSection>
-          <Label>{t('login.fields.email')}</Label>
-          <MemoizedEmailInput
-            value={email}
-            onChangeText={handleEmailChange}
-            placeholder={t('login.placeholders.email')}
-            placeholderTextColor={theme.colors.textSecondary}
-            editable={!authLoading}
+        <BottomSheetView style={{ paddingBottom: footerHeight }}>
+          <BottomSheetHeader
+            title={t('login.title')}
+            subtitle={t('login.subtitle')}
+            onClose={handleClose}
           />
-        </FormSection>
 
-        <FormSection>
-          <Label>{t('login.fields.password')}</Label>
-          <MemoizedPasswordInput
-            value={password}
-            onChangeText={handlePasswordChange}
-            onSubmitEditing={handleSubmit}
-            placeholder={t('login.placeholders.password')}
-            placeholderTextColor={theme.colors.textSecondary}
-            editable={!authLoading}
-          />
-          {displayError && <ErrorText>{displayError}</ErrorText>}
-        </FormSection>
+          <View style={{ paddingHorizontal: theme.spacing.md }}>
 
-        <LinkButton onPress={handleSignupPress}>
-          <LinkText>{t('login.link')}</LinkText>
-        </LinkButton>
-        </BottomSheetScrollView>
+
+            <FormSection label={t('login.fields.email')}>
+              <UncontrolledInput
+                ref={emailInputRef}
+                defaultValue={email}
+                onChangeText={handleEmailChange}
+                onBlur={() => { }}
+                placeholder={t('login.placeholders.email')}
+                placeholderTextColor={theme.colors.textSecondary}
+                keyboardType="email-address"
+              />
+            </FormSection>
+
+            <FormSection label={t('login.fields.password')}>
+              <UncontrolledInput
+                ref={passwordInputRef}
+                defaultValue={password}
+                onChangeText={handlePasswordChange}
+                onBlur={() => { }}
+                onSubmitEditing={handleSubmit}
+                placeholder={t('login.placeholders.password')}
+                placeholderTextColor={theme.colors.textSecondary}
+                keyboardType="default"
+                secureTextEntry={true}
+                error={!!displayError}
+                errorMessage={displayError || undefined}
+              />
+            </FormSection>
+
+            <LinkButton onPress={handleSignupPress}>
+              <LinkText>{t('login.link')}</LinkText>
+            </LinkButton>
+          </View>
+        </BottomSheetView>
       </ContentContainer>
     </BottomSheetModal>
   );

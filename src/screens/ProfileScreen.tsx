@@ -392,64 +392,7 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
-  if (!user || !isAuthenticated) {
-    return (
-      <Container>
-        <PageHeader
-          icon="person"
-          title={t('profile.title')}
-          subtitle={t('profile.subtitle')}
-          showBackButton={true}
-          showRightButtons={false}
-        />
-        <Content
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: bottomPadding }}
-        >
-          <AuthSection>
-            <AuthTitle>{t('profile.auth.title')}</AuthTitle>
-            <AuthSubtitle>{t('profile.auth.subtitle')}</AuthSubtitle>
-            <AuthButtonContainer>
-              <ButtonWrapper>
-                <Button
-                  onPress={handleLoginPress}
-                  label={t('login.submit')}
-                  icon="log-in"
-                  variant="primary"
-                />
-              </ButtonWrapper>
-              <ButtonWrapper>
-                <Button
-                  onPress={handleSignupPress}
-                  label={t('signup.submit')}
-                  icon="person-add"
-                  variant="secondary"
-                />
-              </ButtonWrapper>
-              <ButtonWrapper>
-                <Button
-                  onPress={handleGoogleLogin}
-                  label={t('login.loginWithGoogle')}
-                  icon="logo-google"
-                  variant="secondary"
-                />
-              </ButtonWrapper>
-            </AuthButtonContainer>
-          </AuthSection>
-        </Content>
-        <LoginBottomSheet
-          bottomSheetRef={loginBottomSheetRef}
-          onSignupPress={handleSignupPress}
-          onLoginSuccess={handleLoginSuccess}
-        />
-        <SignupBottomSheet
-          bottomSheetRef={signupBottomSheetRef}
-          onLoginPress={handleLoginPress}
-          onSignupSuccess={handleSignupSuccess}
-        />
-      </Container>
-    );
-  }
+
 
   return (
     <Container>
@@ -464,56 +407,86 @@ export const ProfileScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
-        <ProfileSection>
-          <AvatarContainer onPress={handleAvatarPress} disabled={isUploading}>
-            {isUploading ? (
-              <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                <ActivityIndicator size="small" color="white" />
-              </View>
-            ) : user.avatarUrl ? (
-              <AvatarImage source={{ uri: user.avatarUrl }} contentFit="cover" cachePolicy="memory-disk" />
-            ) : (
+        {isAuthenticated && user ? (
+          <>
+            <ProfileSection>
+              <AvatarContainer onPress={handleAvatarPress} disabled={isUploading}>
+                {isUploading ? (
+                  <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <ActivityIndicator size="small" color="white" />
+                  </View>
+                ) : user.avatarUrl ? (
+                  <AvatarImage source={{ uri: user.avatarUrl }} contentFit="cover" cachePolicy="memory-disk" />
+                ) : (
+                  <AvatarPlaceholder>
+                    <Text style={{ fontSize: 40, color: 'white' }}>👤</Text>
+                  </AvatarPlaceholder>
+                )}
+              </AvatarContainer>
+              <UserNameContainer>
+                <UserName>{user.nickname || user.email}</UserName>
+                <EditNicknameButton onPress={() => editNicknameBottomSheetRef.current?.present(user.nickname || '')}>
+                  <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+                </EditNicknameButton>
+              </UserNameContainer>
+              {user.nickname && <UserEmail>{user.email}</UserEmail>}
+              {user.id && <UserId>{t('profile.userId')}: {user.id}</UserId>}
+            </ProfileSection>
+
+            <InfoSection>
+              {user.nickname && (
+                <InfoRow>
+                  <InfoLabel>{t('profile.nickname')}</InfoLabel>
+                  <InfoValue>{user.nickname}</InfoValue>
+                </InfoRow>
+              )}
+              <InfoRow>
+                <InfoLabel>{t('profile.email')}</InfoLabel>
+                <InfoValue>{user.email}</InfoValue>
+              </InfoRow>
+              {user.createdAt && (
+                <InfoRow>
+                  <InfoLabel>{t('profile.memberSince')}</InfoLabel>
+                  <InfoValue>{formatDate(user.createdAt, getLocale(), t)}</InfoValue>
+                </InfoRow>
+              )}
+              {user.updatedAt && (
+                <InfoRow>
+                  <InfoLabel>{t('profile.lastUpdated')}</InfoLabel>
+                  <InfoValue>{formatDate(user.updatedAt, getLocale(), t)}</InfoValue>
+                </InfoRow>
+              )}
+            </InfoSection>
+
+            <LogoutButton onPress={handleLogout} />
+          </>
+        ) : (
+          <AuthSection>
+            <AvatarContainer disabled={true}>
               <AvatarPlaceholder>
-                <Text style={{ fontSize: 40, color: 'white' }}>👤</Text>
+                <Ionicons name="person" size={50} color="white" />
               </AvatarPlaceholder>
-            )}
-          </AvatarContainer>
-          <UserNameContainer>
-            <UserName>{user.nickname || user.email}</UserName>
-            <EditNicknameButton onPress={() => editNicknameBottomSheetRef.current?.present(user.nickname || '')}>
-              <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
-            </EditNicknameButton>
-          </UserNameContainer>
-          {user.nickname && <UserEmail>{user.email}</UserEmail>}
-          {user.id && <UserId>{t('profile.userId')}: {user.id}</UserId>}
-        </ProfileSection>
-
-        <InfoSection>
-          {user.nickname && (
-            <InfoRow>
-              <InfoLabel>{t('profile.nickname')}</InfoLabel>
-              <InfoValue>{user.nickname}</InfoValue>
-            </InfoRow>
-          )}
-          <InfoRow>
-            <InfoLabel>{t('profile.email')}</InfoLabel>
-            <InfoValue>{user.email}</InfoValue>
-          </InfoRow>
-          {user.createdAt && (
-            <InfoRow>
-              <InfoLabel>{t('profile.memberSince')}</InfoLabel>
-              <InfoValue>{formatDate(user.createdAt, getLocale(), t)}</InfoValue>
-            </InfoRow>
-          )}
-          {user.updatedAt && (
-            <InfoRow>
-              <InfoLabel>{t('profile.lastUpdated')}</InfoLabel>
-              <InfoValue>{formatDate(user.updatedAt, getLocale(), t)}</InfoValue>
-            </InfoRow>
-          )}
-        </InfoSection>
-
-        <LogoutButton onPress={handleLogout} />
+            </AvatarContainer>
+            <AuthTitle>{t('profile.auth.title')}</AuthTitle>
+            <AuthSubtitle>{t('profile.auth.subtitle')}</AuthSubtitle>
+            <AuthButtonContainer>
+              <ButtonWrapper>
+                <Button
+                  label={t('login.submit')}
+                  onPress={handleLoginPress}
+                  variant="primary"
+                />
+              </ButtonWrapper>
+              <ButtonWrapper>
+                <Button
+                  label={t('signup.submit')}
+                  onPress={handleSignupPress}
+                  variant="secondary"
+                />
+              </ButtonWrapper>
+            </AuthButtonContainer>
+          </AuthSection>
+        )}
       </Content>
       <LoginBottomSheet
         bottomSheetRef={loginBottomSheetRef}

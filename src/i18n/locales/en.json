@@ -657,5 +657,8 @@
       "enterNickname": "Please enter a nickname",
       "updateFailed": "Failed to update nickname, please try again"
     }
+  },
+  "onboarding": {
+    "welcome": "Organize your life"
   }
 }

@@ -15,7 +15,7 @@ const InputInnerWrapper = styled.View<{ hasError: boolean }>`
   width: 100%;
 `;
 
-const Input = styled(BottomSheetTextInput)<{ hasError: boolean; isFocused: boolean; noBorder?: boolean; textAlign?: 'left' | 'center' | 'right' }>`
+const Input = styled(BottomSheetTextInput) <{ hasError: boolean; isFocused: boolean; noBorder?: boolean; textAlign?: 'left' | 'center' | 'right' }>`
   background-color: ${({ theme, hasError }: StyledProps & { hasError: boolean }) =>
     hasError ? theme.colors.errorLight : theme.colors.surface};
   border-width: ${({ noBorder, isFocused }: { noBorder?: boolean; isFocused: boolean }) =>
@@ -76,6 +76,7 @@ export interface UncontrolledInputProps {
   errorMessage?: string;
   noBorder?: boolean;
   textAlign?: 'left' | 'center' | 'right';
+  secureTextEntry?: boolean;
 }
 
 /**
@@ -112,6 +113,7 @@ export const UncontrolledInput = memo(
         errorMessage,
         noBorder = false,
         textAlign,
+        secureTextEntry = false,
       },
       ref
     ) => {
@@ -144,6 +146,7 @@ export const UncontrolledInput = memo(
               isFocused={isFocused}
               noBorder={noBorder}
               textAlign={textAlign}
+              secureTextEntry={secureTextEntry}
             />
             {error && (
               <ErrorIcon>

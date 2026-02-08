@@ -632,5 +632,8 @@
       "enterNickname": "请输入昵称",
       "updateFailed": "更新昵称失败，请重试"
     }
+  },
+  "onboarding": {
+    "welcome": "整理您的生活"
   }
 }

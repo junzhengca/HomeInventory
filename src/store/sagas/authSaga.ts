@@ -238,7 +238,6 @@ function* checkAuthSaga(): Generator {
     // Verify auth by calling /me endpoint
     try {
       const currentUser: User = (yield call(apiClient.getCurrentUser.bind(apiClient))) as User;
-      const savedUser: User | null = (yield call(getUser)) as User | null;
 
       authLogger.info('/me endpoint response', {
         hasAvatar: !!currentUser?.avatarUrl,
@@ -269,36 +268,51 @@ function* checkAuthSaga(): Generator {
 
         // Sync everything (Homes + Content)
         yield put(syncItemsAction());
-      } else if (savedUser) {
-        yield put(setUser(savedUser));
-        yield put(setAuthenticated(true));
-
-        // Check if nickname is missing
-        if (!savedUser.nickname || savedUser.nickname.trim() === '') {
-          yield put(setShowNicknameSetup(true));
-        } else {
-          yield put(setShowNicknameSetup(false));
-        }
-
-        // Restore active home ID or select default
-        yield call(restoreOrSelectActiveHome);
-
-        // Reload data with correct context
-        yield put(loadItems());
-        yield put(loadTodos());
-        yield put(loadSettings());
-
-
-        // Sync everything (Homes + Content)
-        yield put(syncItemsAction());
-      } else {
-        throw new Error('No user data available from API or storage');
       }
     } catch (error) {
-      // If /me returns 401, user is not authenticated
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      authLogger.error(`Auth verification failed: ${errorMessage}`, error);
-      yield call(clearAuthAndLogout);
+      // Check if it's a 401 error
+      const errorStatus = (error as any)?.status;
+
+      if (errorStatus === 401) {
+        // If /me returns 401, user is not authenticated
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        authLogger.error(`Auth verification failed (401): ${errorMessage}`, error);
+        yield call(clearAuthAndLogout);
+      } else {
+        // For other errors (network, 500, etc.), try to use cached user
+        // This effectively enables offline mode if we have a token
+        authLogger.warn('Failed to verify auth with server, checking local cache', error);
+
+        const savedUser: User | null = (yield call(getUser)) as User | null;
+
+        if (savedUser) {
+          authLogger.info('Using cached user data for offline/error mode');
+          yield put(setUser(savedUser));
+          yield put(setAuthenticated(true));
+
+          // Check if nickname is missing
+          if (!savedUser.nickname || savedUser.nickname.trim() === '') {
+            yield put(setShowNicknameSetup(true));
+          } else {
+            yield put(setShowNicknameSetup(false));
+          }
+
+          // Restore active home ID or select default
+          yield call(restoreOrSelectActiveHome);
+
+          // Reload data with correct context (from local DB)
+          yield put(loadItems());
+          yield put(loadTodos());
+          yield put(loadSettings());
+        } else {
+          // No cached user, but we have a token that failed with non-401?
+          // This is a tricky state. We probably shouldn't logout if it's a network error.
+          // But if we can't load a user, we can't really "authenticate" the app UI.
+          // For now, if we have no user data, we must logout.
+          authLogger.error('No cached user data available and server request failed');
+          yield call(clearAuthAndLogout);
+        }
+      }
     }
   } catch (error) {
     authLogger.error('Error checking auth', error);
