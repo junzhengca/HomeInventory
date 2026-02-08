@@ -7,6 +7,7 @@ import {
   removeItem as removeItemSlice,
   setLoading,
 } from '../slices/inventorySlice';
+import { triggerCategoryRefresh } from '../slices/refreshSlice';
 import {
   getAllItems,
   createItem,
@@ -143,6 +144,9 @@ function* syncItemsSaga() {
     // 4. Refresh UI for the currently active home
     yield call(silentRefreshItemsSaga);
     yield put(loadTodos());
+
+    // 5. Trigger category refresh to update CategorySelector and CategoryFilter
+    yield put(triggerCategoryRefresh());
 
   } catch (error) {
     syncLogger.error('Error in sync sequence', error);

@@ -4,8 +4,9 @@ import styled from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
 import { Category } from '../../types/inventory';
 import { getAllCategories } from '../../services/CategoryService';
-import { useCategory } from '../../store/hooks';
+import { useCategory, useAppSelector } from '../../store/hooks';
 import { useHome } from '../../hooks/useHome';
+import { selectCategoryRefreshTimestamp } from '../../store/slices/refreshSlice';
 import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
 import { uiLogger } from '../../utils/Logger';
 
@@ -29,10 +30,10 @@ const CategoryButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
   border-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.border};
   margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-  
+
   /* Elevation for Android */
   elevation: ${({ isSelected }: { isSelected: boolean }) => (isSelected ? 4 : 0)};
-  
+
   /* Shadow for iOS */
   shadow-color: #000;
   shadow-offset: 0px 2px;
@@ -71,6 +72,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   const [categories, setCategories] = useState<Category[]>([]);
   const { registerRefreshCallback } = useCategory();
   const { currentHomeId } = useHome();
+  const refreshTimestamp = useAppSelector(selectCategoryRefreshTimestamp);
 
   const loadCategories = useCallback(async () => {
     if (providedCategories) {
@@ -108,9 +110,10 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     }
   }, [providedCategories, t, currentHomeId]);
 
+  // Load categories when home changes, refresh timestamp changes, or translations change
   useEffect(() => {
     loadCategories();
-  }, [loadCategories]);
+  }, [loadCategories, refreshTimestamp]);
 
   useEffect(() => {
     if (!providedCategories) {
@@ -160,4 +163,3 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     </Container>
   );
 };
-

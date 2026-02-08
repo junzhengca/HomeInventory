@@ -2,10 +2,12 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface RefreshState {
   categoryCallbacks: Set<string>; // Store callback IDs as strings
+  categoryRefreshTimestamp: number; // Timestamp of last category refresh
 }
 
 const initialState: RefreshState = {
   categoryCallbacks: new Set(),
+  categoryRefreshTimestamp: Date.now(),
 };
 
 const refreshSlice = createSlice({
@@ -18,8 +20,9 @@ const refreshSlice = createSlice({
     unregisterCategoryCallback: (_state, action: PayloadAction<string>) => {
       _state.categoryCallbacks.delete(action.payload);
     },
-    triggerCategoryRefresh: () => {
-      // No state change needed - this action will trigger saga
+    triggerCategoryRefresh: (state) => {
+      // Increment timestamp to trigger refresh in all observers
+      state.categoryRefreshTimestamp = Date.now();
     },
   },
 });
@@ -29,5 +32,9 @@ export const {
   unregisterCategoryCallback,
   triggerCategoryRefresh,
 } = refreshSlice.actions;
-export default refreshSlice.reducer;
 
+// Selector to get the refresh timestamp
+export const selectCategoryRefreshTimestamp = (state: { refresh: RefreshState }) =>
+  state.refresh.categoryRefreshTimestamp;
+
+export default refreshSlice.reducer;
