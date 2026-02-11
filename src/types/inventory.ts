@@ -43,6 +43,18 @@ export interface Location {
   pendingDelete?: boolean;
 }
 
+export interface ItemBatch {
+  id: string;              // UUID, generated client-side
+  amount: number;          // Quantity in this batch
+  unit?: string;           // Unit of measurement (e.g. "kg", "pcs", "bottles")
+  expiryDate?: string;     // ISO date string
+  purchaseDate?: string;   // ISO date string
+  price?: number;          // Price paid for this batch
+  vendor?: string;         // Where it was purchased
+  note?: string;           // Optional note for this batch
+  createdAt: string;       // ISO date string
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -51,14 +63,11 @@ export interface InventoryItem {
   status: string; // Status ID (e.g., "using", "new", "out-of-stock")
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
-  price: number;
-  amount?: number; // Optional quantity
   warningThreshold?: number; // Warning threshold for restocking badge (defaults to 0)
-  expiryDate?: string; // ISO date string (optional)
-  purchaseDate?: string; // ISO date string (optional)
+  batches: ItemBatch[];      // Purchase batches
+  categoryId?: string;
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
-  categoryId?: string;
   deletedAt?: string; // ISO date string - marks soft deletion
 
   // Sync metadata

@@ -25,6 +25,7 @@ import { useItemActions } from '../hooks/useItemActions';
 import { formatDate, formatPrice } from '../utils/formatters';
 import { getLightColor } from '../utils/colors';
 import { calculateBottomActionBarPadding } from '../utils/layout';
+import { getTotalAmount, getTotalValue, getEarliestExpiry, getLatestPurchase } from '../utils/batchUtils';
 import type { Theme } from '../theme/types';
 import type { StyledProps } from '../utils/styledComponents';
 import { uiLogger } from '../utils/Logger';
@@ -257,10 +258,10 @@ export const ItemDetailsScreen: React.FC = () => {
     navigation.goBack();
   };
 
+  const totalAmount = item ? getTotalAmount(item.batches || []) : 0;
   const needsRestock =
     item &&
-    item.amount !== undefined &&
-    item.amount <= (item.warningThreshold ?? 0);
+    totalAmount <= (item.warningThreshold ?? 0);
 
   // Calculate bottom padding for action bar
   const bottomPadding = calculateBottomActionBarPadding(insets.bottom);
@@ -361,7 +362,7 @@ export const ItemDetailsScreen: React.FC = () => {
               </PropertyIcon>
               <PropertyContent>
                 <PropertyLabel>{t('itemDetails.fields.quantity')}</PropertyLabel>
-                <PropertyValue>{item.amount ?? 1}</PropertyValue>
+                <PropertyValue>{totalAmount}</PropertyValue>
                 {needsRestock && (
                   <RestockBadge>
                     <Ionicons name="alert-circle" size={14} color="#FF5252" />
@@ -385,7 +386,7 @@ export const ItemDetailsScreen: React.FC = () => {
               </PropertyIcon>
               <PropertyContent>
                 <PropertyLabel>{t('itemDetails.fields.valuation')}</PropertyLabel>
-                <PropertyValue>{formatPrice(item.price, currencySymbol)}</PropertyValue>
+                <PropertyValue>{formatPrice(getTotalValue(item.batches || []), currencySymbol)}</PropertyValue>
               </PropertyContent>
             </PropertyRow>
             <PropertyRow>
@@ -394,7 +395,7 @@ export const ItemDetailsScreen: React.FC = () => {
               </PropertyIcon>
               <PropertyContent>
                 <PropertyLabel>{t('itemDetails.fields.purchaseDate')}</PropertyLabel>
-                <PropertyValue>{formatDate(item.purchaseDate, getLocale(), t)}</PropertyValue>
+                <PropertyValue>{formatDate(getLatestPurchase(item.batches || []), getLocale(), t)}</PropertyValue>
               </PropertyContent>
             </PropertyRow>
             <PropertyRowLast>
@@ -403,7 +404,7 @@ export const ItemDetailsScreen: React.FC = () => {
               </PropertyIcon>
               <PropertyContent>
                 <PropertyLabel>{t('itemDetails.fields.expiryDate')}</PropertyLabel>
-                <PropertyValue>{formatDate(item.expiryDate, getLocale(), t)}</PropertyValue>
+                <PropertyValue>{formatDate(getEarliestExpiry(item.batches || []), getLocale(), t)}</PropertyValue>
               </PropertyContent>
             </PropertyRowLast>
           </Section>

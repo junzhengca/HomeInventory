@@ -7,6 +7,7 @@ import { InventoryItem, Category } from '../../types/inventory';
 import { getCategoryById } from '../../services/CategoryService';
 import { formatLocation } from '../../utils/formatters';
 import { isExpiringSoon } from '../../utils/dateUtils';
+import { getTotalAmount, getEarliestExpiry } from '../../utils/batchUtils';
 import type { StyledProps } from '../../utils/styledComponents';
 import { BaseCard } from '../atoms';
 import { useHome } from '../../hooks/useHome';
@@ -197,10 +198,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
   const metadataText = metadataParts.length > 0 ? metadataParts.join(' · ') : locationText;
 
   // Warning checks
+  const totalAmount = getTotalAmount(item.batches || []);
   const needsRestock =
-    item.amount !== undefined &&
-    item.amount <= (item.warningThreshold ?? 0);
-  const isExpiring = item.expiryDate ? isExpiringSoon(item.expiryDate, 7) : false;
+    totalAmount !== undefined &&
+    totalAmount <= (item.warningThreshold ?? 0);
+  const earliestExpiry = getEarliestExpiry(item.batches || []);
+  const isExpiring = earliestExpiry ? isExpiringSoon(earliestExpiry, 7) : false;
 
   // Status text (default to 'using' for backward compatibility)
   const itemStatus = item.status || 'using';

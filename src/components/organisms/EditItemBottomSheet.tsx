@@ -1,11 +1,10 @@
 import React, { useRef, useCallback, useImperativeHandle, forwardRef, useState } from 'react';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { Ionicons } from '@expo/vector-icons';
 import type { InventoryItem } from '../../types/inventory';
 import { useAppDispatch } from '../../store/hooks';
 import type { RootState } from '../../store';
 import { useStore } from 'react-redux';
-import { ItemFormBottomSheet } from './ItemFormBottomSheet';
+import { ItemFormBottomSheet, type ItemFormSubmitValues } from './ItemFormBottomSheet';
 import { uiLogger } from '../../utils/Logger';
 
 export interface EditItemBottomSheetProps {
@@ -37,20 +36,7 @@ export const EditItemBottomSheet = forwardRef<
   const [initialData, setInitialData] = useState<Partial<InventoryItem> | null>(null);
 
   const handleSubmit = useCallback(
-    async (values: {
-      name: string;
-      location: string;
-      detailedLocation: string;
-      status: string;
-      categoryId: string | null;
-      price: number;
-      amount?: number;
-      warningThreshold: number;
-      icon: keyof typeof Ionicons.glyphMap;
-      iconColor: string;
-      purchaseDate?: string;
-      expiryDate?: string;
-    }) => {
+    async (values: ItemFormSubmitValues) => {
       uiLogger.info(`handleSubmit called with icon: ${values.icon}`, { iconColor: values.iconColor });
       const itemId = currentItemIdRef.current;
       uiLogger.info('currentItemIdRef.current', itemId);
@@ -59,7 +45,6 @@ export const EditItemBottomSheet = forwardRef<
         return;
       }
       uiLogger.info('About to call updateItem with itemId', itemId);
-      // updateItem(itemId, values);
       dispatch({ type: 'inventory/UPDATE_ITEM', payload: { id: itemId, updates: values } });
 
       // Clear the ref after update is dispatched

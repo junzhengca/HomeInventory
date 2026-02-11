@@ -66,11 +66,19 @@ export interface InventoryItemServerData {
   status: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
-  price: number;
-  amount?: number;
   warningThreshold?: number;
-  expiryDate?: string;
-  purchaseDate?: string;
+  batches?: Array<{
+    id: string;
+    amount: number;
+    unit?: string;
+    expiryDate?: string;
+    purchaseDate?: string;
+    price?: number;
+    vendor?: string;
+    note?: string;
+    createdAt: string;
+  }>;
+  categoryId?: string;
 }
 
 export interface TodoItemServerData {

@@ -52,6 +52,7 @@ import { useHome } from '../hooks/useHome';
 import { calculateBottomPadding } from '../utils/layout';
 import { useToast } from '../hooks/useToast';
 import { isExpiringSoon, countExpiringItems } from '../utils/dateUtils';
+import { getTotalAmount, getEarliestExpiry } from '../utils/batchUtils';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -158,7 +159,10 @@ export const HomeScreen: React.FC = () => {
     // Filter by status
     if (selectedStatusId !== null) {
       if (selectedStatusId === 'expiring') {
-        filtered = filtered.filter((item) => isExpiringSoon(item.expiryDate));
+        filtered = filtered.filter((item) => {
+          const earliestExpiry = getEarliestExpiry(item.batches || []);
+          return earliestExpiry ? isExpiringSoon(earliestExpiry) : false;
+        });
       } else {
         filtered = filtered.filter((item) => item.status === selectedStatusId);
       }
@@ -413,7 +417,13 @@ export const HomeScreen: React.FC = () => {
                         label: t('inventory.actions.plusOne'),
                         icon: 'plus',
                         onPress: () => {
-                          updateInventoryItem(item.id, { amount: (item.amount || 0) + 1 });
+                          const batches = [...(item.batches || [])];
+                          if (batches.length > 0) {
+                            batches[0] = { ...batches[0], amount: batches[0].amount + 1 };
+                          } else {
+                            batches.push({ id: Date.now().toString(), amount: 1, createdAt: new Date().toISOString() });
+                          }
+                          updateInventoryItem(item.id, { batches });
                         },
                       },
                       {
@@ -421,7 +431,11 @@ export const HomeScreen: React.FC = () => {
                         label: t('inventory.actions.minusOne'),
                         icon: 'minus',
                         onPress: () => {
-                          updateInventoryItem(item.id, { amount: Math.max(0, (item.amount || 0) - 1) });
+                          const batches = [...(item.batches || [])];
+                          if (batches.length > 0) {
+                            batches[0] = { ...batches[0], amount: Math.max(0, batches[0].amount - 1) };
+                          }
+                          updateInventoryItem(item.id, { batches });
                         },
                       },
                       {

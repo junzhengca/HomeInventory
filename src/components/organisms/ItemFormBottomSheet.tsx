@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState, forwardRef, useImperativeHandle, useRef } from 'react';
-import { Keyboard, Alert } from 'react-native';
+import { Keyboard, Alert, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import {
   BottomSheetModal,
@@ -9,14 +9,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import type { InventoryItem } from '../../types/inventory';
+import type { InventoryItem, ItemBatch } from '../../types/inventory';
 import type { StyledProps } from '../../utils/styledComponents';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useKeyboardVisibility } from '../../hooks/useKeyboardVisibility';
 import { useUncontrolledItemForm, type UseUncontrolledItemFormOptions } from '../../hooks/useUncontrolledItemForm';
 import { BottomSheetHeader, Button } from '../atoms';
 import { ItemFormFields } from './ItemFormFields';
+import { BatchFormFields } from './BatchFormFields';
 import { uiLogger } from '../../utils/Logger';
+import { generateItemId } from '../../utils/idGenerator';
 
 const Backdrop = styled(BottomSheetBackdrop)`
   background-color: rgba(0, 0, 0, 0.5);
@@ -47,26 +49,38 @@ const FooterContainer = styled.View<{
   elevation: 2;
 `;
 
+const SectionDivider = styled.View`
+  height: 1px;
+  background-color: ${({ theme }: StyledProps) => theme.colors.border};
+  margin-vertical: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
+const SectionHeader = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
+  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
+  color: ${({ theme }: StyledProps) => theme.colors.text};
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+`;
+
 export type FormMode = 'create' | 'edit';
+
+export interface ItemFormSubmitValues {
+  name: string;
+  location: string;
+  detailedLocation: string;
+  status: string;
+  categoryId: string | null;
+  warningThreshold: number;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  batches?: ItemBatch[];
+}
 
 export interface ItemFormBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
   mode: FormMode;
   initialData?: UseUncontrolledItemFormOptions['initialData'];
-  onSubmit: (values: {
-    name: string;
-    location: string;
-    detailedLocation: string;
-    status: string;
-    categoryId: string | null;
-    price: number;
-    amount?: number;
-    warningThreshold: number;
-    icon: keyof typeof Ionicons.glyphMap;
-    iconColor: string;
-    purchaseDate?: string;
-    expiryDate?: string;
-  }) => void | Promise<void>;
+  onSubmit: (values: ItemFormSubmitValues) => void | Promise<void>;
   onSheetOpen?: () => void;
   onSheetClose?: () => void;
   onSuccess?: () => void;
@@ -81,6 +95,8 @@ export interface ItemFormBottomSheetRef {
 
 /**
  * Shared bottom sheet component for item creation and editing.
+ * In 'create' mode, shows both item info and batch fields.
+ * In 'edit' mode, shows only item info fields.
  * Uses uncontrolled inputs with refs to prevent IME composition interruption.
  */
 export const ItemFormBottomSheet = forwardRef<
@@ -141,16 +157,23 @@ export const ItemFormBottomSheet = forwardRef<
     resetForm,
     populateForm,
     handleNameChangeText,
-    handlePriceChangeText,
     handleDetailedLocationChangeText,
-    handleAmountChangeText,
     handleWarningThresholdChangeText,
     handleNameBlur,
-    handlePriceBlur,
     handleDetailedLocationBlur,
-    handleAmountBlur,
     handleWarningThresholdBlur,
-  } = useUncontrolledItemForm({ initialData, onFormValidChange: handleFormValidChange });
+    // Batch handlers
+    handleAmountChangeText,
+    handleUnitChangeText,
+    handlePriceChangeText,
+    handleVendorChangeText,
+    handleNoteChangeText,
+    handleAmountBlur,
+    handleUnitBlur,
+    handlePriceBlur,
+    handleVendorBlur,
+    handleNoteBlur,
+  } = useUncontrolledItemForm({ initialData, onFormValidChange: handleFormValidChange, mode });
 
   // Ref for isFormDirty to avoid stale closure in handleSheetChange
   const isFormDirtyRef = useRef(isFormDirty);
@@ -310,28 +333,43 @@ export const ItemFormBottomSheet = forwardRef<
 
     setIsLoading(true);
     try {
-      const priceNum = parseFloat(formValues.price) || 0;
-      const amountNum = formValues.amount
-        ? parseInt(formValues.amount, 10)
-        : undefined;
       const warningThresholdNum =
         parseInt(formValues.warningThreshold, 10) || 0;
 
-      uiLogger.info(`About to call onSubmit with icon: ${formValues.icon}, iconColor: ${formValues.iconColor}`);
-      await onSubmit({
+      const submitValues: ItemFormSubmitValues = {
         name: formValues.name.trim(),
         location: formValues.location,
         detailedLocation: formValues.detailedLocation.trim(),
         status: formValues.status,
         categoryId: formValues.categoryId,
-        price: priceNum,
-        amount: amountNum,
         warningThreshold: warningThresholdNum,
         icon: formValues.icon,
         iconColor: formValues.iconColor,
-        purchaseDate: formValues.purchaseDate?.toISOString(),
-        expiryDate: formValues.expiryDate?.toISOString(),
-      });
+      };
+
+      // In create mode, build the first batch
+      if (mode === 'create') {
+        const amountNum = parseInt(formValues.amount, 10) || 1;
+        const priceNum = parseFloat(formValues.price) || 0;
+        const now = new Date().toISOString();
+
+        const firstBatch: ItemBatch = {
+          id: generateItemId(),
+          amount: amountNum,
+          unit: formValues.unit?.trim() || undefined,
+          price: priceNum || undefined,
+          vendor: formValues.vendor?.trim() || undefined,
+          note: formValues.note?.trim() || undefined,
+          purchaseDate: formValues.purchaseDate?.toISOString(),
+          expiryDate: formValues.expiryDate?.toISOString(),
+          createdAt: now,
+        };
+
+        submitValues.batches = [firstBatch];
+      }
+
+      uiLogger.info(`About to call onSubmit with icon: ${formValues.icon}, iconColor: ${formValues.iconColor}`);
+      await onSubmit(submitValues);
       uiLogger.info('onSubmit completed successfully');
 
       handleClose(true); // Skip dirty check since we just saved successfully
@@ -361,30 +399,47 @@ export const ItemFormBottomSheet = forwardRef<
     getErrorMessage,
   ]);
 
-  // Memoize translation keys
-  const translations = useMemo(
+  // Memoize translation keys for item info fields
+  const itemTranslations = useMemo(
     () => ({
       fields: {
         name: t(`${mode}Item.fields.name`),
-        amount: t(`${mode}Item.fields.amount`),
         warningThreshold: t(`${mode}Item.fields.warningThreshold`),
         location: t(`${mode}Item.fields.location`),
         status: t(`${mode}Item.fields.status`),
-        price: t(`${mode}Item.fields.price`),
         detailedLocation: t(`${mode}Item.fields.detailedLocation`),
         category: t(`${mode}Item.fields.category`),
-        purchaseDate: t(`${mode}Item.fields.purchaseDate`),
-        expiryDate: t(`${mode}Item.fields.expiryDate`),
       },
       placeholders: {
         name: t(`${mode}Item.placeholders.name`),
-        price: t(`${mode}Item.placeholders.price`),
         detailedLocation: t(`${mode}Item.placeholders.detailedLocation`),
-        amount: t(`${mode}Item.placeholders.amount`),
         warningThreshold: t(`${mode}Item.placeholders.warningThreshold`),
       },
     }),
     [mode, t]
+  );
+
+  // Memoize translation keys for batch fields (create mode only)
+  const batchTranslations = useMemo(
+    () => ({
+      fields: {
+        amount: t('createItem.fields.amount'),
+        unit: t('createItem.fields.unit'),
+        price: t('createItem.fields.price'),
+        vendor: t('createItem.fields.vendor'),
+        note: t('createItem.fields.note'),
+        purchaseDate: t('createItem.fields.purchaseDate'),
+        expiryDate: t('createItem.fields.expiryDate'),
+      },
+      placeholders: {
+        amount: t('createItem.placeholders.amount'),
+        unit: t('createItem.placeholders.unit'),
+        price: t('createItem.placeholders.price'),
+        vendor: t('createItem.placeholders.vendor'),
+        note: t('createItem.placeholders.note'),
+      },
+    }),
+    [t]
   );
 
   const snapPoints = useMemo(() => ['100%'], []);
@@ -465,41 +520,65 @@ export const ItemFormBottomSheet = forwardRef<
             selectedLocation={selectedLocation}
             selectedStatus={selectedStatus}
             selectedCategoryId={selectedCategoryId}
-            purchaseDate={purchaseDate}
-            expiryDate={expiryDate}
             formKey={formKey}
             nameInputRef={refs.nameInput}
-            priceInputRef={refs.priceInput}
             detailedLocationInputRef={refs.detailedLocationInput}
-            amountInputRef={refs.amountInput}
             warningThresholdInputRef={refs.warningThresholdInput}
             defaultName={defaultValues.name}
-            defaultPrice={defaultValues.price}
             defaultDetailedLocation={defaultValues.detailedLocation}
-            defaultAmount={defaultValues.amount}
             defaultWarningThreshold={defaultValues.warningThreshold}
             onIconSelect={setSelectedIcon}
             onColorSelect={setSelectedColor}
             onLocationSelect={setSelectedLocation}
             onStatusSelect={setSelectedStatus}
             onCategorySelect={setSelectedCategoryId}
-            onPurchaseDateChange={setPurchaseDate}
-            onExpiryDateChange={setExpiryDate}
             onNameChangeText={handleNameChangeText}
-            onPriceChangeText={handlePriceChangeText}
             onDetailedLocationChangeText={handleDetailedLocationChangeText}
-            onAmountChangeText={handleAmountChangeText}
             onWarningThresholdChangeText={handleWarningThresholdChangeText}
             onNameBlur={handleNameBlur}
-            onPriceBlur={handlePriceBlur}
             onDetailedLocationBlur={handleDetailedLocationBlur}
-            onAmountBlur={handleAmountBlur}
             onWarningThresholdBlur={handleWarningThresholdBlur}
             onOpeningNestedModal={(isOpening) => {
               isOpeningNestedModalRef.current = isOpening;
             }}
-            translations={translations}
+            translations={itemTranslations}
           />
+
+          {/* Batch form fields (create mode only) */}
+          {mode === 'create' && (
+            <>
+              <SectionDivider />
+              <SectionHeader>{t('createItem.batchSection')}</SectionHeader>
+              <BatchFormFields
+                formKey={formKey}
+                purchaseDate={purchaseDate}
+                expiryDate={expiryDate}
+                amountInputRef={refs.amountInput}
+                unitInputRef={refs.unitInput}
+                priceInputRef={refs.priceInput}
+                vendorInputRef={refs.vendorInput}
+                noteInputRef={refs.noteInput}
+                defaultAmount={defaultValues.amount}
+                defaultUnit={defaultValues.unit}
+                defaultPrice={defaultValues.price}
+                defaultVendor={defaultValues.vendor}
+                defaultNote={defaultValues.note}
+                onPurchaseDateChange={setPurchaseDate}
+                onExpiryDateChange={setExpiryDate}
+                onAmountChangeText={handleAmountChangeText}
+                onUnitChangeText={handleUnitChangeText}
+                onPriceChangeText={handlePriceChangeText}
+                onVendorChangeText={handleVendorChangeText}
+                onNoteChangeText={handleNoteChangeText}
+                onAmountBlur={handleAmountBlur}
+                onUnitBlur={handleUnitBlur}
+                onPriceBlur={handlePriceBlur}
+                onVendorBlur={handleVendorBlur}
+                onNoteBlur={handleNoteBlur}
+                translations={batchTranslations}
+              />
+            </>
+          )}
         </BottomSheetScrollView>
       </ContentContainer>
     </BottomSheetModal>

@@ -2,47 +2,61 @@ import React, { useRef, useCallback, useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { locations } from '../data/locations';
-import type { InventoryItem } from '../types/inventory';
+import type { InventoryItem, ItemBatch } from '../types/inventory';
+import { getTotalAmount, getEarliestExpiry, getLatestPurchase } from '../utils/batchUtils';
 
 export interface ItemFormValues {
   name: string;
-  price: string;
   detailedLocation: string;
-  amount: string;
   warningThreshold: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   location: string;
   status: string;
   categoryId: string | null;
+  // Batch fields (used only in create mode)
+  amount: string;
+  unit: string;
+  price: string;
+  vendor: string;
+  note: string;
   purchaseDate: Date | null;
   expiryDate: Date | null;
 }
 
 export interface ItemFormRefs {
   nameInput: React.RefObject<TextInput | null>;
-  priceInput: React.RefObject<TextInput | null>;
   detailedLocationInput: React.RefObject<TextInput | null>;
-  amountInput: React.RefObject<TextInput | null>;
   warningThresholdInput: React.RefObject<TextInput | null>;
+  // Batch refs
+  amountInput: React.RefObject<TextInput | null>;
+  unitInput: React.RefObject<TextInput | null>;
+  priceInput: React.RefObject<TextInput | null>;
+  vendorInput: React.RefObject<TextInput | null>;
+  noteInput: React.RefObject<TextInput | null>;
 }
 
 export interface UseUncontrolledItemFormOptions {
   initialData?: Partial<InventoryItem> | null;
   onFormValidChange?: (isValid: boolean) => void;
+  mode?: 'create' | 'edit';
 }
 
 interface FormInitialValues {
   name: string;
-  price: string;
   detailedLocation: string;
-  amount: string;
   warningThreshold: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   location: string;
   status: string;
   categoryId: string | null;
+  // Batch fields
+  amount: string;
+  unit: string;
+  price: string;
+  vendor: string;
+  note: string;
   purchaseDate: Date | null;
   expiryDate: Date | null;
 }
@@ -57,49 +71,70 @@ const DEFAULT_LOCATION = locations.length > 0 ? locations[0].id : '';
  * Uses refs for text input values to prevent IME composition interruption
  * for Chinese/Japanese input methods.
  *
+ * In 'create' mode, manages both item info and first batch fields.
+ * In 'edit' mode, manages only item info fields (batch fields are ignored).
+ *
  * @see .cursor/rules/pinyin-input-pattern.mdc
  */
 export const useUncontrolledItemForm = (
   options: UseUncontrolledItemFormOptions = {}
 ) => {
-  const { initialData, onFormValidChange } = options;
+  const { initialData, onFormValidChange, mode = 'create' } = options;
 
-  // Input refs
+  // Input refs - item info
   const nameInputRef = useRef<TextInput>(null);
-  const priceInputRef = useRef<TextInput>(null);
   const detailedLocationInputRef = useRef<TextInput>(null);
-  const amountInputRef = useRef<TextInput>(null);
   const warningThresholdInputRef = useRef<TextInput>(null);
+
+  // Input refs - batch
+  const amountInputRef = useRef<TextInput>(null);
+  const unitInputRef = useRef<TextInput>(null);
+  const priceInputRef = useRef<TextInput>(null);
+  const vendorInputRef = useRef<TextInput>(null);
+  const noteInputRef = useRef<TextInput>(null);
 
   // Value refs (for uncontrolled inputs - prevents IME interruption)
   const nameValueRef = useRef('');
-  const priceValueRef = useRef('0');
   const detailedLocationValueRef = useRef('');
-  const amountValueRef = useRef('1');
   const warningThresholdValueRef = useRef('0');
+
+  // Batch value refs
+  const amountValueRef = useRef('1');
+  const unitValueRef = useRef('');
+  const priceValueRef = useRef('0');
+  const vendorValueRef = useRef('');
+  const noteValueRef = useRef('');
 
   // Initial values ref (for dirty state tracking)
   const initialValuesRef = useRef<FormInitialValues>({
     name: '',
-    price: '0',
     detailedLocation: '',
-    amount: '1',
     warningThreshold: '0',
     icon: DEFAULT_ICON,
     iconColor: DEFAULT_COLOR,
     location: DEFAULT_LOCATION,
     status: DEFAULT_STATUS,
     categoryId: null,
+    amount: '1',
+    unit: '',
+    price: '0',
+    vendor: '',
+    note: '',
     purchaseDate: null,
     expiryDate: null,
   });
 
   // Default value states (for defaultValue prop on uncontrolled inputs)
   const [defaultName, setDefaultName] = useState('');
-  const [defaultPrice, setDefaultPrice] = useState('0');
   const [defaultDetailedLocation, setDefaultDetailedLocation] = useState('');
-  const [defaultAmount, setDefaultAmount] = useState('1');
   const [defaultWarningThreshold, setDefaultWarningThreshold] = useState('0');
+
+  // Batch default values
+  const [defaultAmount, setDefaultAmount] = useState('1');
+  const [defaultUnit, setDefaultUnit] = useState('');
+  const [defaultPrice, setDefaultPrice] = useState('0');
+  const [defaultVendor, setDefaultVendor] = useState('');
+  const [defaultNote, setDefaultNote] = useState('');
 
   // Force re-render when validity changes (for button state)
   const [formKey, setFormKey] = useState(0);
@@ -129,70 +164,90 @@ export const useUncontrolledItemForm = (
     onFormValidChange?.(getIsFormValid());
   }, [selectedLocation, getIsFormValid, onFormValidChange]);
 
+  // Helper: extract first batch data from initialData
+  const getFirstBatch = (data: Partial<InventoryItem>): Partial<ItemBatch> => {
+    const batches = data.batches || [];
+    return batches.length > 0 ? batches[0] : {};
+  };
+
   // Initialize form from initialData
   useEffect(() => {
     if (initialData) {
       const name = initialData.name ?? '';
-      const price = initialData.price?.toString() ?? '0';
       const detailedLocation = initialData.detailedLocation ?? '';
-      const amount =
-        initialData.amount !== undefined && initialData.amount !== null
-          ? initialData.amount.toString()
-          : '1';
       const warningThreshold =
         initialData.warningThreshold !== undefined &&
           initialData.warningThreshold !== null
           ? initialData.warningThreshold.toString()
           : '0';
 
+      // Extract first batch for batch fields
+      const firstBatch = getFirstBatch(initialData);
+      const amount =
+        firstBatch.amount !== undefined && firstBatch.amount !== null
+          ? firstBatch.amount.toString()
+          : '1';
+      const unit = firstBatch.unit ?? '';
+      const price = firstBatch.price?.toString() ?? '0';
+      const vendor = firstBatch.vendor ?? '';
+      const note = firstBatch.note ?? '';
+
       // Store initial values for dirty state tracking
       initialValuesRef.current = {
         name,
-        price,
         detailedLocation,
-        amount,
         warningThreshold,
         icon: initialData.icon ?? DEFAULT_ICON,
         iconColor: initialData.iconColor ?? DEFAULT_COLOR,
         location: initialData.location ?? DEFAULT_LOCATION,
         status: initialData.status ?? DEFAULT_STATUS,
         categoryId: initialData.categoryId ?? null,
-        purchaseDate: initialData.purchaseDate
-          ? new Date(initialData.purchaseDate)
+        amount,
+        unit,
+        price,
+        vendor,
+        note,
+        purchaseDate: firstBatch.purchaseDate
+          ? new Date(firstBatch.purchaseDate)
           : null,
-        expiryDate: initialData.expiryDate
-          ? new Date(initialData.expiryDate)
+        expiryDate: firstBatch.expiryDate
+          ? new Date(firstBatch.expiryDate)
           : null,
       };
 
       // Update refs for form submission
       nameValueRef.current = name;
-      priceValueRef.current = price;
       detailedLocationValueRef.current = detailedLocation;
-      amountValueRef.current = amount;
       warningThresholdValueRef.current = warningThreshold;
+      amountValueRef.current = amount;
+      unitValueRef.current = unit;
+      priceValueRef.current = price;
+      vendorValueRef.current = vendor;
+      noteValueRef.current = note;
 
       // Update state for defaultValue props
       setDefaultName(name);
-      setDefaultPrice(price);
       setDefaultDetailedLocation(detailedLocation);
-      setDefaultAmount(amount);
       setDefaultWarningThreshold(warningThreshold);
+      setDefaultAmount(amount);
+      setDefaultUnit(unit);
+      setDefaultPrice(price);
+      setDefaultVendor(vendor);
+      setDefaultNote(note);
 
       if (initialData.icon) setSelectedIcon(initialData.icon);
       if (initialData.iconColor) setSelectedColor(initialData.iconColor);
       if (initialData.location) setSelectedLocation(initialData.location);
       if (initialData.status) setSelectedStatus(initialData.status);
       if (initialData.categoryId !== undefined) setSelectedCategoryId(initialData.categoryId);
-      if (initialData.purchaseDate)
-        setPurchaseDate(new Date(initialData.purchaseDate));
-      if (initialData.expiryDate)
-        setExpiryDate(new Date(initialData.expiryDate));
+      if (firstBatch.purchaseDate)
+        setPurchaseDate(new Date(firstBatch.purchaseDate));
+      if (firstBatch.expiryDate)
+        setExpiryDate(new Date(firstBatch.expiryDate));
 
       setFormKey((prev) => prev + 1);
 
       // Notify parent of validity state after initialization
-      // Check if form is valid after populating
       const hasName = name.trim().length > 0;
       const hasLocation = initialData.location
         ? initialData.location.length > 0
@@ -206,32 +261,41 @@ export const useUncontrolledItemForm = (
     // Reset initial values to defaults
     initialValuesRef.current = {
       name: '',
-      price: '0',
       detailedLocation: '',
-      amount: '1',
       warningThreshold: '0',
       icon: DEFAULT_ICON,
       iconColor: DEFAULT_COLOR,
       location: DEFAULT_LOCATION,
       status: DEFAULT_STATUS,
       categoryId: null,
+      amount: '1',
+      unit: '',
+      price: '0',
+      vendor: '',
+      note: '',
       purchaseDate: null,
       expiryDate: null,
     };
 
     // Reset refs
     nameValueRef.current = '';
-    priceValueRef.current = '0';
     detailedLocationValueRef.current = '';
-    amountValueRef.current = '1';
     warningThresholdValueRef.current = '0';
+    amountValueRef.current = '1';
+    unitValueRef.current = '';
+    priceValueRef.current = '0';
+    vendorValueRef.current = '';
+    noteValueRef.current = '';
 
     // Reset default values
     setDefaultName('');
-    setDefaultPrice('0');
     setDefaultDetailedLocation('');
-    setDefaultAmount('1');
     setDefaultWarningThreshold('0');
+    setDefaultAmount('1');
+    setDefaultUnit('');
+    setDefaultPrice('0');
+    setDefaultVendor('');
+    setDefaultNote('');
 
     // Reset other state
     setSelectedIcon(DEFAULT_ICON);
@@ -248,15 +312,19 @@ export const useUncontrolledItemForm = (
   const getFormValues = useCallback((): ItemFormValues => {
     return {
       name: nameValueRef.current,
-      price: priceValueRef.current,
       detailedLocation: detailedLocationValueRef.current,
-      amount: amountValueRef.current,
       warningThreshold: warningThresholdValueRef.current,
       icon: selectedIcon,
       iconColor: selectedColor,
       location: selectedLocation,
       status: selectedStatus,
       categoryId: selectedCategoryId,
+      // Batch fields
+      amount: amountValueRef.current,
+      unit: unitValueRef.current,
+      price: priceValueRef.current,
+      vendor: vendorValueRef.current,
+      note: noteValueRef.current,
       purchaseDate,
       expiryDate,
     };
@@ -284,85 +352,115 @@ export const useUncontrolledItemForm = (
     [getIsFormValid, onFormValidChange]
   );
 
-  const handlePriceChangeText = useCallback((text: string) => {
-    priceValueRef.current = text;
-  }, []);
-
   const handleDetailedLocationChangeText = useCallback((text: string) => {
     detailedLocationValueRef.current = text;
-  }, []);
-
-  const handleAmountChangeText = useCallback((text: string) => {
-    amountValueRef.current = text;
   }, []);
 
   const handleWarningThresholdChangeText = useCallback((text: string) => {
     warningThresholdValueRef.current = text;
   }, []);
 
+  // Batch change handlers
+  const handleAmountChangeText = useCallback((text: string) => {
+    amountValueRef.current = text;
+  }, []);
+
+  const handleUnitChangeText = useCallback((text: string) => {
+    unitValueRef.current = text;
+  }, []);
+
+  const handlePriceChangeText = useCallback((text: string) => {
+    priceValueRef.current = text;
+  }, []);
+
+  const handleVendorChangeText = useCallback((text: string) => {
+    vendorValueRef.current = text;
+  }, []);
+
+  const handleNoteChangeText = useCallback((text: string) => {
+    noteValueRef.current = text;
+  }, []);
+
   // Blur handlers (no-op for uncontrolled pattern, but kept for consistency)
   const handleNameBlur = useCallback(() => undefined, []);
-  const handlePriceBlur = useCallback(() => undefined, []);
   const handleDetailedLocationBlur = useCallback(() => undefined, []);
-  const handleAmountBlur = useCallback(() => undefined, []);
   const handleWarningThresholdBlur = useCallback(() => undefined, []);
+  const handleAmountBlur = useCallback(() => undefined, []);
+  const handleUnitBlur = useCallback(() => undefined, []);
+  const handlePriceBlur = useCallback(() => undefined, []);
+  const handleVendorBlur = useCallback(() => undefined, []);
+  const handleNoteBlur = useCallback(() => undefined, []);
 
   // Direct form population method (bypasses initialData prop/state)
   const populateForm = useCallback(
     (data: Partial<InventoryItem>) => {
       const name = data.name ?? '';
-      const price = data.price?.toString() ?? '0';
       const detailedLocation = data.detailedLocation ?? '';
-      const amount =
-        data.amount !== undefined && data.amount !== null
-          ? data.amount.toString()
-          : '1';
       const warningThreshold =
         data.warningThreshold !== undefined && data.warningThreshold !== null
           ? data.warningThreshold.toString()
           : '0';
 
+      const firstBatch = getFirstBatch(data);
+      const amount =
+        firstBatch.amount !== undefined && firstBatch.amount !== null
+          ? firstBatch.amount.toString()
+          : '1';
+      const unit = firstBatch.unit ?? '';
+      const price = firstBatch.price?.toString() ?? '0';
+      const vendor = firstBatch.vendor ?? '';
+      const note = firstBatch.note ?? '';
+
       initialValuesRef.current = {
         name,
-        price,
         detailedLocation,
-        amount,
         warningThreshold,
         icon: data.icon ?? DEFAULT_ICON,
         iconColor: data.iconColor ?? DEFAULT_COLOR,
         location: data.location ?? DEFAULT_LOCATION,
         status: data.status ?? DEFAULT_STATUS,
         categoryId: data.categoryId ?? null,
-        purchaseDate: data.purchaseDate
-          ? new Date(data.purchaseDate)
+        amount,
+        unit,
+        price,
+        vendor,
+        note,
+        purchaseDate: firstBatch.purchaseDate
+          ? new Date(firstBatch.purchaseDate)
           : null,
-        expiryDate: data.expiryDate
-          ? new Date(data.expiryDate)
+        expiryDate: firstBatch.expiryDate
+          ? new Date(firstBatch.expiryDate)
           : null,
       };
 
       // Update refs for form submission
       nameValueRef.current = name;
-      priceValueRef.current = price;
       detailedLocationValueRef.current = detailedLocation;
-      amountValueRef.current = amount;
       warningThresholdValueRef.current = warningThreshold;
+      amountValueRef.current = amount;
+      unitValueRef.current = unit;
+      priceValueRef.current = price;
+      vendorValueRef.current = vendor;
+      noteValueRef.current = note;
 
       // Update state for defaultValue props
       setDefaultName(name);
-      setDefaultPrice(price);
       setDefaultDetailedLocation(detailedLocation);
-      setDefaultAmount(amount);
       setDefaultWarningThreshold(warningThreshold);
+      setDefaultAmount(amount);
+      setDefaultUnit(unit);
+      setDefaultPrice(price);
+      setDefaultVendor(vendor);
+      setDefaultNote(note);
 
       if (data.icon) setSelectedIcon(data.icon);
       if (data.iconColor) setSelectedColor(data.iconColor);
       if (data.location) setSelectedLocation(data.location);
       if (data.status) setSelectedStatus(data.status);
       if (data.categoryId !== undefined) setSelectedCategoryId(data.categoryId);
-      if (data.purchaseDate)
-        setPurchaseDate(new Date(data.purchaseDate));
-      if (data.expiryDate) setExpiryDate(new Date(data.expiryDate));
+      if (firstBatch.purchaseDate)
+        setPurchaseDate(new Date(firstBatch.purchaseDate));
+      if (firstBatch.expiryDate) setExpiryDate(new Date(firstBatch.expiryDate));
 
       setFormKey((prev) => prev + 1);
 
@@ -377,20 +475,6 @@ export const useUncontrolledItemForm = (
   // Check if form has unsaved changes
   const isFormDirty = useCallback((): boolean => {
     const initial = initialValuesRef.current;
-    const currentValues = {
-      name: nameValueRef.current,
-      price: priceValueRef.current,
-      detailedLocation: detailedLocationValueRef.current,
-      amount: amountValueRef.current,
-      warningThreshold: warningThresholdValueRef.current,
-      icon: selectedIcon,
-      iconColor: selectedColor,
-      location: selectedLocation,
-      status: selectedStatus,
-      categoryId: selectedCategoryId,
-      purchaseDate,
-      expiryDate,
-    };
 
     // Compare dates properly (need to compare time for Date objects)
     const datesEqual = (d1: Date | null, d2: Date | null): boolean => {
@@ -399,38 +483,62 @@ export const useUncontrolledItemForm = (
       return d1.getTime() === d2.getTime();
     };
 
-    return (
-      currentValues.name !== initial.name ||
-      currentValues.price !== initial.price ||
-      currentValues.detailedLocation !== initial.detailedLocation ||
-      currentValues.amount !== initial.amount ||
-      currentValues.warningThreshold !== initial.warningThreshold ||
-      currentValues.icon !== initial.icon ||
-      currentValues.iconColor !== initial.iconColor ||
-      currentValues.location !== initial.location ||
-      currentValues.status !== initial.status ||
-      currentValues.categoryId !== initial.categoryId ||
-      !datesEqual(currentValues.purchaseDate, initial.purchaseDate) ||
-      !datesEqual(currentValues.expiryDate, initial.expiryDate)
-    );
-  }, [selectedIcon, selectedColor, selectedLocation, selectedStatus, selectedCategoryId, purchaseDate, expiryDate]);
+    // Always check item info fields
+    if (
+      nameValueRef.current !== initial.name ||
+      detailedLocationValueRef.current !== initial.detailedLocation ||
+      warningThresholdValueRef.current !== initial.warningThreshold ||
+      selectedIcon !== initial.icon ||
+      selectedColor !== initial.iconColor ||
+      selectedLocation !== initial.location ||
+      selectedStatus !== initial.status ||
+      selectedCategoryId !== initial.categoryId
+    ) {
+      return true;
+    }
+
+    // In create mode, also check batch fields
+    if (mode === 'create') {
+      if (
+        amountValueRef.current !== initial.amount ||
+        unitValueRef.current !== initial.unit ||
+        priceValueRef.current !== initial.price ||
+        vendorValueRef.current !== initial.vendor ||
+        noteValueRef.current !== initial.note ||
+        !datesEqual(purchaseDate, initial.purchaseDate) ||
+        !datesEqual(expiryDate, initial.expiryDate)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [selectedIcon, selectedColor, selectedLocation, selectedStatus, selectedCategoryId, purchaseDate, expiryDate, mode]);
 
   return {
     // Refs
     refs: {
       nameInput: nameInputRef,
-      priceInput: priceInputRef,
       detailedLocationInput: detailedLocationInputRef,
-      amountInput: amountInputRef,
       warningThresholdInput: warningThresholdInputRef,
+      // Batch refs
+      amountInput: amountInputRef,
+      unitInput: unitInputRef,
+      priceInput: priceInputRef,
+      vendorInput: vendorInputRef,
+      noteInput: noteInputRef,
     },
     // Default values for uncontrolled inputs
     defaultValues: {
       name: defaultName,
-      price: defaultPrice,
       detailedLocation: defaultDetailedLocation,
-      amount: defaultAmount,
       warningThreshold: defaultWarningThreshold,
+      // Batch default values
+      amount: defaultAmount,
+      unit: defaultUnit,
+      price: defaultPrice,
+      vendor: defaultVendor,
+      note: defaultNote,
     },
     // State values
     selectedIcon,
@@ -457,14 +565,21 @@ export const useUncontrolledItemForm = (
     populateForm,
     // Input handlers
     handleNameChangeText,
-    handlePriceChangeText,
     handleDetailedLocationChangeText,
-    handleAmountChangeText,
     handleWarningThresholdChangeText,
     handleNameBlur,
-    handlePriceBlur,
     handleDetailedLocationBlur,
-    handleAmountBlur,
     handleWarningThresholdBlur,
+    // Batch input handlers
+    handleAmountChangeText,
+    handleUnitChangeText,
+    handlePriceChangeText,
+    handleVendorChangeText,
+    handleNoteChangeText,
+    handleAmountBlur,
+    handleUnitBlur,
+    handlePriceBlur,
+    handleVendorBlur,
+    handleNoteBlur,
   };
 };

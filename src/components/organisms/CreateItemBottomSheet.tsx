@@ -1,12 +1,76 @@
-import React, { useRef, useCallback, useEffect } from 'react';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Keyboard, Alert } from 'react-native';
+import styled from 'styled-components/native';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { Ionicons } from '@expo/vector-icons';
-import type { InventoryItem } from '../../types/inventory';
+import type { InventoryItem, ItemBatch } from '../../types/inventory';
+import type { StyledProps } from '../../utils/styledComponents';
+import { useTheme } from '../../theme/ThemeProvider';
+import { useKeyboardVisibility } from '../../hooks/useKeyboardVisibility';
+import { useCreateItemForm } from '../../hooks/useCreateItemForm';
 import { useAppDispatch } from '../../store/hooks';
-import { ItemFormBottomSheet } from './ItemFormBottomSheet';
+import { BottomSheetHeader, Button } from '../atoms';
+import { CreateItemFormFields } from './CreateItemFormFields';
 import { uiLogger } from '../../utils/Logger';
+import { generateItemId } from '../../utils/idGenerator';
+import type { ItemFormSubmitValues } from './ItemFormBottomSheet';
+
+// ---------------------------------------------------------------------------
+// Styled components
+// ---------------------------------------------------------------------------
+
+const Backdrop = styled(BottomSheetBackdrop)`
+  background-color: rgba(0, 0, 0, 0.5);
+`;
+
+const ContentContainer = styled.View`
+  flex: 1;
+  border-top-left-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  border-top-right-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  overflow: hidden;
+`;
+
+const FooterContainer = styled.View<{
+  bottomInset: number;
+  showSafeArea: boolean;
+}>`
+  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  padding-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  padding-bottom: ${({
+  bottomInset,
+  showSafeArea,
+  theme,
+}: StyledProps & { bottomInset: number; showSafeArea: boolean }) =>
+    showSafeArea ? bottomInset + theme.spacing.md : theme.spacing.md}px;
+  shadow-color: #000;
+  shadow-offset: 0px -2px;
+  shadow-opacity: 0.03;
+  shadow-radius: 4px;
+  elevation: 2;
+`;
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const STORAGE_KEY_LOCATION = 'LAST_CREATED_ITEM_LOCATION';
+
+/** Sensible defaults for fields the create-item form no longer exposes. */
+const DEFAULT_ICON = 'cube-outline' as const;
+const DEFAULT_COLOR = '#95A5A6';
+const DEFAULT_STATUS = 'using';
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 export interface CreateItemBottomSheetProps {
   bottomSheetRef: React.RefObject<BottomSheetModal | null>;
@@ -15,12 +79,21 @@ export interface CreateItemBottomSheetProps {
   onSheetClose?: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 /**
- * Create item bottom sheet using shared ItemFormBottomSheet component.
- * Reduced from ~565 lines to ~40 lines by sharing code with EditItemBottomSheet.
+ * Self-contained bottom sheet for creating a new inventory item.
  *
- * Uses uncontrolled inputs with refs to prevent IME composition interruption
- * for Chinese/Japanese input methods.
+ * Shows a simplified form with three fields:
+ *  1. Name
+ *  2. Location picker
+ *  3. Category picker
+ *
+ * This component manages its own `BottomSheetModal` instead of delegating to
+ * the shared `ItemFormBottomSheet`, so its field list can evolve
+ * independently from the edit-item flow.
  */
 export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   bottomSheetRef,
@@ -28,80 +101,338 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
   initialData,
   onSheetClose,
 }) => {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  // const { createItem } = useInventory(); // Removed to prevent re-renders on items change
+  const { isKeyboardVisible } = useKeyboardVisibility();
 
-  const [lastLocation, setLastLocation] = React.useState<string | undefined>(undefined);
-  const [lastStatus, setLastStatus] = React.useState<string | undefined>(undefined);
+  // --- Persisted last-used location --------------------------------------
 
-  // Load persisted values on mount
-  React.useEffect(() => {
+  const [lastLocation, setLastLocation] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
     (async () => {
       try {
-        const location = await AsyncStorage.getItem('LAST_CREATED_ITEM_LOCATION');
-        const status = await AsyncStorage.getItem('LAST_CREATED_ITEM_STATUS');
-        if (location) setLastLocation(location);
-        if (status) setLastStatus(status);
+        const stored = await AsyncStorage.getItem(STORAGE_KEY_LOCATION);
+        if (stored) setLastLocation(stored);
       } catch (error) {
-        uiLogger.error('Failed to load last created item settings', error);
+        uiLogger.error('Failed to load last created item location', error);
       }
     })();
   }, []);
 
-  const combinedInitialData = React.useMemo(() => {
-    const data = { ...initialData };
-    if (!data.location && lastLocation) {
-      data.location = lastLocation;
-    }
-    if (!data.status && lastStatus) {
-      data.status = lastStatus;
-    }
-    return data;
-  }, [initialData, lastLocation, lastStatus]);
+  const resolvedInitialLocation = initialData?.location ?? lastLocation;
 
-  const handleSubmit = useCallback(
-    async (values: {
-      name: string;
-      location: string;
-      detailedLocation: string;
-      status: string;
-      categoryId: string | null;
-      price: number;
-      amount?: number;
-      warningThreshold: number;
-      icon: keyof typeof Ionicons.glyphMap;
-      iconColor: string;
-      purchaseDate?: string;
-      expiryDate?: string;
-    }) => {
-      // createItem(values);
-      dispatch({ type: 'inventory/CREATE_ITEM', payload: values });
+  // --- Form hook ---------------------------------------------------------
 
-      // Save location and status
-      try {
-        await AsyncStorage.setItem('LAST_CREATED_ITEM_LOCATION', values.location);
-        await AsyncStorage.setItem('LAST_CREATED_ITEM_STATUS', values.status);
-        setLastLocation(values.location);
-        setLastStatus(values.status);
-      } catch (error) {
-        uiLogger.error('Failed to save last created item settings', error);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  const handleFormValidChange = useCallback((isValid: boolean) => {
+    setIsFormValid(isValid);
+  }, []);
+
+  const {
+    nameInputRef,
+    defaultName,
+    selectedLocation,
+    selectedCategoryId,
+    formKey,
+    setSelectedLocation,
+    setSelectedCategoryId,
+    getFormValues,
+    isFormDirty,
+    resetForm,
+    handleNameChangeText,
+    handleNameBlur,
+  } = useCreateItemForm({
+    initialLocation: resolvedInitialLocation,
+    initialCategoryId: initialData?.categoryId ?? null,
+    onFormValidChange: handleFormValidChange,
+  });
+
+  // --- Refs for sheet behaviour ------------------------------------------
+
+  const isShowingConfirmationRef = useRef(false);
+  const isClosingIntentionallyRef = useRef(false);
+  const isFormDirtyRef = useRef(isFormDirty);
+
+  useEffect(() => {
+    isFormDirtyRef.current = isFormDirty;
+  }, [isFormDirty]);
+
+  // --- Sheet handlers ----------------------------------------------------
+
+  const handleSheetChange = useCallback(
+    (index: number) => {
+      if (index === -1) {
+        if (isClosingIntentionallyRef.current) {
+          isClosingIntentionallyRef.current = false;
+          Keyboard.dismiss();
+          onSheetClose?.();
+          return;
+        }
+
+        if (isFormDirtyRef.current() && !isShowingConfirmationRef.current) {
+          isShowingConfirmationRef.current = true;
+          bottomSheetRef.current?.snapToIndex(0);
+
+          Alert.alert(
+            t('common.confirmation'),
+            t('common.discardChanges'),
+            [
+              {
+                text: t('common.keepEditing'),
+                style: 'cancel',
+                onPress: () => {
+                  isShowingConfirmationRef.current = false;
+                },
+              },
+              {
+                text: t('common.discard'),
+                style: 'destructive',
+                onPress: () => {
+                  isShowingConfirmationRef.current = false;
+                  Keyboard.dismiss();
+                  resetForm();
+                  isClosingIntentionallyRef.current = true;
+                  bottomSheetRef.current?.dismiss();
+                },
+              },
+            ],
+            { cancelable: true },
+          );
+          return;
+        }
+
+        Keyboard.dismiss();
+        onSheetClose?.();
+        return;
+      }
+
+      if (index === 0) {
+        // Sheet opening — auto-focus name input
+        if (nameInputRef.current) {
+          nameInputRef.current.focus();
+        }
       }
     },
-    [dispatch]
+    [nameInputRef, onSheetClose, resetForm, bottomSheetRef, t],
   );
 
-  const handleSuccess = useCallback(() => {
-    onItemCreated?.();
-  }, [onItemCreated]);
+  const handleClose = useCallback(
+    (skipDirtyCheck?: boolean | Event) => {
+      const shouldSkipCheck =
+        typeof skipDirtyCheck === 'boolean' ? skipDirtyCheck : false;
+
+      if (
+        !shouldSkipCheck &&
+        isFormDirtyRef.current() &&
+        !isShowingConfirmationRef.current
+      ) {
+        isShowingConfirmationRef.current = true;
+        Alert.alert(
+          t('common.confirmation'),
+          t('common.discardChanges'),
+          [
+            {
+              text: t('common.keepEditing'),
+              style: 'cancel',
+              onPress: () => {
+                isShowingConfirmationRef.current = false;
+              },
+            },
+            {
+              text: t('common.discard'),
+              style: 'destructive',
+              onPress: () => {
+                isShowingConfirmationRef.current = false;
+                Keyboard.dismiss();
+                resetForm();
+                isClosingIntentionallyRef.current = true;
+                bottomSheetRef.current?.dismiss();
+              },
+            },
+          ],
+          { cancelable: true },
+        );
+        return;
+      }
+
+      Keyboard.dismiss();
+      isClosingIntentionallyRef.current = true;
+      bottomSheetRef.current?.dismiss();
+    },
+    [resetForm, bottomSheetRef, t],
+  );
+
+  // --- Submit ------------------------------------------------------------
+
+  const handleSubmit = useCallback(async () => {
+    const formValues = getFormValues();
+    uiLogger.info('CreateItemBottomSheet handleSubmit', formValues);
+
+    if (!formValues.name.trim()) {
+      Alert.alert(
+        t('createItem.errors.title'),
+        t('createItem.errors.enterName'),
+      );
+      return;
+    }
+    if (!formValues.location) {
+      Alert.alert(
+        t('createItem.errors.title'),
+        t('createItem.errors.selectLocation'),
+      );
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const now = new Date().toISOString();
+
+      // Build a default first batch so existing logic still works
+      const firstBatch: ItemBatch = {
+        id: generateItemId(),
+        amount: 1,
+        createdAt: now,
+      };
+
+      const submitValues: ItemFormSubmitValues = {
+        name: formValues.name.trim(),
+        location: formValues.location,
+        detailedLocation: '',
+        status: DEFAULT_STATUS,
+        categoryId: formValues.categoryId,
+        warningThreshold: 0,
+        icon: DEFAULT_ICON,
+        iconColor: DEFAULT_COLOR,
+        batches: [firstBatch],
+      };
+
+      dispatch({ type: 'inventory/CREATE_ITEM', payload: submitValues });
+
+      // Persist last-used location
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY_LOCATION, formValues.location);
+        setLastLocation(formValues.location);
+      } catch (error) {
+        uiLogger.error('Failed to save last created item location', error);
+      }
+
+      handleClose(true);
+      resetForm();
+      onItemCreated?.();
+    } catch (error) {
+      uiLogger.error('Error creating item', error);
+      Alert.alert(
+        t('createItem.errors.title'),
+        t('createItem.errors.createFailed'),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getFormValues, dispatch, handleClose, resetForm, onItemCreated, t]);
+
+  // --- Translations (memoised) -------------------------------------------
+
+  const translations = useMemo(
+    () => ({
+      fields: {
+        name: t('createItem.fields.name'),
+        location: t('createItem.fields.location'),
+        category: t('createItem.fields.category'),
+      },
+      placeholders: {
+        name: t('createItem.placeholders.name'),
+      },
+    }),
+    [t],
+  );
+
+  // --- Bottom sheet config (memoised) ------------------------------------
+
+  const snapPoints = useMemo(() => ['100%'], []);
+  const keyboardBehavior = useMemo(() => 'extend' as const, []);
+  const keyboardBlurBehavior = useMemo(() => 'restore' as const, []);
+
+  const renderBackdrop = useCallback(
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
+      <Backdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+    ),
+    [],
+  );
+
+  const renderFooter = useCallback(
+    () => (
+      <FooterContainer
+        bottomInset={insets.bottom}
+        showSafeArea={!isKeyboardVisible}
+      >
+        <Button
+          label={t('createItem.submit')}
+          onPress={handleSubmit}
+          variant="primary"
+          icon="add"
+          disabled={!isFormValid || isLoading}
+        />
+      </FooterContainer>
+    ),
+    [handleSubmit, isLoading, isFormValid, isKeyboardVisible, insets.bottom, t],
+  );
+
+  // --- Render ------------------------------------------------------------
 
   return (
-    <ItemFormBottomSheet
-      bottomSheetRef={bottomSheetRef}
-      mode="create"
-      initialData={combinedInitialData}
-      onSubmit={handleSubmit}
-      onSuccess={handleSuccess}
-      onSheetClose={onSheetClose}
-    />
+    <BottomSheetModal
+      ref={bottomSheetRef}
+      snapPoints={snapPoints}
+      backdropComponent={renderBackdrop}
+      enablePanDownToClose
+      enableContentPanningGesture={false}
+      keyboardBehavior={keyboardBehavior}
+      keyboardBlurBehavior={keyboardBlurBehavior}
+      android_keyboardInputMode="adjustResize"
+      enableHandlePanningGesture={false}
+      handleComponent={null}
+      topInset={insets.top}
+      index={0}
+      footerComponent={renderFooter}
+      enableDynamicSizing={false}
+      onChange={handleSheetChange}
+      backgroundStyle={{ backgroundColor: theme.colors.surface }}
+    >
+      <ContentContainer>
+        <BottomSheetHeader
+          title={t('createItem.title')}
+          subtitle={t('createItem.subtitle')}
+          onClose={handleClose}
+        />
+        <BottomSheetScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingHorizontal: theme.spacing.md,
+            paddingBottom: theme.spacing.lg,
+          }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          enableOnPanDownToDismiss={false}
+        >
+          <CreateItemFormFields
+            selectedLocation={selectedLocation}
+            selectedCategoryId={selectedCategoryId}
+            formKey={formKey}
+            nameInputRef={nameInputRef}
+            defaultName={defaultName}
+            onLocationSelect={setSelectedLocation}
+            onCategorySelect={setSelectedCategoryId}
+            onNameChangeText={handleNameChangeText}
+            onNameBlur={handleNameBlur}
+            translations={translations}
+          />
+        </BottomSheetScrollView>
+      </ContentContainer>
+    </BottomSheetModal>
   );
 };

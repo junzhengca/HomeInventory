@@ -2,6 +2,7 @@ import { InventoryItem } from '../types/inventory';
 import { readFile, writeFile } from './FileSystemService';
 import { generateItemId } from '../utils/idGenerator';
 import { isExpiringSoon } from '../utils/dateUtils';
+import { getEarliestExpiry } from '../utils/batchUtils';
 import { ApiClient } from './ApiClient';
 import {
   BatchSyncRequest,
@@ -175,7 +176,10 @@ export const searchItems = async (
 
   // Filter by expiring soon
   if (filters?.expiringSoon) {
-    items = items.filter((item) => isExpiringSoon(item.expiryDate));
+    items = items.filter((item) => {
+      const earliestExpiry = getEarliestExpiry(item.batches || []);
+      return earliestExpiry ? isExpiringSoon(earliestExpiry) : false;
+    });
   }
 
   // Search by query
@@ -227,11 +231,9 @@ export const syncItems = async (
             status: t.status,
             icon: t.icon,
             iconColor: t.iconColor,
-            price: t.price,
-            amount: t.amount,
             warningThreshold: t.warningThreshold,
-            expiryDate: t.expiryDate,
-            purchaseDate: t.purchaseDate,
+            batches: t.batches,
+            categoryId: t.categoryId,
           },
           version: t.version,
           clientUpdatedAt: t.clientUpdatedAt,
@@ -298,11 +300,9 @@ export const syncItems = async (
                   status: serverData.status,
                   icon: serverData.icon as keyof typeof Ionicons.glyphMap,
                   iconColor: serverData.iconColor,
-                  price: serverData.price,
-                  amount: serverData.amount,
                   warningThreshold: serverData.warningThreshold,
-                  expiryDate: serverData.expiryDate,
-                  purchaseDate: serverData.purchaseDate,
+                  batches: serverData.batches || [],
+                  categoryId: serverData.categoryId,
                   version: result.serverVersionData.version,
                   serverUpdatedAt: result.serverVersionData.updatedAt,
                   lastSyncedAt: response.serverTimestamp,
@@ -340,11 +340,9 @@ export const syncItems = async (
               status: serverData.status,
               icon: serverData.icon as keyof typeof Ionicons.glyphMap,
               iconColor: serverData.iconColor,
-              price: serverData.price,
-              amount: serverData.amount,
               warningThreshold: serverData.warningThreshold,
-              expiryDate: serverData.expiryDate,
-              purchaseDate: serverData.purchaseDate,
+              batches: serverData.batches || [],
+              categoryId: serverData.categoryId,
               createdAt: entity.updatedAt, // Approximate if new
               updatedAt: entity.updatedAt,
               version: entity.version,
