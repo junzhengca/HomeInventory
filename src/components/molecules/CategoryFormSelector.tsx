@@ -28,7 +28,7 @@ const CategoryButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
   align-items: center;
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
   padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
   background-color: ${({ theme, isSelected }: StyledPropsWith<{ isSelected: boolean }>) =>
         isSelected ? theme.colors.primary : theme.colors.surface};
   margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;

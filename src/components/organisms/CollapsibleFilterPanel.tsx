@@ -61,8 +61,7 @@ interface CollapsibleFilterPanelProps {
 }
 
 const ContentContainer = styled(View)`
-  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
+  background-color: transparent;
   padding-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
   padding-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
   margin-top: ${({ theme }: StyledProps) => theme.spacing.xs}px;
@@ -123,7 +122,7 @@ export const CollapsibleFilterPanel: React.FC<CollapsibleFilterPanelProps> = ({
         />
       </Header>
 
-      <Animated.View style={animatedStyle}>
+      <Animated.View style={[animatedStyle, { marginHorizontal: -theme.spacing.md }]}>
         <View
           onLayout={(event) => {
             'worklet';
