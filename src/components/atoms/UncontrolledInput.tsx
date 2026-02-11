@@ -77,6 +77,8 @@ export interface UncontrolledInputProps {
   noBorder?: boolean;
   textAlign?: 'left' | 'center' | 'right';
   secureTextEntry?: boolean;
+  multiline?: boolean;
+  numberOfLines?: number;
 }
 
 /**
@@ -114,6 +116,8 @@ export const UncontrolledInput = memo(
         noBorder = false,
         textAlign,
         secureTextEntry = false,
+        multiline = false,
+        numberOfLines,
       },
       ref
     ) => {
@@ -147,6 +151,9 @@ export const UncontrolledInput = memo(
               noBorder={noBorder}
               textAlign={textAlign}
               secureTextEntry={secureTextEntry}
+              multiline={multiline}
+              numberOfLines={numberOfLines}
+              textAlignVertical={multiline ? 'top' : 'center'}
             />
             {error && (
               <ErrorIcon>

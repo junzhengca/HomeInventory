@@ -24,7 +24,7 @@ const CategoryScrollView = styled(ScrollView).attrs(() => ({
 const CategoryButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
   padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
   flex-direction: row;
   align-items: center;
   background-color: ${({

@@ -164,6 +164,16 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
     handleUnitBlur,
     handleVendorChange,
     handleVendorBlur,
+    detailedLocationInputRef,
+    warningThresholdInputRef,
+    defaultDetailedLocation,
+    defaultWarningThreshold,
+    selectedStatusId,
+    handleDetailedLocationChange,
+    handleDetailedLocationBlur,
+    handleWarningThresholdChange,
+    handleWarningThresholdBlur,
+    setSelectedStatusId,
   } = useCreateItemForm({
     initialLocation: resolvedInitialLocation,
     initialCategoryId: initialData?.categoryId ?? null,
@@ -324,13 +334,15 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
         createdAt: now,
       };
 
+      const parsedWarningThreshold = parseInt(formValues.warningThreshold, 10);
+
       const submitValues: ItemFormSubmitValues = {
         name: formValues.name.trim(),
         location: formValues.location,
-        detailedLocation: '',
-        status: DEFAULT_STATUS,
+        detailedLocation: formValues.detailedLocation.trim(),
+        status: formValues.status,
         categoryId: formValues.categoryId,
-        warningThreshold: 0,
+        warningThreshold: isNaN(parsedWarningThreshold) ? 0 : parsedWarningThreshold,
         icon: DEFAULT_ICON,
         iconColor: DEFAULT_COLOR,
         batches: [firstBatch],
@@ -369,9 +381,15 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
         location: t('createItem.fields.location'),
         category: t('createItem.fields.category'),
         expiryDate: t('createItem.fields.expiryDate'),
+        advanced: t('createItem.fields.advanced'),
+        detailedLocation: t('createItem.fields.detailedLocation'),
+        status: t('createItem.fields.status'),
+        warningThreshold: t('createItem.fields.warningThreshold'),
       },
       placeholders: {
         name: t('createItem.placeholders.name'),
+        detailedLocation: t('createItem.placeholders.detailedLocation'),
+        warningThreshold: t('createItem.placeholders.warningThreshold'),
       },
     }),
     [t],
@@ -474,6 +492,16 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
             expiryDate={expiryDate}
             onExpiryDateChange={setExpiryDate}
             translations={translations}
+            detailedLocationInputRef={detailedLocationInputRef}
+            warningThresholdInputRef={warningThresholdInputRef}
+            defaultDetailedLocation={defaultDetailedLocation}
+            defaultWarningThreshold={defaultWarningThreshold}
+            selectedStatusId={selectedStatusId}
+            onDetailedLocationChange={handleDetailedLocationChange}
+            onDetailedLocationBlur={handleDetailedLocationBlur}
+            onWarningThresholdChange={handleWarningThresholdChange}
+            onWarningThresholdBlur={handleWarningThresholdBlur}
+            onStatusSelect={setSelectedStatusId}
           />
         </BottomSheetScrollView>
       </ContentContainer>

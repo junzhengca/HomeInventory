@@ -247,7 +247,8 @@
       "warningThreshold": "Warning Threshold",
       "purchaseDate": "Purchase Date",
       "expiryDate": "Expiry Date",
-      "category": "Category"
+      "category": "Category",
+      "advanced": "Advanced"
     },
     "placeholders": {
       "name": "e.g., Cute Cup",

@@ -51,6 +51,8 @@ export type { StatusFormSelectorProps } from './StatusFormSelector';
 export { BatchDetailsFormSection } from './BatchDetailsFormSection';
 export type { BatchDetailsFormSectionProps } from './BatchDetailsFormSection';
 
+export { CollapsibleSection } from './CollapsibleSection';
+
 // Picker/selector molecules
 export { DatePicker } from './DatePicker';
 export type { DatePickerProps } from './DatePicker';

@@ -4,7 +4,7 @@ import styled from 'styled-components/native';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import { FormSection, UncontrolledInput } from '../atoms';
-import { LocationFormSelector, CategoryFormSelector, BatchDetailsFormSection, DatePicker } from '../molecules';
+import { LocationFormSelector, CategoryFormSelector, BatchDetailsFormSection, DatePicker, StatusFormSelector, CollapsibleSection } from '../molecules';
 
 // ---------------------------------------------------------------------------
 // Styled helpers
@@ -55,6 +55,17 @@ export interface CreateItemFormFieldsProps {
     // Expiry date
     expiryDate: Date | null;
     onExpiryDateChange: (date: Date | null) => void;
+    // Advanced fields
+    detailedLocationInputRef: React.RefObject<TextInput | null>;
+    warningThresholdInputRef: React.RefObject<TextInput | null>;
+    defaultDetailedLocation: string;
+    defaultWarningThreshold: string;
+    selectedStatusId: string;
+    onDetailedLocationChange: (text: string) => void;
+    onDetailedLocationBlur: () => void;
+    onWarningThresholdChange: (text: string) => void;
+    onWarningThresholdBlur: () => void;
+    onStatusSelect: (statusId: string) => void;
     // Translations
     translations: {
         fields: {
@@ -62,9 +73,15 @@ export interface CreateItemFormFieldsProps {
             location: string;
             category: string;
             expiryDate: string;
+            advanced: string;
+            detailedLocation: string;
+            status: string;
+            warningThreshold: string;
         };
         placeholders: {
             name: string;
+            detailedLocation: string;
+            warningThreshold: string;
         };
     };
 }
@@ -113,6 +130,16 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
     onVendorBlur,
     expiryDate,
     onExpiryDateChange,
+    detailedLocationInputRef,
+    warningThresholdInputRef,
+    defaultDetailedLocation,
+    defaultWarningThreshold,
+    selectedStatusId,
+    onDetailedLocationChange,
+    onDetailedLocationBlur,
+    onWarningThresholdChange,
+    onWarningThresholdBlur,
+    onStatusSelect,
     translations,
 }) => {
     const theme = useTheme();
@@ -175,6 +202,42 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
                     minimumDate={new Date()}
                 />
             </FormSection>
+
+            {/* Row 6 — Advanced Section */}
+            <CollapsibleSection title={translations.fields.advanced}>
+                <FormContainer>
+                    <FormSection label={translations.fields.detailedLocation}>
+                        <UncontrolledInput
+                            ref={detailedLocationInputRef}
+                            defaultValue={defaultDetailedLocation}
+                            onChangeText={onDetailedLocationChange}
+                            onBlur={onDetailedLocationBlur}
+                            placeholder={translations.placeholders.detailedLocation}
+                            placeholderTextColor={theme.colors.textLight}
+                            multiline
+                        />
+                    </FormSection>
+
+                    <FormSection label={translations.fields.status}>
+                        <StatusFormSelector
+                            selectedStatusId={selectedStatusId}
+                            onSelect={onStatusSelect}
+                        />
+                    </FormSection>
+
+                    <FormSection label={translations.fields.warningThreshold}>
+                        <UncontrolledInput
+                            ref={warningThresholdInputRef}
+                            defaultValue={defaultWarningThreshold}
+                            onChangeText={onWarningThresholdChange}
+                            onBlur={onWarningThresholdBlur}
+                            placeholder={translations.placeholders.warningThreshold}
+                            placeholderTextColor={theme.colors.textLight}
+                            keyboardType="numeric"
+                        />
+                    </FormSection>
+                </FormContainer>
+            </CollapsibleSection>
         </FormContainer>
     );
 };

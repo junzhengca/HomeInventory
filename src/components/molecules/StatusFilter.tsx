@@ -20,7 +20,7 @@ const StatusContainer = styled(View)`
 const StatusButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
   padding-horizontal: 8px;
   padding-vertical: 8px;
-  border-radius: 10px;
+  border-radius: 30px;
   flex-direction: row;
   align-items: center;
   justify-content: center;
