@@ -151,6 +151,27 @@
   "notes": {
     "title": "Notes",
     "subtitle": "Your todos",
+    "mode": {
+      "planning": "Planning",
+      "shopping": "Shopping"
+    },
+    "banner": {
+      "planning": {
+        "title": "Planning List",
+        "subtitle": "Sorted by addition order",
+        "button": "Start Shopping"
+      },
+      "shopping": {
+        "title": "Shopping in Progress",
+        "subtitle": "Sorted by category",
+        "button": "Finish Shopping"
+      }
+    },
+    "uncategorized": "Uncategorized",
+    "emptyShopping": {
+      "title": "All done!",
+      "description": "No pending items to shop for."
+    },
     "addTodo": "Add a new todo...",
     "addNote": "Add a note (optional)...",
     "pending": "Pending",

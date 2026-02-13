@@ -47,6 +47,7 @@ const TodoText = styled(Text) <{ completed: boolean }>`
   padding: 0px;
   padding-vertical: 0px;
   margin: 0px;
+  padding-bottom: ${({ theme }: StyledProps) => theme.spacing.xs}px;
 `;
 
 const TodoNote = styled(Text) <{ completed: boolean }>`
@@ -372,9 +373,9 @@ export const TodoCard: React.FC<TodoCardProps> = ({
       <ContentContainer>
         <Checkbox
           checked={todo.completed}
-          onPress={() => editable && onToggle?.(todo.id)}
-          activeOpacity={editable ? 0.7 : 1}
-          disabled={!editable}
+          onPress={() => onToggle?.(todo.id)}
+          activeOpacity={0.7}
+          disabled={!onToggle}
         >
           {todo.completed && <Ionicons name="checkmark" size={14} color="white" />}
         </Checkbox>
@@ -387,7 +388,6 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                   <TodoText
                     completed={todo.completed}
                     style={{
-                      position: 'absolute',
                       opacity: 0,
                       width: '100%',
                       pointerEvents: 'none',
@@ -418,8 +418,14 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                     style={{
                       borderWidth: 0,
                       outline: 'none',
-                      minHeight: 24,
-                      width: '100%',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: '100%',
+                      padding: 0,
+                      margin: 0,
                     }}
                   />
                 </View>

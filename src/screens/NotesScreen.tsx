@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   ScrollView,
   TextInput,
@@ -31,7 +31,7 @@ import {
   HomeSwitcher,
   TodoCategoryPicker,
 } from '../components';
-import { useTodos, useAuth } from '../store/hooks';
+import { useTodos, useAuth, useTodoCategories } from '../store/hooks';
 import { useHome } from '../hooks/useHome';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -46,6 +46,35 @@ const Container = styled(View)`
 const Content = styled(ScrollView)`
   flex: 1;
   padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
+const ModeToggleContainer = styled(View)`
+  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  padding: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  flex-direction: row;
+  height: 48px;
+  border-width: 1px;
+  border-color: ${({ theme }: StyledProps) => theme.colors.borderLight};
+`;
+
+const ModeButton = styled(TouchableOpacity) <{ isActive: boolean }>`
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.lg}px;
+  background-color: ${({ theme, isActive }: StyledPropsWith<{ isActive: boolean }>) =>
+    isActive ? theme.colors.primary : 'transparent'};
+`;
+
+const ModeText = styled(Text) <{ isActive: boolean }>`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
+  font-weight: 600;
+  color: ${({ theme, isActive }: StyledPropsWith<{ isActive: boolean }>) =>
+    isActive ? '#FFFFFF' : theme.colors.textSecondary};
+  margin-left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
 `;
 
 const AddTodoContainer = styled(View) <{ isFocused: boolean }>`
@@ -90,6 +119,70 @@ const ToggleNotesButton = styled(TouchableOpacity) <{ isActive: boolean }>`
   justify-content: center;
 `;
 
+// Banner Components
+const BannerContainer = styled(View) <{ mode: TodoMode }>`
+  background-color: ${({ theme, mode }: StyledPropsWith<{ mode: TodoMode }>) =>
+    mode === 'shopping' ? theme.colors.primary : theme.colors.surface};
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
+  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  ${({ mode, theme }: StyledPropsWith<{ mode: TodoMode }>) =>
+    mode === 'planning' ? `border-width: 1px; border-color: ${theme.colors.borderLight};` : ''}
+`;
+
+const BannerContent = styled(View)`
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+`;
+
+const IconContainer = styled(View) <{ mode: TodoMode }>`
+  width: 40px;
+  height: 40px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.lg}px;
+  background-color: ${({ theme, mode }: StyledPropsWith<{ mode: TodoMode }>) =>
+    mode === 'shopping' ? 'rgba(255, 255, 255, 0.2)' : theme.colors.background};
+  align-items: center;
+  justify-content: center;
+  margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
+const TextContainer = styled(View)`
+  flex: 1;
+`;
+
+const BannerTitle = styled(Text) <{ mode: TodoMode }>`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
+  font-weight: 600;
+  color: ${({ theme, mode }: StyledPropsWith<{ mode: TodoMode }>) =>
+    mode === 'shopping' ? '#FFFFFF' : theme.colors.text};
+  margin-bottom: 2px;
+`;
+
+const BannerSubtitle = styled(Text) <{ mode: TodoMode }>`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
+  color: ${({ theme, mode }: StyledPropsWith<{ mode: TodoMode }>) =>
+    mode === 'shopping' ? 'rgba(255, 255, 255, 0.8)' : theme.colors.textSecondary};
+`;
+
+const BannerButton = styled(TouchableOpacity) <{ mode: TodoMode }>`
+  background-color: ${({ theme, mode }: StyledPropsWith<{ mode: TodoMode }>) =>
+    mode === 'shopping' ? '#FFFFFF' : theme.colors.primary};
+  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.lg}px;
+`;
+
+const BannerButtonText = styled(Text) <{ mode: TodoMode }>`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
+  font-weight: 600;
+  color: ${({ theme, mode }: StyledPropsWith<{ mode: TodoMode }>) =>
+    mode === 'shopping' ? theme.colors.primary : '#FFFFFF'};
+`;
+
 const AddButton = styled(TouchableOpacity)`
   background-color: ${({ theme }: StyledProps) => theme.colors.primary};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
@@ -123,6 +216,14 @@ const SectionTitle = styled(Text)`
   font-weight: 600;
   color: ${({ theme }: StyledProps) => theme.colors.text};
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
+const CategorySectionTitle = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+  font-weight: 600;
+  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
+  margin-top: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 const SwipeableWrapper = styled(View)`
@@ -164,6 +265,8 @@ const DeleteAction = styled(ActionButton)`
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+type TodoMode = 'planning' | 'shopping';
+
 export const NotesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
@@ -177,6 +280,7 @@ export const NotesScreen: React.FC = () => {
     removeTodo,
     updateTodo,
   } = useTodos();
+  const { categories } = useTodoCategories();
   const theme = useTheme();
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -187,6 +291,7 @@ export const NotesScreen: React.FC = () => {
     return currentHome.settings?.canShareTodos ?? true;
   }, [currentHome]);
 
+  const [mode, setMode] = useState<TodoMode>('planning');
   const [newTodoText, setNewTodoText] = useState('');
   const [newTodoNote, setNewTodoNote] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -200,6 +305,44 @@ export const NotesScreen: React.FC = () => {
   // Animation values for notes field - height cannot use native driver
   const notesHeight = useRef(new Animated.Value(0)).current;
   const notesOpacity = useRef(new Animated.Value(0)).current;
+
+  // Grouped todos for shopping mode
+  const groupedPendingTodos = useMemo(() => {
+    if (mode !== 'shopping') return {};
+
+    const groups: Record<string, TodoItem[]> = {};
+    const uncategorized: TodoItem[] = [];
+
+    // Initialize groups for all categories to ensure order
+    categories.forEach(cat => {
+      groups[cat.id] = [];
+    });
+
+    pendingTodos.forEach(todo => {
+      if (todo.categoryId && groups[todo.categoryId]) {
+        groups[todo.categoryId].push(todo);
+      } else {
+        uncategorized.push(todo);
+      }
+    });
+
+    // Remove empty groups if desired, or keep them.
+    // For now, let's keep only groups that have items or are explicitly categories
+    // But filter out empty ones for display to avoid clutter
+    const result: Record<string, TodoItem[]> = {};
+
+    categories.forEach(cat => {
+      if (groups[cat.id].length > 0) {
+        result[cat.id] = groups[cat.id];
+      }
+    });
+
+    if (uncategorized.length > 0) {
+      result['uncategorized'] = uncategorized;
+    }
+
+    return result;
+  }, [mode, pendingTodos, categories]);
 
   useEffect(() => {
     refreshTodos();
@@ -313,8 +456,29 @@ export const NotesScreen: React.FC = () => {
     );
   };
 
-  const renderTodoItem = (todo: TodoItem) => {
+  const renderTodoItem = (todo: TodoItem, editable: boolean = true) => {
     // Wrap all todos in Swipeable to allow deletion
+    // If not editable (shopping mode), disable swipeable or just don't allow delete?
+    // User said "cannot edit todo items", implies read-only. Deletion might be considered editing.
+    // For now, I'll allow deletion in planning mode only to be safe, or just keep it enabled? 
+    // "Shopping mode... cannot add new items... cannot edit todo items"
+    // Usually shopping mode is safe to just check off. 
+    // Let's disable swipe actions in shopping mode for now.
+
+    if (!editable) {
+      return (
+        <CardWrapper key={todo.id} style={{ marginBottom: 16 }}>
+          <TodoCard
+            todo={todo}
+            onToggle={handleToggleTodo}
+            onUpdate={updateTodo}
+            style={{ marginBottom: 0 }}
+            editable={false}
+          />
+        </CardWrapper>
+      );
+    }
+
     return (
       <SwipeableWrapper key={todo.id}>
         <Swipeable
@@ -395,93 +559,149 @@ export const NotesScreen: React.FC = () => {
               keyboardDismissMode="interactive"
               keyboardShouldPersistTaps="handled"
             >
-              <AddTodoContainer isFocused={isFocused}>
-                <TodoInputRow>
-                  <TodoInput
-                    placeholder={t('notes.addTodo')}
-                    placeholderTextColor={theme.colors.textLight}
-                    value={newTodoText}
-                    onChangeText={handleTodoTextChange}
-                    onSubmitEditing={handleAddTodo}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    autoCorrect={false}
-                    spellCheck={false}
-                    textContentType="none"
-                    autoComplete="off"
-                  />
-                  <ToggleNotesButton
-                    isActive={showNotesField}
-                    onPress={() => setShowNotesField(!showNotesField)}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
+              <BannerContainer mode={mode}>
+                <BannerContent>
+                  <IconContainer mode={mode}>
                     <Ionicons
-                      name={
-                        showNotesField ? 'document-text' : 'document-text-outline'
-                      }
-                      size={18}
-                      color={showNotesField ? 'white' : theme.colors.textSecondary}
+                      name={mode === 'shopping' ? 'cart' : 'grid-outline'}
+                      size={24}
+                      color={mode === 'shopping' ? '#FFFFFF' : theme.colors.primary}
                     />
-                  </ToggleNotesButton>
-                  <AddButton
-                    onPress={handleAddTodo}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="add" size={18} color="white" />
-                  </AddButton>
-                </TodoInputRow>
-                <NotesHeightWrapper
-                  style={{
-                    height: notesHeight.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 80],
-                    }),
-                    opacity: notesOpacity,
-                    overflow: 'hidden',
-                  }}
-                  pointerEvents={showNotesField ? 'auto' : 'none'}
+                  </IconContainer>
+                  <TextContainer>
+                    <BannerTitle mode={mode}>
+                      {t(`notes.banner.${mode}.title`)}
+                    </BannerTitle>
+                    <BannerSubtitle mode={mode}>
+                      {t(`notes.banner.${mode}.subtitle`)}
+                    </BannerSubtitle>
+                  </TextContainer>
+                </BannerContent>
+                <BannerButton
+                  mode={mode}
+                  onPress={() => setMode(mode === 'planning' ? 'shopping' : 'planning')}
+                  activeOpacity={0.8}
                 >
-                  <NotesInputContainer>
-                    <NotesInput
-                      placeholder={t('notes.addNote')}
-                      placeholderTextColor={theme.colors.textLight}
-                      value={newTodoNote}
-                      onChangeText={handleTodoNoteChange}
-                      multiline={true}
-                      autoCorrect={false}
-                      spellCheck={false}
-                      textContentType="none"
-                      autoComplete="off"
+                  <BannerButtonText mode={mode}>
+                    {t(`notes.banner.${mode}.button`)}
+                  </BannerButtonText>
+                </BannerButton>
+              </BannerContainer>
+
+              {mode === 'planning' ? (
+                <>
+                  <AddTodoContainer isFocused={isFocused}>
+                    <TodoInputRow>
+                      <TodoInput
+                        placeholder={t('notes.addTodo')}
+                        placeholderTextColor={theme.colors.textLight}
+                        value={newTodoText}
+                        onChangeText={handleTodoTextChange}
+                        onSubmitEditing={handleAddTodo}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setIsFocused(false)}
+                        autoCorrect={false}
+                        spellCheck={false}
+                        textContentType="none"
+                        autoComplete="off"
+                      />
+                      <ToggleNotesButton
+                        isActive={showNotesField}
+                        onPress={() => setShowNotesField(!showNotesField)}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Ionicons
+                          name={
+                            showNotesField ? 'document-text' : 'document-text-outline'
+                          }
+                          size={18}
+                          color={showNotesField ? 'white' : theme.colors.textSecondary}
+                        />
+                      </ToggleNotesButton>
+                      <AddButton
+                        onPress={handleAddTodo}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Ionicons name="add" size={18} color="white" />
+                      </AddButton>
+                    </TodoInputRow>
+                    <NotesHeightWrapper
+                      style={{
+                        height: notesHeight.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 80],
+                        }),
+                        opacity: notesOpacity,
+                        overflow: 'hidden',
+                      }}
+                      pointerEvents={showNotesField ? 'auto' : 'none'}
+                    >
+                      <NotesInputContainer>
+                        <NotesInput
+                          placeholder={t('notes.addNote')}
+                          placeholderTextColor={theme.colors.textLight}
+                          value={newTodoNote}
+                          onChangeText={handleTodoNoteChange}
+                          multiline={true}
+                          autoCorrect={false}
+                          spellCheck={false}
+                          textContentType="none"
+                          autoComplete="off"
+                        />
+                      </NotesInputContainer>
+                    </NotesHeightWrapper>
+                    <TodoCategoryPicker
+                      selectedCategoryId={selectedCategoryId}
+                      onSelect={setSelectedCategoryId}
                     />
-                  </NotesInputContainer>
-                </NotesHeightWrapper>
-                <TodoCategoryPicker
-                  selectedCategoryId={selectedCategoryId}
-                  onSelect={setSelectedCategoryId}
-                />
-              </AddTodoContainer>
+                  </AddTodoContainer>
 
-              {pendingTodos.length > 0 && (
+                  {pendingTodos.length > 0 && (
+                    <>
+                      <SectionTitle>
+                        {t('notes.pending')} ({pendingTodos.length})
+                      </SectionTitle>
+                      {pendingTodos.map((todo) => renderTodoItem(todo))}
+                    </>
+                  )}
+
+                  {completedTodos.length > 0 && (
+                    <>
+                      <SectionTitle style={{ marginTop: 20 }}>
+                        {t('notes.completed')} ({completedTodos.length})
+                      </SectionTitle>
+                      {completedTodos.map((todo) => renderTodoItem(todo))}
+                    </>
+                  )}
+                </>
+              ) : (
+                /* Shopping Mode */
                 <>
-                  <SectionTitle>
-                    {t('notes.pending')} ({pendingTodos.length})
-                  </SectionTitle>
-                  {pendingTodos.map((todo) => renderTodoItem(todo))}
+                  {Object.entries(groupedPendingTodos).map(([catId, todos]) => {
+                    const category = categories.find(c => c.id === catId);
+                    const title = category ? category.name : t('notes.uncategorized', 'Uncategorized');
+
+                    return (
+                      <View key={catId} style={{ marginBottom: 16 }}>
+                        <CategorySectionTitle>{title}</CategorySectionTitle>
+                        {todos.map(todo => renderTodoItem(todo, false))}
+                      </View>
+                    );
+                  })}
+
+                  {pendingTodos.length === 0 && (
+                    <EmptyState
+                      icon="cart-outline"
+                      title={t('notes.emptyShopping.title', 'All done!')}
+                      description={t('notes.emptyShopping.description', 'No pending items to shop for.')}
+                    />
+                  )}
                 </>
               )}
 
-              {completedTodos.length > 0 && (
-                <>
-                  <SectionTitle style={{ marginTop: 20 }}>
-                    {t('notes.completed')} ({completedTodos.length})
-                  </SectionTitle>
-                  {completedTodos.map((todo) => renderTodoItem(todo))}
-                </>
-              )}
-
-              {pendingTodos.length === 0 && completedTodos.length === 0 && (
+              {mode === 'planning' && pendingTodos.length === 0 && completedTodos.length === 0 && (
                 <EmptyState
                   icon="clipboard-outline"
                   title={t('notes.empty.title')}

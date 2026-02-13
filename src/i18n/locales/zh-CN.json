@@ -135,6 +135,27 @@
   "notes": {
     "title": "待办事项",
     "subtitle": "您的任务清单",
+    "mode": {
+      "planning": "清单规划",
+      "shopping": "开始购物"
+    },
+    "banner": {
+      "planning": {
+        "title": "清单规划",
+        "subtitle": "按添加顺序排列",
+        "button": "开始购物"
+      },
+      "shopping": {
+        "title": "购物进行中",
+        "subtitle": "按货架分类排列",
+        "button": "结束购物"
+      }
+    },
+    "uncategorized": "未分类",
+    "emptyShopping": {
+      "title": "全部完成！",
+      "description": "没有待购物品。"
+    },
     "addTodo": "添加新的待办事项...",
     "addNote": "添加备注（可选）...",
     "pending": "待处理",
