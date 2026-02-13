@@ -29,6 +29,7 @@ import {
   LoginBottomSheet,
   SignupBottomSheet,
   HomeSwitcher,
+  TodoCategoryPicker,
 } from '../components';
 import { useTodos, useAuth } from '../store/hooks';
 import { useHome } from '../hooks/useHome';
@@ -138,7 +139,6 @@ const SwipeActionsContainer = styled(View)`
     theme.borderRadius.xxl}px;
   border-bottom-right-radius: ${({ theme }: StyledProps) =>
     theme.borderRadius.xxl}px;
-  overflow: hidden;
   margin-left: ${({ theme }: StyledProps) => theme.spacing.xs}px;
 `;
 
@@ -160,13 +160,6 @@ const DeleteAction = styled(ActionButton)`
     theme.borderRadius.xxl}px;
   border-bottom-right-radius: ${({ theme }: StyledProps) =>
     theme.borderRadius.xxl}px;
-
-  /* Shadow for depth */
-  shadow-color: ${({ theme }: StyledProps) => theme.colors.error};
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.2;
-  shadow-radius: 4px;
-  elevation: 3;
 `;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -196,6 +189,7 @@ export const NotesScreen: React.FC = () => {
 
   const [newTodoText, setNewTodoText] = useState('');
   const [newTodoNote, setNewTodoNote] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [showNotesField, setShowNotesField] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -275,9 +269,10 @@ export const NotesScreen: React.FC = () => {
 
   const handleAddTodo = async () => {
     if (newTodoText.trim()) {
-      await addTodo(newTodoText.trim(), newTodoNote.trim() || undefined);
+      await addTodo(newTodoText.trim(), newTodoNote.trim() || undefined, selectedCategoryId || undefined);
       setNewTodoText('');
       setNewTodoNote('');
+      setSelectedCategoryId(null);
       setShowNotesField(false);
     }
   };
@@ -462,6 +457,10 @@ export const NotesScreen: React.FC = () => {
                     />
                   </NotesInputContainer>
                 </NotesHeightWrapper>
+                <TodoCategoryPicker
+                  selectedCategoryId={selectedCategoryId}
+                  onSelect={setSelectedCategoryId}
+                />
               </AddTodoContainer>
 
               {pendingTodos.length > 0 && (

@@ -3,7 +3,7 @@ import { TouchableOpacity, View, ViewStyle } from 'react-native';
 import styled from 'styled-components/native';
 import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
 
-const CardContainer = styled(View)<{ compact?: boolean; square?: boolean }>`
+const CardContainer = styled(View) <{ compact?: boolean; square?: boolean }>`
   flex-direction: ${({ square }: { square?: boolean }) => (square ? 'column' : 'row')};
   align-items: ${({ square }: { square?: boolean }) => (square ? 'stretch' : 'center')};
   ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 1;' : '')}
@@ -12,16 +12,9 @@ const CardContainer = styled(View)<{ compact?: boolean; square?: boolean }>`
   padding: ${({ theme, compact }: StyledPropsWith<{ compact?: boolean }>) =>
     compact ? 14 : theme.spacing.md}px;
   position: relative;
-  
-  /* Subtle shadow for the card */
-  shadow-color: #000;
-  shadow-offset: 0px 4px;
-  shadow-opacity: 0.05;
-  shadow-radius: 12px;
-  elevation: 3;
 `;
 
-const TouchableCardContainer = styled(TouchableOpacity)<{ compact?: boolean; square?: boolean }>`
+const TouchableCardContainer = styled(TouchableOpacity) <{ compact?: boolean; square?: boolean }>`
   flex-direction: ${({ square }: { square?: boolean }) => (square ? 'column' : 'row')};
   align-items: ${({ square }: { square?: boolean }) => (square ? 'stretch' : 'center')};
   ${({ square }: { square?: boolean }) => (square ? 'aspect-ratio: 1;' : '')}
@@ -30,13 +23,6 @@ const TouchableCardContainer = styled(TouchableOpacity)<{ compact?: boolean; squ
   padding: ${({ theme, compact }: StyledPropsWith<{ compact?: boolean }>) =>
     compact ? 14 : theme.spacing.md}px;
   position: relative;
-  
-  /* Subtle shadow for the card */
-  shadow-color: #000;
-  shadow-offset: 0px 4px;
-  shadow-opacity: 0.05;
-  shadow-radius: 12px;
-  elevation: 3;
 `;
 
 export interface BaseCardProps {
@@ -54,9 +40,9 @@ export interface BaseCardProps {
  * @param compact - If true, uses smaller padding for a more compact appearance
  * @param square - If true, makes the card more vertical (aspect ratio 0.9) and removes row layout
  */
-export const BaseCard: React.FC<BaseCardProps> = ({ 
-  children, 
-  onPress, 
+export const BaseCard: React.FC<BaseCardProps> = ({
+  children,
+  onPress,
   activeOpacity = 0.8,
   style,
   compact = false,
@@ -64,8 +50,8 @@ export const BaseCard: React.FC<BaseCardProps> = ({
 }) => {
   if (onPress) {
     return (
-      <TouchableCardContainer 
-        onPress={onPress} 
+      <TouchableCardContainer
+        onPress={onPress}
         activeOpacity={activeOpacity}
         style={style}
         compact={compact}
@@ -75,7 +61,7 @@ export const BaseCard: React.FC<BaseCardProps> = ({
       </TouchableCardContainer>
     );
   }
-  
+
   return (
     <CardContainer style={style} compact={compact} square={square}>
       {children}

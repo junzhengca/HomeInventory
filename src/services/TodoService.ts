@@ -48,7 +48,7 @@ export const getTodoById = async (id: string, homeId?: string): Promise<TodoItem
 /**
  * Create a new todo
  */
-export const createTodo = async (text: string, homeId: string, note?: string): Promise<TodoItem | null> => {
+export const createTodo = async (text: string, homeId: string, note?: string, categoryId?: string): Promise<TodoItem | null> => {
   try {
     if (!homeId) {
       syncLogger.error('Error creating todo: homeId is required');
@@ -64,6 +64,7 @@ export const createTodo = async (text: string, homeId: string, note?: string): P
       text: text.trim(),
       completed: false,
       note: note?.trim() || undefined,
+      categoryId: categoryId,
       createdAt: now,
       updatedAt: now,
 

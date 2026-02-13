@@ -29,6 +29,9 @@ export type { LocationFilterProps } from './LocationFilter';
 export { CategoryFilter } from './CategoryFilter';
 export type { CategoryFilterProps } from './CategoryFilter';
 
+export { TodoCategoryPicker } from './TodoCategoryPicker';
+export type { TodoCategoryPickerProps } from './TodoCategoryPicker';
+
 // Form field molecules
 export * from './BatchItemCard';
 export { CategoryField } from './CategoryField';

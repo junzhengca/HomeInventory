@@ -4,7 +4,8 @@ import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
-import { TodoItem } from '../../types/inventory';
+import { TodoItem, TodoCategory } from '../../types/inventory';
+import { useTodoCategories } from '../../store/hooks';
 import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
 import { BaseCard } from '../atoms';
 
@@ -57,6 +58,32 @@ const TodoNote = styled(Text) <{ completed: boolean }>`
   padding: 0px;
   padding-vertical: 0px;
   margin: 0px;
+`;
+
+const TitleRow = styled(View)`
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+`;
+
+const BadgeContainer = styled(View)`
+  height: ${({ theme }: StyledProps) => theme.typography.fontSize.md * 1.2}px;
+  justify-content: center;
+  margin-left: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+`;
+
+const CategoryTag = styled(View)`
+  background-color: ${({ theme }: StyledProps) => theme.colors.borderLight};
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.xs}px;
+  padding-vertical: 2px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.sm}px;
+`;
+
+const CategoryTagText = styled(Text)`
+  font-size: 10px;
+  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
+  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.regular};
 `;
 
 const EditableTextInput = styled(TextInput) <{ completed: boolean; isEditing: boolean }>`
@@ -129,6 +156,9 @@ export const TodoCard: React.FC<TodoCardProps> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
+  const { categories } = useTodoCategories();
+
+  const category = categories.find(c => c.id === todo.categoryId);
   const [editingField, setEditingField] = useState<'text' | 'note' | null>(null);
   const textInputRef = useRef<TextInput>(null);
   const noteInputRef = useRef<TextInput>(null);
@@ -349,57 +379,68 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           {todo.completed && <Ionicons name="checkmark" size={14} color="white" />}
         </Checkbox>
         <TextContainer>
-          {editingField === 'text' ? (
-            <View style={{ width: '100%' }}>
-              {/* Invisible Measurement View for Title - Ensures parent container grows instantly */}
-              <TodoText
-                completed={todo.completed}
-                style={{
-                  position: 'absolute',
-                  opacity: 0,
-                  width: '100%',
-                  pointerEvents: 'none',
-                }}
-              >
-                {titleContent || ' '}
-              </TodoText>
-              <EditableTextInput
-                ref={textInputRef}
-                value={titleContent}
-                onChangeText={handleTextChange}
-                onSubmitEditing={handleTextSubmit}
-                onFocus={handleTextFocus}
-                onBlur={handleTextBlur}
-                completed={todo.completed}
-                isEditing={true}
-                editable={!todo.completed && editable}
-                multiline
-                scrollEnabled={false}
-                blurOnSubmit={true} // Maintain enter-to-submit behavior for title
-                autoCorrect={false}
-                spellCheck={false}
-                textContentType="none"
-                autoComplete="off"
-                underlineColorAndroid="transparent"
-                includeFontPadding={false}
-                textAlignVertical="top"
-                style={{
-                  borderWidth: 0,
-                  outline: 'none',
-                  minHeight: 24,
-                  width: '100%',
-                }}
-              />
+          <TitleRow>
+            <View style={{ flex: 1 }}>
+              {editingField === 'text' ? (
+                <View style={{ width: '100%' }}>
+                  {/* Invisible Measurement View for Title - Ensures parent container grows instantly */}
+                  <TodoText
+                    completed={todo.completed}
+                    style={{
+                      position: 'absolute',
+                      opacity: 0,
+                      width: '100%',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    {titleContent || ' '}
+                  </TodoText>
+                  <EditableTextInput
+                    ref={textInputRef}
+                    value={titleContent}
+                    onChangeText={handleTextChange}
+                    onSubmitEditing={handleTextSubmit}
+                    onFocus={handleTextFocus}
+                    onBlur={handleTextBlur}
+                    completed={todo.completed}
+                    isEditing={true}
+                    editable={!todo.completed && editable}
+                    multiline
+                    scrollEnabled={false}
+                    blurOnSubmit={true} // Maintain enter-to-submit behavior for title
+                    autoCorrect={false}
+                    spellCheck={false}
+                    textContentType="none"
+                    autoComplete="off"
+                    underlineColorAndroid="transparent"
+                    includeFontPadding={false}
+                    textAlignVertical="top"
+                    style={{
+                      borderWidth: 0,
+                      outline: 'none',
+                      minHeight: 24,
+                      width: '100%',
+                    }}
+                  />
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={handleTextPress}
+                  activeOpacity={todo.completed || !editable ? 1 : 0.7}
+                  disabled={todo.completed || !editable}
+                >
+                  <TodoText completed={todo.completed}>{todo.text}</TodoText>
+                </TouchableOpacity>
+              )}
             </View>
-          ) : (
-            <TouchableOpacity
-              onPress={handleTextPress}
-              activeOpacity={todo.completed || !editable ? 1 : 0.7}
-              disabled={todo.completed || !editable}
-            >
-              <TodoText completed={todo.completed}>{todo.text}</TodoText>
-            </TouchableOpacity>
-          )}
+            {category && (
+              <BadgeContainer>
+                <CategoryTag>
+                  <CategoryTagText>{category.name}</CategoryTagText>
+                </CategoryTag>
+              </BadgeContainer>
+            )}
+          </TitleRow>
           {/* Unified note area - handled by animation wrapper for both display and editing */}
           {showNotesWrapper && (
             <NotesHeightWrapper

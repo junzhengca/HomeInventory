@@ -10,7 +10,7 @@ import {
   setActiveHomeId,
 } from '../slices/authSlice';
 import { loadItems, syncItemsAction } from './inventorySaga';
-import { loadTodos } from './todoSaga';
+import { loadTodos, loadTodoCategoriesAction } from './todoSaga';
 import { loadSettings } from './settingsSaga';
 import {
   ApiClient,
@@ -281,6 +281,7 @@ function* checkAuthSaga(): Generator {
         // Reload data with correct context
         yield put(loadItems());
         yield put(loadTodos());
+        yield put(loadTodoCategoriesAction());
         yield put(loadSettings());
       }
     } catch (error) {
@@ -424,6 +425,7 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     // Reload data with correct context
     yield put(loadItems());
     yield put(loadTodos());
+    yield put(loadTodoCategoriesAction());
     yield put(loadSettings());
 
     yield put(setLoading(false));
@@ -511,6 +513,7 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
     // Reload data with correct context
     yield put(loadItems());
     yield put(loadTodos());
+    yield put(loadTodoCategoriesAction());
     yield put(loadSettings());
 
     // Show success toast
@@ -611,6 +614,7 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     // Reload data with correct context
     yield put(loadItems());
     yield put(loadTodos());
+    yield put(loadTodoCategoriesAction());
     yield put(loadSettings());
 
     yield put(setLoading(false));
@@ -687,6 +691,7 @@ function* handleActiveHomeIdChange(action: { type: string; payload: string | nul
     authLogger.info('Reloading data for new home', action.payload);
     yield put(loadItems());
     yield put(loadTodos());
+    yield put(loadTodoCategoriesAction());
     yield put(loadSettings());
   } else {
     yield call(removeActiveHomeId);

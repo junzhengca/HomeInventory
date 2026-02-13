@@ -88,7 +88,8 @@
     "snacks": "零食",
     "household": "日用百货",
     "personal-care": "个人护理",
-    "other": "其他"
+    "other": "其他",
+    "uncategorized": "未分类"
   },
   "locations": {
     "living-room": "客厅",

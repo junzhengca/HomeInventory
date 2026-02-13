@@ -51,7 +51,7 @@ const DELETE_TODO_CATEGORY = 'todo/DELETE_TODO_CATEGORY';
 // Action creators
 export const loadTodos = () => ({ type: LOAD_TODOS });
 export const silentRefreshTodos = () => ({ type: SILENT_REFRESH_TODOS });
-export const addTodo = (text: string, note?: string) => ({ type: ADD_TODO, payload: { text, note } });
+export const addTodo = (text: string, note?: string, categoryId?: string) => ({ type: ADD_TODO, payload: { text, note, categoryId } });
 export const toggleTodo = (id: string) => ({ type: TOGGLE_TODO, payload: id });
 export const deleteTodoAction = (id: string) => ({ type: DELETE_TODO, payload: id });
 export const updateTodoText = (id: string, text: string, note?: string) => ({
@@ -128,14 +128,15 @@ function* syncTodosSaga() {
 
     // 4. Refresh UI
     yield call(silentRefreshTodosSaga);
+    yield call(silentRefreshTodoCategoriesSaga);
 
   } catch (error) {
     sagaLogger.error('Error in sync sequence', error);
   }
 }
 
-function* addTodoSaga(action: { type: string; payload: { text: string; note?: string } }) {
-  const { text, note } = action.payload;
+function* addTodoSaga(action: { type: string; payload: { text: string; note?: string; categoryId?: string } }) {
+  const { text, note, categoryId } = action.payload;
   if (!text.trim()) return;
 
   try {
@@ -145,7 +146,7 @@ function* addTodoSaga(action: { type: string; payload: { text: string; note?: st
       return;
     }
     // userId here IS the homeId because getFileUserId returns activeHomeId
-    const newTodo: TodoItem = yield call(createTodo, text, userId, note);
+    const newTodo: TodoItem = yield call(createTodo, text, userId, note, categoryId);
     if (newTodo) {
       // Optimistically add to state
       yield put(addTodoSlice(newTodo));

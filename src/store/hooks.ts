@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useMemo } from 'react';
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import type { RootState, AppDispatch } from './index';
 import { selectPendingTodos, selectCompletedTodos } from './slices/todoSlice';
@@ -101,13 +101,13 @@ export const useSettings = () => {
       return new Promise((resolve) => {
         // Clear previous result
         dispatch(clearUpdateResult());
-        
+
         // Add resolver to pending list
         pendingResolversRef.current.push(resolve);
-        
+
         // Dispatch update action
         dispatch({ type: 'settings/UPDATE_SETTINGS', payload: updates });
-        
+
         // Timeout after 2 seconds if no result
         setTimeout(() => {
           const index = pendingResolversRef.current.indexOf(resolve);
@@ -142,8 +142,8 @@ export const useTodos = () => {
   }, [dispatch]);
 
   const addTodo = useCallback(
-    (text: string, note?: string) => {
-      dispatch({ type: 'todo/ADD_TODO', payload: { text, note } });
+    (text: string, note?: string, categoryId?: string) => {
+      dispatch({ type: 'todo/ADD_TODO', payload: { text, note, categoryId } });
     },
     [dispatch]
   );
@@ -186,7 +186,12 @@ export const useTodos = () => {
 // Todo Categories hook
 export const useTodoCategories = () => {
   const dispatch = useAppDispatch();
-  const categories = useAppSelector((state) => state.todo.categories);
+  const activeHomeId = useAppSelector((state) => state.auth.activeHomeId);
+  const allCategories = useAppSelector((state) => state.todo.categories);
+
+  const categories = useMemo(() => {
+    return allCategories.filter((c) => c.homeId === activeHomeId);
+  }, [allCategories, activeHomeId]);
 
   const createCategory = useCallback(
     (name: string, homeId: string) => {

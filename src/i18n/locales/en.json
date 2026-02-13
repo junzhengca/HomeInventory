@@ -104,7 +104,8 @@
     "snacks": "Snacks",
     "household": "Household",
     "personal-care": "Personal Care",
-    "other": "Other"
+    "other": "Other",
+    "uncategorized": "Uncategorized"
   },
   "locations": {
     "living-room": "Living Room",
