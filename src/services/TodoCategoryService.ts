@@ -21,7 +21,10 @@ interface TodoCategoriesData {
 /**
  * Get all todo categories (excluding deleted items)
  */
-export const getAllCategories = async (homeId?: string): Promise<TodoCategory[]> => {
+export const getAllCategories = async (homeId: string): Promise<TodoCategory[]> => {
+  if (!homeId) {
+    throw new Error('homeId is required for todo categories');
+  }
   const data = await readFile<TodoCategoriesData>(TODO_CATEGORIES_FILE, homeId);
   const categories = data?.categories || [];
   return categories.filter((cat) => !cat.deletedAt);
@@ -30,7 +33,10 @@ export const getAllCategories = async (homeId?: string): Promise<TodoCategory[]>
 /**
  * Get a single todo category by ID
  */
-export const getCategoryById = async (id: string, homeId?: string): Promise<TodoCategory | null> => {
+export const getCategoryById = async (id: string, homeId: string): Promise<TodoCategory | null> => {
+  if (!homeId) {
+    throw new Error('homeId is required to get todo category by ID');
+  }
   const categories = await getAllCategories(homeId);
   return categories.find((cat) => cat.id === id) || null;
 };
@@ -38,15 +44,18 @@ export const getCategoryById = async (id: string, homeId?: string): Promise<Todo
 /**
  * Create a new todo category
  */
-export const createCategory = async (category: Omit<TodoCategory, 'id' | 'version' | 'clientUpdatedAt' | 'homeId'>, homeId?: string): Promise<TodoCategory | null> => {
+export const createCategory = async (category: Omit<TodoCategory, 'id' | 'version' | 'clientUpdatedAt' | 'homeId'>, homeId: string): Promise<TodoCategory | null> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to create todo category');
+    }
     const data = await readFile<TodoCategoriesData>(TODO_CATEGORIES_FILE, homeId);
     const categories = data?.categories || [];
     const now = new Date().toISOString();
 
     const newCategory: TodoCategory = {
       ...category,
-      homeId: homeId || '',
+      homeId,
       id: generateItemId(),
       createdAt: now,
       updatedAt: now,
@@ -75,9 +84,12 @@ export const createCategory = async (category: Omit<TodoCategory, 'id' | 'versio
 export const updateCategory = async (
   id: string,
   updates: Partial<Omit<TodoCategory, 'id' | 'version' | 'clientUpdatedAt'>>,
-  homeId?: string
+  homeId: string
 ): Promise<TodoCategory | null> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to update todo category');
+    }
     const data = await readFile<TodoCategoriesData>(TODO_CATEGORIES_FILE, homeId);
     const categories = data?.categories || [];
     const index = categories.findIndex((cat) => cat.id === id);
@@ -111,8 +123,11 @@ export const updateCategory = async (
 /**
  * Delete a todo category (soft delete)
  */
-export const deleteCategory = async (id: string, homeId?: string): Promise<boolean> => {
+export const deleteCategory = async (id: string, homeId: string): Promise<boolean> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to delete todo category');
+    }
     const data = await readFile<TodoCategoriesData>(TODO_CATEGORIES_FILE, homeId);
     const categories = data?.categories || [];
     const index = categories.findIndex((cat) => cat.id === id);

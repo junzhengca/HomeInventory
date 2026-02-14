@@ -23,7 +23,10 @@ interface TodosData {
 /**
  * Get all todos (excluding deleted todos)
  */
-export const getAllTodos = async (homeId?: string): Promise<TodoItem[]> => {
+export const getAllTodos = async (homeId: string): Promise<TodoItem[]> => {
+  if (!homeId) {
+    throw new Error('homeId is required for todos');
+  }
   const data = await readFile<TodosData>(TODOS_FILE, homeId);
   const todos = data?.todos || [];
   return todos.filter((todo) => !todo.deletedAt);
@@ -32,7 +35,10 @@ export const getAllTodos = async (homeId?: string): Promise<TodoItem[]> => {
 /**
  * Get all todos for sync (including deleted todos)
  */
-export const getAllTodosForSync = async (homeId?: string): Promise<TodoItem[]> => {
+export const getAllTodosForSync = async (homeId: string): Promise<TodoItem[]> => {
+  if (!homeId) {
+    throw new Error('homeId is required for todos sync');
+  }
   const data = await readFile<TodosData>(TODOS_FILE, homeId);
   return data?.todos || [];
 };
@@ -40,7 +46,10 @@ export const getAllTodosForSync = async (homeId?: string): Promise<TodoItem[]> =
 /**
  * Get a single todo by ID (excluding deleted todos)
  */
-export const getTodoById = async (id: string, homeId?: string): Promise<TodoItem | null> => {
+export const getTodoById = async (id: string, homeId: string): Promise<TodoItem | null> => {
+  if (!homeId) {
+    throw new Error('homeId is required to get todo by ID');
+  }
   const todos = await getAllTodos(homeId);
   return todos.find((todo) => todo.id === id && !todo.deletedAt) || null;
 };
@@ -90,9 +99,12 @@ export const createTodo = async (text: string, homeId: string, note?: string, ca
 export const updateTodo = async (
   id: string,
   updates: Partial<Omit<TodoItem, 'id' | 'createdAt'>>,
-  homeId?: string
+  homeId: string
 ): Promise<TodoItem | null> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to update todo');
+    }
     const data = await readFile<TodosData>(TODOS_FILE, homeId);
     const todos = data?.todos || [];
     const index = todos.findIndex((todo) => todo.id === id);
@@ -128,8 +140,11 @@ export const updateTodo = async (
 /**
  * Delete a todo (soft delete - sets deletedAt timestamp)
  */
-export const deleteTodo = async (id: string, homeId?: string): Promise<boolean> => {
+export const deleteTodo = async (id: string, homeId: string): Promise<boolean> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to delete todo');
+    }
     const data = await readFile<TodosData>(TODOS_FILE, homeId);
     const todos = data?.todos || [];
     const index = todos.findIndex((todo) => todo.id === id);
@@ -174,8 +189,11 @@ export const deleteTodo = async (id: string, homeId?: string): Promise<boolean> 
 /**
  * Toggle todo completion status
  */
-export const toggleTodo = async (id: string, homeId?: string): Promise<TodoItem | null> => {
+export const toggleTodo = async (id: string, homeId: string): Promise<TodoItem | null> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to toggle todo');
+    }
     const data = await readFile<TodosData>(TODOS_FILE, homeId);
     const todos = data?.todos || [];
     const index = todos.findIndex((todo) => todo.id === id);

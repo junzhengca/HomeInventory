@@ -529,7 +529,7 @@ export const ItemFormBottomSheet = forwardRef<
             defaultWarningThreshold={defaultValues.warningThreshold}
             onIconSelect={setSelectedIcon}
             onColorSelect={setSelectedColor}
-            onLocationSelect={setSelectedLocation}
+            onLocationSelect={(id) => id && setSelectedLocation(id)}
             onStatusSelect={setSelectedStatus}
             onCategorySelect={setSelectedCategoryId}
             onNameChangeText={handleNameChangeText}

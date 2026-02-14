@@ -51,19 +51,30 @@ export const deleteItemAction = (id: string) => ({ type: DELETE_ITEM, payload: i
 export const syncItemsAction = () => ({ type: SYNC_ITEMS });
 
 
-function* getFileUserId() {
+function* getFileHomeId() {
   const state: RootState = yield select();
   const { activeHomeId } = state.auth;
-  // If we have an active home ID, use it as the "userId" for file scoping
-  // This effectively scopes items to the home
-  return activeHomeId || undefined;
+
+  if (!activeHomeId) {
+    // Either throw or show error and return
+    syncLogger.error('No active home - cannot load items');
+    yield put(setItems([])); // Clear items
+    return; // Stop execution
+  }
+
+  return activeHomeId;
 }
 
 function* loadItemsSaga() {
   try {
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      yield put(setLoading(false));
+      return; // No home = no items
+    }
+
     yield put(setLoading(true));
-    const userId: string | undefined = yield call(getFileUserId);
-    const allItems: InventoryItem[] = yield call(getAllItems, userId);
+    const allItems: InventoryItem[] = yield call(getAllItems, homeId);
     // Sort by createdAt in descending order (newest first)
     allItems.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -81,8 +92,12 @@ function* loadItemsSaga() {
 function* silentRefreshItemsSaga() {
   try {
     // Silent refresh - no loading state changes
-    const userId: string | undefined = yield call(getFileUserId);
-    const allItems: InventoryItem[] = yield call(getAllItems, userId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      return; // No home = no items
+    }
+
+    const allItems: InventoryItem[] = yield call(getAllItems, homeId);
     // Sort by createdAt in descending order (newest first)
     allItems.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -157,14 +172,19 @@ function* createItemSaga(action: { type: string; payload: Omit<InventoryItem, 'i
   const item = action.payload;
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
-    const newItem: InventoryItem | null = yield call(createItem, item, userId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      syncLogger.error('Cannot create item: No active home selected');
+      return;
+    }
+
+    const newItem: InventoryItem | null = yield call(createItem, item, homeId);
     if (newItem) {
       // Optimistically add to state
       yield put(addItemSlice(newItem));
 
       // Refresh to ensure sync (but don't set loading)
-      const allItems: InventoryItem[] = yield call(getAllItems, userId);
+      const allItems: InventoryItem[] = yield call(getAllItems, homeId);
       allItems.sort((a, b) => {
         const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -187,7 +207,11 @@ function* updateItemSaga(action: { type: string; payload: { id: string; updates:
   syncLogger.info(`updateItemSaga called with id: ${id}`, updates);
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      syncLogger.error('Cannot update item: No active home selected');
+      return;
+    }
 
     // Optimistically update to state
     const currentItems: InventoryItem[] = yield select((state: RootState) => state.inventory.items);
@@ -198,10 +222,10 @@ function* updateItemSaga(action: { type: string; payload: { id: string; updates:
     }
 
     // Then update in storage
-    yield call(updateItemService, id, updates, userId);
+    yield call(updateItemService, id, updates, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allItems: InventoryItem[] = yield call(getAllItems, userId);
+    const allItems: InventoryItem[] = yield call(getAllItems, homeId);
     const updatedItemFromStorage = allItems.find((item) => item.id === id);
     syncLogger.info('Item from storage after update', updatedItemFromStorage);
     allItems.sort((a, b) => {
@@ -224,16 +248,20 @@ function* deleteItemSaga(action: { type: string; payload: string }) {
   const id = action.payload;
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      syncLogger.error('Cannot delete item: No active home selected');
+      return;
+    }
 
     // Optimistically remove from state
     yield put(removeItemSlice(id));
 
     // Then delete from storage
-    yield call(deleteItem, id, userId);
+    yield call(deleteItem, id, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allItems: InventoryItem[] = yield call(getAllItems, userId);
+    const allItems: InventoryItem[] = yield call(getAllItems, homeId);
     allItems.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;

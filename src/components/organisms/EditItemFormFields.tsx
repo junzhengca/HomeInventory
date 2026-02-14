@@ -5,6 +5,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import { FormSection, UncontrolledInput } from '../atoms';
 import { LocationSelector, CategoryFormSelector, StatusFormSelector, CollapsibleSection, IconColorPicker } from '../molecules';
+import { Ionicons } from '@expo/vector-icons';
 
 // ---------------------------------------------------------------------------
 // Styled helpers
@@ -125,7 +126,7 @@ export const EditItemFormFields: React.FC<EditItemFormFieldsProps> = ({
             <FormSection label={translations.fields.name}>
                 <NameRow>
                     <IconColorPicker
-                        icon={selectedIcon}
+                        icon={selectedIcon as keyof typeof Ionicons.glyphMap}
                         color={selectedColor}
                         onIconSelect={onIconSelect}
                         onColorSelect={onColorSelect}

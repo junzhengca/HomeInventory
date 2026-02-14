@@ -24,8 +24,11 @@ interface ItemsData {
 /**
  * Get all inventory items (excluding deleted items)
  */
-export const getAllItems = async (userId?: string): Promise<InventoryItem[]> => {
-  const data = await readFile<ItemsData>(ITEMS_FILE, userId);
+export const getAllItems = async (homeId: string): Promise<InventoryItem[]> => {
+  if (!homeId) {
+    throw new Error('homeId is required for items');
+  }
+  const data = await readFile<ItemsData>(ITEMS_FILE, homeId);
   const items = data?.items || [];
   return items.filter((item) => !item.deletedAt);
 };
@@ -33,25 +36,34 @@ export const getAllItems = async (userId?: string): Promise<InventoryItem[]> => 
 /**
  * Get all inventory items for sync (including deleted items)
  */
-export const getAllItemsForSync = async (userId?: string): Promise<InventoryItem[]> => {
-  const data = await readFile<ItemsData>(ITEMS_FILE, userId);
+export const getAllItemsForSync = async (homeId: string): Promise<InventoryItem[]> => {
+  if (!homeId) {
+    throw new Error('homeId is required for items sync');
+  }
+  const data = await readFile<ItemsData>(ITEMS_FILE, homeId);
   return data?.items || [];
 };
 
 /**
  * Get a single item by ID (excluding deleted items)
  */
-export const getItemById = async (id: string, userId?: string): Promise<InventoryItem | null> => {
-  const items = await getAllItems(userId);
+export const getItemById = async (id: string, homeId: string): Promise<InventoryItem | null> => {
+  if (!homeId) {
+    throw new Error('homeId is required to get item by ID');
+  }
+  const items = await getAllItems(homeId);
   return items.find((item) => item.id === id && !item.deletedAt) || null;
 };
 
 /**
  * Create a new item
  */
-export const createItem = async (item: Omit<InventoryItem, 'id'>, userId?: string): Promise<InventoryItem | null> => {
+export const createItem = async (item: Omit<InventoryItem, 'id'>, homeId: string): Promise<InventoryItem | null> => {
   try {
-    const data = await readFile<ItemsData>(ITEMS_FILE, userId);
+    if (!homeId) {
+      throw new Error('homeId is required to create item');
+    }
+    const data = await readFile<ItemsData>(ITEMS_FILE, homeId);
     const items = data?.items || [];
     const now = new Date().toISOString();
     const newItem: InventoryItem = {
@@ -68,7 +80,7 @@ export const createItem = async (item: Omit<InventoryItem, 'id'>, userId?: strin
     };
 
     items.push(newItem);
-    const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, userId);
+    const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, homeId);
 
     return success ? newItem : null;
   } catch (error) {
@@ -83,11 +95,14 @@ export const createItem = async (item: Omit<InventoryItem, 'id'>, userId?: strin
 export const updateItem = async (
   id: string,
   updates: Partial<Omit<InventoryItem, 'id'>>,
-  userId?: string
+  homeId: string
 ): Promise<InventoryItem | null> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to update item');
+    }
     syncLogger.info(`updateItem called with id: ${id}`, updates);
-    const data = await readFile<ItemsData>(ITEMS_FILE, userId);
+    const data = await readFile<ItemsData>(ITEMS_FILE, homeId);
     const items = data?.items || [];
     const index = items.findIndex((item) => item.id === id);
 
@@ -108,7 +123,7 @@ export const updateItem = async (
       pendingUpdate: !isPendingCreate, // If it's pending create, it stays pending create
     };
     syncLogger.info('Updated item to be written:', items[index]);
-    const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, userId);
+    const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, homeId);
 
     return success ? items[index] : null;
   } catch (error) {
@@ -120,9 +135,12 @@ export const updateItem = async (
 /**
  * Delete an item (soft delete - sets deletedAt timestamp)
  */
-export const deleteItem = async (id: string, userId?: string): Promise<boolean> => {
+export const deleteItem = async (id: string, homeId: string): Promise<boolean> => {
   try {
-    const data = await readFile<ItemsData>(ITEMS_FILE, userId);
+    if (!homeId) {
+      throw new Error('homeId is required to delete item');
+    }
+    const data = await readFile<ItemsData>(ITEMS_FILE, homeId);
     const items = data?.items || [];
     const index = items.findIndex((item) => item.id === id);
 
@@ -154,7 +172,7 @@ export const deleteItem = async (id: string, userId?: string): Promise<boolean> 
       };
     }
 
-    const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, userId);
+    const success = await writeFile<ItemsData>(ITEMS_FILE, { ...data, items }, homeId);
 
     return success;
   } catch (error) {
@@ -167,12 +185,13 @@ export const deleteItem = async (id: string, userId?: string): Promise<boolean> 
  * Search and filter items
  */
 export const searchItems = async (
+  homeId: string,
   query?: string,
   filters?: {
     expiringSoon?: boolean; // Items expiring within 7 days
   }
 ): Promise<InventoryItem[]> => {
-  let items = await getAllItems(); // Already filters out deleted items
+  let items = await getAllItems(homeId); // Already filters out deleted items
 
   // Filter by expiring soon
   if (filters?.expiringSoon) {

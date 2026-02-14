@@ -168,9 +168,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
   // Load category data when component mounts or item/categoryId changes
   useEffect(() => {
     const loadCategory = async () => {
-      if (item.categoryId) {
+      if (item.categoryId && currentHomeId) {
         try {
-          const cat = await getCategoryById(item.categoryId, currentHomeId || undefined);
+          const cat = await getCategoryById(item.categoryId, currentHomeId);
           setCategory(cat);
         } catch {
           setCategory(null);

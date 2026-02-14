@@ -22,7 +22,10 @@ interface CategoriesData {
 /**
  * Get all categories (excluding deleted items)
  */
-export const getAllCategories = async (homeId?: string): Promise<Category[]> => {
+export const getAllCategories = async (homeId: string): Promise<Category[]> => {
+  if (!homeId) {
+    throw new Error('homeId is required for categories');
+  }
   const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
   const categories = data?.categories || [];
   return categories.filter((cat) => !cat.deletedAt);
@@ -31,7 +34,10 @@ export const getAllCategories = async (homeId?: string): Promise<Category[]> => 
 /**
  * Get a single category by ID
  */
-export const getCategoryById = async (id: string, homeId?: string): Promise<Category | null> => {
+export const getCategoryById = async (id: string, homeId: string): Promise<Category | null> => {
+  if (!homeId) {
+    throw new Error('homeId is required to get category by ID');
+  }
   const categories = await getAllCategories(homeId);
   return categories.find((cat) => cat.id === id) || null;
 };
@@ -39,15 +45,18 @@ export const getCategoryById = async (id: string, homeId?: string): Promise<Cate
 /**
  * Create a new category
  */
-export const createCategory = async (category: Omit<Category, 'id' | 'version' | 'clientUpdatedAt' | 'homeId'>, homeId?: string): Promise<Category | null> => {
+export const createCategory = async (category: Omit<Category, 'id' | 'version' | 'clientUpdatedAt' | 'homeId'>, homeId: string): Promise<Category | null> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to create category');
+    }
     const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
     const categories = data?.categories || [];
     const now = new Date().toISOString();
 
     const newCategory: Category = {
       ...category,
-      homeId: homeId || '', // homeId is required
+      homeId,
       id: generateItemId(),
       createdAt: now,
       updatedAt: now,
@@ -76,9 +85,12 @@ export const createCategory = async (category: Omit<Category, 'id' | 'version' |
 export const updateCategory = async (
   id: string,
   updates: Partial<Omit<Category, 'id' | 'version' | 'clientUpdatedAt'>>,
-  homeId?: string
+  homeId: string
 ): Promise<Category | null> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to update category');
+    }
     const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
     const categories = data?.categories || [];
     const index = categories.findIndex((cat) => cat.id === id);
@@ -112,8 +124,11 @@ export const updateCategory = async (
 /**
  * Delete a category (soft delete)
  */
-export const deleteCategory = async (id: string, homeId?: string): Promise<boolean> => {
+export const deleteCategory = async (id: string, homeId: string): Promise<boolean> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to delete category');
+    }
     const data = await readFile<CategoriesData>(CATEGORIES_FILE, homeId);
     const categories = data?.categories || [];
     const index = categories.findIndex((cat) => cat.id === id);

@@ -88,7 +88,11 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     }
 
     try {
-      const allCategories = await getAllCategories(currentHomeId || undefined);
+      if (!currentHomeId) {
+        setCategories([]);
+        return;
+      }
+      const allCategories = await getAllCategories(currentHomeId);
       // Add "all" category at the beginning
       const allCategory: Category = {
         id: 'all',

@@ -81,7 +81,11 @@ export const CategoryFormSelector: React.FC<CategoryFormSelectorProps> = ({
 
     const loadCategories = useCallback(async () => {
         try {
-            const allCategories = await getAllCategories(currentHomeId || undefined);
+            if (!currentHomeId) {
+                setCategories([]);
+                return;
+            }
+            const allCategories = await getAllCategories(currentHomeId);
             setCategories(allCategories);
 
             // Auto-select first category if nothing is selected and categories exist

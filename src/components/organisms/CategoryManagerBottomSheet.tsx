@@ -90,7 +90,11 @@ export const CategoryManagerBottomSheet: React.FC<
   const loadCategories = useCallback(async () => {
     try {
       const { getAllCategories } = await import('../../services/CategoryService');
-      const allCategories = await getAllCategories(currentHomeId || undefined);
+      if (!currentHomeId) {
+        setCategories([]);
+        return;
+      }
+      const allCategories = await getAllCategories(currentHomeId);
       const custom = allCategories.filter((cat) => cat.isCustom);
       setCategories(custom);
     } catch (error) {
@@ -153,18 +157,26 @@ export const CategoryManagerBottomSheet: React.FC<
       let result: Category | null = null;
 
       if (editingId) {
+        if (!currentHomeId) {
+          setIsLoading(false);
+          return;
+        }
         result = await updateCategory(editingId, {
           name: formData.name.trim(),
           label: formData.label.trim(),
           icon: formData.icon,
-        }, currentHomeId || undefined);
+        }, currentHomeId);
       } else {
+        if (!currentHomeId) {
+          setIsLoading(false);
+          return;
+        }
         result = await createCategory({
           name: formData.name.trim(),
           label: formData.label.trim(),
           icon: formData.icon,
           isCustom: true,
-        }, currentHomeId || undefined);
+        }, currentHomeId);
       }
 
       if (result) {
@@ -218,7 +230,12 @@ export const CategoryManagerBottomSheet: React.FC<
                 const { deleteCategory } =
                   await import('../../services/CategoryService');
 
-                const success = await deleteCategory(categoryId, currentHomeId || undefined);
+                if (!currentHomeId) {
+                  uiLogger.error('Cannot delete category: No active home selected');
+                  return;
+                }
+
+                const success = await deleteCategory(categoryId, currentHomeId);
                 if (success) {
                   await loadCategories();
                   refreshCategories();

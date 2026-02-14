@@ -22,7 +22,10 @@ interface LocationsData {
 /**
  * Get all locations (excluding deleted items)
  */
-export const getAllLocations = async (homeId?: string): Promise<Location[]> => {
+export const getAllLocations = async (homeId: string): Promise<Location[]> => {
+  if (!homeId) {
+    throw new Error('homeId is required for locations');
+  }
   const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
   const locations = data?.locations || [];
   return locations.filter((loc) => !loc.deletedAt);
@@ -31,7 +34,10 @@ export const getAllLocations = async (homeId?: string): Promise<Location[]> => {
 /**
  * Get a single location by ID
  */
-export const getLocationById = async (id: string, homeId?: string): Promise<Location | null> => {
+export const getLocationById = async (id: string, homeId: string): Promise<Location | null> => {
+  if (!homeId) {
+    throw new Error('homeId is required to get location by ID');
+  }
   const locations = await getAllLocations(homeId);
   return locations.find((loc) => loc.id === id) || null;
 };
@@ -39,15 +45,18 @@ export const getLocationById = async (id: string, homeId?: string): Promise<Loca
 /**
  * Create a new location
  */
-export const createLocation = async (location: Omit<Location, 'id' | 'version' | 'clientUpdatedAt' | 'homeId'>, homeId?: string): Promise<Location | null> => {
+export const createLocation = async (location: Omit<Location, 'id' | 'version' | 'clientUpdatedAt' | 'homeId'>, homeId: string): Promise<Location | null> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to create location');
+    }
     const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
     const locations = data?.locations || [];
     const now = new Date().toISOString();
 
     const newLocation: Location = {
       ...location,
-      homeId: homeId || '', // homeId is required
+      homeId,
       id: generateItemId(),
       createdAt: now,
       updatedAt: now,
@@ -76,9 +85,12 @@ export const createLocation = async (location: Omit<Location, 'id' | 'version' |
 export const updateLocation = async (
   id: string,
   updates: Partial<Omit<Location, 'id' | 'version' | 'clientUpdatedAt'>>,
-  homeId?: string
+  homeId: string
 ): Promise<Location | null> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to update location');
+    }
     const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
     const locations = data?.locations || [];
     const index = locations.findIndex((loc) => loc.id === id);
@@ -112,8 +124,11 @@ export const updateLocation = async (
 /**
  * Delete a location (soft delete)
  */
-export const deleteLocation = async (id: string, homeId?: string): Promise<boolean> => {
+export const deleteLocation = async (id: string, homeId: string): Promise<boolean> => {
   try {
+    if (!homeId) {
+      throw new Error('homeId is required to delete location');
+    }
     const data = await readFile<LocationsData>(LOCATIONS_FILE, homeId);
     const locations = data?.locations || [];
     const index = locations.findIndex((loc) => loc.id === id);

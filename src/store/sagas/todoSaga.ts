@@ -65,21 +65,35 @@ export const addTodoCategoryAction = (name: string, homeId: string) => ({ type: 
 export const updateTodoCategoryAction = (id: string, name: string) => ({ type: UPDATE_TODO_CATEGORY, payload: { id, name } });
 export const deleteTodoCategoryAction = (id: string) => ({ type: DELETE_TODO_CATEGORY, payload: id });
 
-function* getFileUserId() {
+function* getFileHomeId() {
   const state: RootState = yield select();
   const { activeHomeId } = state.auth;
-  // If we have an active home ID, use it as the "userId" for file scoping
-  // This effectively scopes todos to the home
-  return activeHomeId || undefined;
+
+  if (!activeHomeId) {
+    sagaLogger.error('No active home - cannot load todos');
+    yield put(setTodos([])); // Clear todos
+    return; // Stop execution
+  }
+
+  return activeHomeId;
 }
 
 function* loadTodosSaga() {
   try {
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      yield put(setLoading(false));
+      return; // No home = no todos
+    }
+
     yield put(setLoading(true));
-    const userId: string | undefined = yield call(getFileUserId);
-    const allTodos: TodoItem[] = yield call(getAllTodos, userId);
+    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
     // Sort by createdAt in descending order (newest first)
-    allTodos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    allTodos.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
     yield put(setTodos(allTodos));
 
     // Trigger sync on load? Maybe strictly stick to periodic + triggers
@@ -95,10 +109,18 @@ function* loadTodosSaga() {
 function* silentRefreshTodosSaga() {
   try {
     // Silent refresh - no loading state changes
-    const userId: string | undefined = yield call(getFileUserId);
-    const allTodos: TodoItem[] = yield call(getAllTodos, userId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      return; // No home = no todos
+    }
+
+    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
     // Sort by createdAt in descending order (newest first)
-    allTodos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    allTodos.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
     // Use silentSetTodos to update without touching loading state
     yield put(silentSetTodos(allTodos));
   } catch (error) {
@@ -140,20 +162,24 @@ function* addTodoSaga(action: { type: string; payload: { text: string; note?: st
   if (!text.trim()) return;
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
-    if (!userId) {
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
       sagaLogger.error('Cannot create todo: No active home selected');
       return;
     }
-    // userId here IS the homeId because getFileUserId returns activeHomeId
-    const newTodo: TodoItem = yield call(createTodo, text, userId, note, categoryId);
+    // homeId comes from getFileHomeId which returns activeHomeId
+    const newTodo: TodoItem = yield call(createTodo, text, homeId, note, categoryId);
     if (newTodo) {
       // Optimistically add to state
       yield put(addTodoSlice(newTodo));
 
       // Refresh to ensure sync (but don't set loading)
-      const allTodos: TodoItem[] = yield call(getAllTodos, userId);
-      allTodos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+      allTodos.sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      });
       yield put(setTodos(allTodos));
 
       // Trigger sync
@@ -170,7 +196,11 @@ function* toggleTodoSaga(action: { type: string; payload: string }) {
   const id = action.payload;
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      sagaLogger.error('Cannot toggle todo: No active home selected');
+      return;
+    }
 
     // Optimistically update to state
     const currentTodos: TodoItem[] = yield select((state: RootState) => state.todo.todos);
@@ -181,11 +211,15 @@ function* toggleTodoSaga(action: { type: string; payload: string }) {
     }
 
     // Then update in storage
-    yield call(toggleTodoService, id, userId);
+    yield call(toggleTodoService, id, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allTodos: TodoItem[] = yield call(getAllTodos, userId);
-    allTodos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+    allTodos.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
     yield put(setTodos(allTodos));
 
     // Trigger sync
@@ -201,17 +235,25 @@ function* deleteTodoSaga(action: { type: string; payload: string }) {
   const id = action.payload;
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      sagaLogger.error('Cannot delete todo: No active home selected');
+      return;
+    }
 
     // Optimistically remove from state
     yield put(removeTodoSlice(id));
 
     // Then delete from storage
-    yield call(deleteTodo, id, userId);
+    yield call(deleteTodo, id, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allTodos: TodoItem[] = yield call(getAllTodos, userId);
-    allTodos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+    allTodos.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
     yield put(setTodos(allTodos));
 
     // Trigger sync
@@ -227,7 +269,11 @@ function* updateTodoSaga(action: { type: string; payload: { id: string; text: st
   const { id, text, note } = action.payload;
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      sagaLogger.error('Cannot update todo: No active home selected');
+      return;
+    }
 
     // Optimistically update to state
     const currentTodos: TodoItem[] = yield select((state: RootState) => state.todo.todos);
@@ -238,11 +284,15 @@ function* updateTodoSaga(action: { type: string; payload: { id: string; text: st
     }
 
     // Then update in storage
-    yield call(updateTodo, id, { text, note }, userId);
+    yield call(updateTodo, id, { text, note }, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allTodos: TodoItem[] = yield call(getAllTodos, userId);
-    allTodos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+    allTodos.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
     yield put(setTodos(allTodos));
 
     // Trigger sync
@@ -256,8 +306,12 @@ function* updateTodoSaga(action: { type: string; payload: { id: string; text: st
 
 function* loadTodoCategoriesSaga() {
   try {
-    const userId: string | undefined = yield call(getFileUserId);
-    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, userId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      sagaLogger.error('Cannot load todo categories: No active home selected');
+      return;
+    }
+    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
     yield put(setTodoCategories(allCategories));
   } catch (error) {
     sagaLogger.error('Error loading todo categories', error);
@@ -266,8 +320,11 @@ function* loadTodoCategoriesSaga() {
 
 function* silentRefreshTodoCategoriesSaga() {
   try {
-    const userId: string | undefined = yield call(getFileUserId);
-    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, userId);
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
+      return;
+    }
+    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
     yield put(silentSetTodoCategories(allCategories));
   } catch (error) {
     sagaLogger.error('Error silently refreshing todo categories', error);
@@ -275,21 +332,21 @@ function* silentRefreshTodoCategoriesSaga() {
 }
 
 function* addTodoCategorySaga(action: { type: string; payload: { name: string; homeId: string } }) {
-  const { name, homeId } = action.payload;
+  const { name } = action.payload;
   if (!name.trim()) return;
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
-    if (!userId) {
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) {
       sagaLogger.error('Cannot create todo category: No active home selected');
       return;
     }
-    const newCategory: TodoCategory = yield call(createTodoCategoryService, { name }, userId);
+    const newCategory: TodoCategory = yield call(createTodoCategoryService, { name }, homeId);
     if (newCategory) {
       yield put(addTodoCategorySlice(newCategory));
 
       // Refresh to ensure sync
-      const allCategories: TodoCategory[] = yield call(getAllTodoCategories, userId);
+      const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
       yield put(setTodoCategories(allCategories));
 
       // Trigger sync
@@ -305,8 +362,8 @@ function* updateTodoCategorySaga(action: { type: string; payload: { id: string; 
   const { id, name } = action.payload;
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
-    if (!userId) return;
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) return;
 
     // Optimistically update to state
     const currentCategories: TodoCategory[] = yield select((state: RootState) => state.todo.categories);
@@ -317,10 +374,10 @@ function* updateTodoCategorySaga(action: { type: string; payload: { id: string; 
     }
 
     // Then update in storage
-    yield call(updateTodoCategoryService, id, { name }, userId);
+    yield call(updateTodoCategoryService, id, { name }, homeId as string);
 
     // Refresh to ensure sync
-    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, userId);
+    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
     yield put(setTodoCategories(allCategories));
 
     // Trigger sync
@@ -335,17 +392,17 @@ function* deleteTodoCategorySaga(action: { type: string; payload: string }) {
   const id = action.payload;
 
   try {
-    const userId: string | undefined = yield call(getFileUserId);
-    if (!userId) return;
+    const homeId: string | undefined = yield call(getFileHomeId);
+    if (!homeId) return;
 
     // Optimistically remove from state
     yield put(removeTodoCategorySlice(id));
 
     // Then delete from storage
-    yield call(deleteTodoCategoryService, id, userId);
+    yield call(deleteTodoCategoryService, id, homeId as string);
 
     // Refresh to ensure sync
-    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, userId);
+    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
     yield put(setTodoCategories(allCategories));
 
     // Trigger sync

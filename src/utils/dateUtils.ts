@@ -38,7 +38,7 @@ export const isExpiringSoon = (
  * @param days - Number of days to check ahead (default: 7)
  * @returns Number of items expiring soon
  */
-export const countExpiringItems = <T extends { batches?: Array<{ expiryDate?: string | null }> }>(
+export const countExpiringItems = <T extends { batches?: { expiryDate?: string | null }[] }>(
   items: T[],
   days: number = 7
 ): number => {

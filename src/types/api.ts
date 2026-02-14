@@ -67,7 +67,7 @@ export interface InventoryItemServerData {
   icon: keyof typeof Ionicons.glyphMap;
   iconColor: string;
   warningThreshold?: number;
-  batches?: Array<{
+  batches?: {
     id: string;
     amount: number;
     unit?: string;
@@ -77,7 +77,7 @@ export interface InventoryItemServerData {
     vendor?: string;
     note?: string;
     createdAt: string;
-  }>;
+  }[];
   categoryId?: string;
 }
 

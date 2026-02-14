@@ -26,6 +26,7 @@ import {
   AddBatchBottomSheet,
 } from '../components';
 import { useItemActions } from '../hooks/useItemActions';
+import { useHome } from '../hooks/useHome';
 import { formatDate, formatPrice } from '../utils/formatters';
 
 import { calculateBottomActionBarPadding } from '../utils/layout';
@@ -206,6 +207,7 @@ export const ItemDetailsScreen: React.FC = () => {
   const theme = useTheme();
   const { settings } = useSettings();
   const { confirmDelete } = useItemActions();
+  const { currentHomeId } = useHome();
   const { deleteItem, loading: itemsLoading, loadItems } = useInventory();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
@@ -250,7 +252,13 @@ export const ItemDetailsScreen: React.FC = () => {
       // Items are loaded but item not found, try loading from service
       setIsLoading(true);
       try {
-        const itemData = await getItemById(itemId);
+        if (!currentHomeId) {
+          setIsLoading(false);
+          Alert.alert(t('itemDetails.error.title'), t('itemDetails.error.noHome'));
+          navigation.goBack();
+          return;
+        }
+        const itemData = await getItemById(itemId, currentHomeId);
         if (itemData) {
           setItem(itemData);
           // Trigger a reload of items to sync Redux

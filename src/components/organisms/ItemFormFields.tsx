@@ -10,7 +10,7 @@ import {
   NumberInput,
 } from '../atoms';
 import {
-  LocationFormSelector,
+  LocationSelector,
   CategoryFormSelector,
   StatusFormSelector,
   IconColorPicker,
@@ -42,7 +42,7 @@ const HalfInput = styled(UncontrolledInput)`
 
 export interface ItemFormFieldsProps {
   // Form values
-  selectedIcon: keyof typeof Ionicons.glyphMap;
+  selectedIcon: string;
   selectedColor: string;
   selectedLocation: string;
   selectedStatus: string;
@@ -59,7 +59,7 @@ export interface ItemFormFieldsProps {
   // Change handlers
   onIconSelect: (icon: keyof typeof Ionicons.glyphMap) => void;
   onColorSelect: (color: string) => void;
-  onLocationSelect: (location: string) => void;
+  onLocationSelect: (location: string | null) => void;
   onStatusSelect: (status: string) => void;
   onCategorySelect: (categoryId: string) => void;
   onOpeningNestedModal?: (isOpening: boolean) => void;
@@ -128,7 +128,7 @@ export const ItemFormFields: React.FC<ItemFormFieldsProps> = ({
       <FormSection label={translations.fields.name}>
         <NameRow>
           <IconColorPicker
-            icon={selectedIcon}
+            icon={selectedIcon as keyof typeof Ionicons.glyphMap}
             color={selectedColor}
             onIconSelect={onIconSelect}
             onColorSelect={onColorSelect}
@@ -160,9 +160,9 @@ export const ItemFormFields: React.FC<ItemFormFieldsProps> = ({
       </FormSection>
 
       <FormSection label={translations.fields.location}>
-        <LocationFormSelector
+        <LocationSelector
           selectedLocationId={selectedLocation}
-          onSelect={onLocationSelect}
+          onSelect={(id) => id && onLocationSelect(id)}
         />
       </FormSection>
 

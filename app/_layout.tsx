@@ -23,7 +23,7 @@ import { loadSettings } from '../src/store/sagas/settingsSaga';
 import { loadTodos } from '../src/store/sagas/todoSaga';
 import { loadItems } from '../src/store/sagas/inventorySaga';
 import { useAppDispatch, useAppSelector } from '../src/store/hooks';
-import { setShowNicknameSetup } from '../src/store/slices/authSlice';
+import { setShowNicknameSetup, setActiveHomeId } from '../src/store/slices/authSlice';
 import { logger } from '../src/utils/Logger';
 
 const appLogger = logger.scoped('general');
@@ -40,10 +40,12 @@ function AppInner() {
     const offlineExplanationBottomSheetRef = useRef<BottomSheetModal>(null);
     const [inviteCode, setInviteCode] = useState<string | null>(null);
     const [errorDetails, setErrorDetails] = useState<ErrorDetails | null>(null);
+    const [homeSynced, setHomeSynced] = useState(false);
     const showNicknameSetup = useAppSelector((state) => state.auth.showNicknameSetup);
     const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
     const isLoading = useAppSelector((state) => state.auth.isLoading);
     const darkMode = useAppSelector((state) => state.settings.settings?.darkMode);
+    const activeHomeId = useAppSelector((state) => state.auth.activeHomeId);
 
     // Deep Link Handling for Invitations
     useEffect(() => {
@@ -100,6 +102,19 @@ function AppInner() {
         // Initialize API client and auth
         dispatch(initializeApiClient(API_BASE_URL));
 
+        // Sync HomeService's initial home selection to Redux
+        // This must happen before loading data so sagas have activeHomeId
+        const currentHome = homeService.getCurrentHome();
+        if (currentHome && !activeHomeId) {
+            dispatch(setActiveHomeId(currentHome.id));
+        }
+        setHomeSynced(true);
+    }, [dispatch, activeHomeId]);
+
+    // Load data after home is synced
+    useEffect(() => {
+        if (!homeSynced) return;
+
         // Load settings
         dispatch(loadSettings());
 
@@ -108,7 +123,7 @@ function AppInner() {
 
         // Load inventory items
         dispatch(loadItems());
-    }, [dispatch]);
+    }, [dispatch, homeSynced]);
 
     // Sync system appearance to prevent flashing
     useEffect(() => {
