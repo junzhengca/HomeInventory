@@ -7,6 +7,7 @@ import {
 import { generateItemId } from '../utils/idGenerator';
 import { ApiClient } from './ApiClient';
 import { TodoCategoryServerData, SyncEntityType } from '../types/api';
+import { SyncDelta } from '../types/sync';
 import { syncLogger } from '../utils/Logger';
 
 // Base file name (FileSystemService appends _homeId for scoping)
@@ -217,7 +218,7 @@ class TodoCategoryService extends BaseSyncableEntityService<
     homeId: string,
     apiClient: ApiClient,
     deviceId: string
-  ): Promise<void> {
+  ): Promise<SyncDelta<TodoCategory>> {
     return this.sync(homeId, apiClient, deviceId);
   }
 }

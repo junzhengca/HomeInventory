@@ -52,10 +52,18 @@ const inventorySlice = createSlice({
       if (idsToRemove.size === 0) return;
       state.items = state.items.filter(item => !idsToRemove.has(item.id));
     },
+    addItems: (state, action: PayloadAction<InventoryItem[]>) => {
+      action.payload.forEach(item => {
+        const index = state.items.findIndex(i => i.id === item.id);
+        if (index === -1) {
+          state.items.push(item); // Only add if not exists
+        }
+      });
+    },
   },
 });
 
-export const { setItems, silentSetItems, addItem, updateItem, removeItem, setLoading, upsertItems, removeItems } =
+export const { setItems, silentSetItems, addItem, updateItem, removeItem, setLoading, upsertItems, removeItems, addItems } =
   inventorySlice.actions;
 
 // Selectors

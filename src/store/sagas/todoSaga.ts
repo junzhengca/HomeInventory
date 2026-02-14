@@ -11,10 +11,17 @@ import {
   addTodoCategory as addTodoCategorySlice,
   updateTodoCategory as updateTodoCategorySlice,
   removeTodoCategory as removeTodoCategorySlice,
+  upsertTodos,
+  addTodos,
+  removeTodos,
+  upsertTodoCategories,
+  addTodoCategories,
+  removeTodoCategories,
 } from '../slices/todoSlice';
 import { todoService } from '../../services/TodoService';
 import { todoCategoryService } from '../../services/TodoCategoryService';
 import { TodoItem, TodoCategory } from '../../types/inventory';
+import { SyncDelta } from '../../types/sync';
 import type { RootState } from '../types';
 import { homeService } from '../../services/HomeService';
 import { ApiClient } from '../../services/ApiClient';
@@ -117,36 +124,118 @@ function* silentRefreshTodosSaga() {
 }
 
 function* syncTodosSaga() {
+  sagaLogger.verbose('▶️ syncTodosSaga - ENTRY');
   try {
     const state: RootState = yield select();
     const { activeHomeId, apiClient, isAuthenticated } = state.auth;
 
-    if (!activeHomeId || !apiClient || !isAuthenticated) return;
+    if (!activeHomeId || !apiClient || !isAuthenticated) {
+      sagaLogger.verbose('⛔ syncTodosSaga - EARLY EXIT: No activeHomeId/apiClient/auth');
+      return;
+    }
 
-    sagaLogger.info('Starting scheduled/triggered sync sequence');
+    sagaLogger.info('▶️ Starting scheduled/triggered sync sequence');
 
     // 1. Sync Homes first (Important rule)
+    sagaLogger.debug('📍 Step 1/4: Syncing homes');
     yield call([homeService, homeService.syncHomes], apiClient);
+    sagaLogger.verbose('✅ Step 1/4: Homes synced');
 
     // 2. Sync Todo Categories
+    sagaLogger.debug('📍 Step 2/4: Syncing todo categories');
     const deviceId: string = yield call(getDeviceId);
-    yield call([todoCategoryService, 'syncCategories'], activeHomeId, apiClient as ApiClient, deviceId);
+    sagaLogger.verbose(`📱 Device ID: ${deviceId}`);
+
+    const categoriesDelta: SyncDelta<TodoCategory> = yield call(
+      [todoCategoryService, 'syncCategories'],
+      activeHomeId,
+      apiClient as ApiClient,
+      deviceId
+    );
+    sagaLogger.verbose(`📊 Categories Delta: created=${categoriesDelta.created.length}, updated=${categoriesDelta.updated.length}, deleted=${categoriesDelta.deleted.length}, unchanged=${categoriesDelta.unchanged}`);
+
+    if (!categoriesDelta.unchanged) {
+      // Process 'created' before 'updated' to ensure new entities are added before updates
+      if (categoriesDelta.created.length > 0) {
+        sagaLogger.verbose(`➕ Adding ${categoriesDelta.created.length} new categories`);
+        yield put(addTodoCategories(categoriesDelta.created));
+      }
+      if (categoriesDelta.updated.length > 0) {
+        sagaLogger.verbose(`🔄 Updating ${categoriesDelta.updated.length} categories`);
+        yield put(upsertTodoCategories(categoriesDelta.updated));
+      }
+      if (categoriesDelta.deleted.length > 0) {
+        sagaLogger.verbose(`➖ Removing ${categoriesDelta.deleted.length} categories`);
+        yield put(removeTodoCategories(categoriesDelta.deleted));
+      }
+    } else {
+      sagaLogger.verbose('⏭ Categories unchanged');
+    }
 
     // 3. Sync Todos
-    yield call([todoService, 'syncTodos'], activeHomeId, apiClient as ApiClient, deviceId);
+    sagaLogger.debug('📍 Step 3/4: Syncing todos');
+    const todosDelta: SyncDelta<TodoItem> = yield call(
+      [todoService, 'syncTodos'],
+      activeHomeId,
+      apiClient as ApiClient,
+      deviceId
+    );
+    sagaLogger.verbose(`📊 Todos Delta: created=${todosDelta.created.length}, updated=${todosDelta.updated.length}, deleted=${todosDelta.deleted.length}, unchanged=${todosDelta.unchanged}`);
 
-    // 4. Refresh UI
-    yield call(silentRefreshTodosSaga);
-    yield call(silentRefreshTodoCategoriesSaga);
+    if (!todosDelta.unchanged) {
+      // Process 'created' before 'updated' to ensure new entities are added before updates
+      if (todosDelta.created.length > 0) {
+        sagaLogger.verbose(`➕ Adding ${todosDelta.created.length} new todos`);
+        sagaLogger.verbose(`📋 Created todo IDs: ${todosDelta.created.map(t => t.id).join(', ')}`);
+        yield put(addTodos(todosDelta.created));
+      }
+      if (todosDelta.updated.length > 0) {
+        sagaLogger.verbose(`🔄 Updating ${todosDelta.updated.length} todos`);
+        sagaLogger.verbose(`📋 Updated todo IDs: ${todosDelta.updated.map(t => t.id).join(', ')}`);
+        todosDelta.updated.forEach(t => {
+          sagaLogger.verbose(`  → Todo ${t.id}: text="${t.text}", completed=${t.completed}, pendingCreate=${t.pendingCreate}, pendingUpdate=${t.pendingUpdate}`);
+        });
+        yield put(upsertTodos(todosDelta.updated));
+      }
+      if (todosDelta.deleted.length > 0) {
+        sagaLogger.verbose(`➖ Removing ${todosDelta.deleted.length} todos`);
+        sagaLogger.verbose(`📋 Deleted todo IDs: ${todosDelta.deleted.join(', ')}`);
+        yield put(removeTodos(todosDelta.deleted));
+      }
+    } else {
+      sagaLogger.verbose('⏭ Todos unchanged');
+    }
 
+    // 4. Silent refresh from storage to ensure Redux state matches persisted data
+    sagaLogger.debug('📍 Step 4/4: Silent refresh from storage');
+    const allTodos: TodoItem[] = yield call([todoService, 'getAllTodos'], activeHomeId);
+    sagaLogger.verbose(`📋 Total todos in storage after sync: ${allTodos.length}`);
+    allTodos.forEach(t => {
+      sagaLogger.verbose(`  → Todo ${t.id}: text="${t.text}", completed=${t.completed}, pendingCreate=${t.pendingCreate}`);
+    });
+    allTodos.sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+    yield put(silentSetTodos(allTodos));
+    sagaLogger.verbose('✅ Redux state refreshed from storage');
+
+    // Also refresh categories
+    const allCategories: TodoCategory[] = yield call([todoCategoryService, 'getAllCategories'], activeHomeId);
+    yield put(silentSetTodoCategories(allCategories));
+
+    sagaLogger.info('✅ Sync complete');
   } catch (error) {
-    sagaLogger.error('Error in sync sequence', error);
+    sagaLogger.error('❌ Error in sync sequence', error);
   }
 }
 
 function* addTodoSaga(action: { type: string; payload: { text: string; note?: string; categoryId?: string } }) {
   const { text, note, categoryId } = action.payload;
   if (!text.trim()) return;
+
+  sagaLogger.verbose(`▶️ addTodoSaga - Creating todo: "${text}"`);
 
   try {
     const homeId: string | undefined = yield call(getFileHomeId);
@@ -160,25 +249,37 @@ function* addTodoSaga(action: { type: string; payload: { text: string; note?: st
       note,
       categoryId,
     };
+    sagaLogger.verbose(`📝 Calling todoService.createTodo with input: ${JSON.stringify(createInput)}`);
     const newTodo: TodoItem = yield call([todoService, 'createTodo'], createInput, homeId);
     if (newTodo) {
+      sagaLogger.verbose(`✅ Todo created: id=${newTodo.id}, text="${newTodo.text}", pendingCreate=${newTodo.pendingCreate}`);
       // Optimistically add to state
       yield put(addTodoSlice(newTodo));
+      sagaLogger.verbose(`➕ Todo added to Redux state via addTodoSlice`);
 
       // Refresh to ensure sync (but don't set loading)
+      sagaLogger.verbose(`🔄 Refreshing from storage...`);
       const allTodos: TodoItem[] = yield call([todoService, 'getAllTodos'], homeId);
+      sagaLogger.verbose(`📋 Total todos in storage: ${allTodos.length}`);
+      allTodos.forEach(t => {
+        sagaLogger.verbose(`  → Todo ${t.id}: text="${t.text}", completed=${t.completed}, pendingCreate=${t.pendingCreate}`);
+      });
       allTodos.sort((a, b) => {
         const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return bTime - aTime;
       });
       yield put(setTodos(allTodos));
+      sagaLogger.verbose(`✅ Redux state replaced via setTodos with ${allTodos.length} todos`);
 
       // Trigger sync
+      sagaLogger.verbose(`🔄 Triggering sync...`);
       yield put(syncTodosAction());
+    } else {
+      sagaLogger.error('❌ Failed to create todo: newTodo is null/undefined');
     }
   } catch (error) {
-    sagaLogger.error('Error adding todo', error);
+    sagaLogger.error('❌ Error adding todo', error);
     // Revert on error by refreshing
     yield loadTodosSaga();
   }

@@ -9,6 +9,7 @@ import { isExpiringSoon } from '../utils/dateUtils';
 import { getEarliestExpiry } from '../utils/batchUtils';
 import { ApiClient } from './ApiClient';
 import { InventoryItemServerData, SyncEntityType } from '../types/api';
+import { SyncDelta } from '../types/sync';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 // Base file name (FileSystemService appends _homeId for scoping)
@@ -180,7 +181,7 @@ class InventoryService extends BaseSyncableEntityService<
     homeId: string,
     apiClient: ApiClient,
     deviceId: string
-  ): Promise<void> {
+  ): Promise<SyncDelta<InventoryItem>> {
     return this.sync(homeId, apiClient, deviceId);
   }
 }

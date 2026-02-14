@@ -6,6 +6,9 @@ import {
   updateItem as updateItemSlice,
   removeItem as removeItemSlice,
   setLoading,
+  upsertItems,
+  addItems,
+  removeItems,
 } from '../slices/inventorySlice';
 import { triggerCategoryRefresh } from '../slices/refreshSlice';
 import { inventoryService } from '../../services/InventoryService';
@@ -14,6 +17,7 @@ import { locationService } from '../../services/LocationService';
 import { todoService } from '../../services/TodoService';
 import { dataInitializationService } from '../../services/DataInitializationService';
 import { InventoryItem } from '../../types/inventory';
+import { SyncDelta } from '../../types/sync';
 import type { RootState } from '../types';
 import { homeService } from '../../services/HomeService';
 import { Home } from '../../types/home';
@@ -109,7 +113,7 @@ function* silentRefreshItemsSaga() {
 function* syncItemsSaga() {
   try {
     const state: RootState = yield select();
-    const { apiClient, isAuthenticated } = state.auth;
+    const { apiClient, isAuthenticated, activeHomeId } = state.auth;
 
     if (!apiClient || !isAuthenticated) return;
 
@@ -124,6 +128,9 @@ function* syncItemsSaga() {
 
     syncLogger.info(`Syncing content for ${homes.length} homes`);
 
+    // Track if any changes occurred for the active home
+    let activeHomeChanged = false;
+
     // 3. For each household, sync everything inside
     for (const home of homes) {
       try {
@@ -132,17 +139,66 @@ function* syncItemsSaga() {
         // Ensure data files exist for this home
         yield call([dataInitializationService, 'initializeHomeData'], home.id);
 
-        // Sync Items
-        yield call([inventoryService, 'syncItems'], home.id, apiClient as ApiClient, deviceId);
+        const isActiveHome = home.id === activeHomeId;
+
+        // Sync Items and get delta
+        const itemsDelta: SyncDelta<InventoryItem> = yield call(
+          [inventoryService, 'syncItems'],
+          home.id,
+          apiClient as ApiClient,
+          deviceId
+        );
+
+        if (isActiveHome && !itemsDelta.unchanged) {
+          activeHomeChanged = true;
+
+          // Dispatch targeted updates - process 'created' before 'updated' to ensure new entities are added before updates
+          if (itemsDelta.created.length > 0) {
+            yield put(addItems(itemsDelta.created));
+          }
+          if (itemsDelta.updated.length > 0) {
+            yield put(upsertItems(itemsDelta.updated));
+          }
+          if (itemsDelta.deleted.length > 0) {
+            yield put(removeItems(itemsDelta.deleted));
+          }
+        }
 
         // Sync Categories
-        yield call([categoryService, 'syncCategories'], home.id, apiClient as ApiClient, deviceId);
+        const categoriesDelta: SyncDelta<InventoryItem> = yield call(
+          [categoryService, 'syncCategories'],
+          home.id,
+          apiClient as ApiClient,
+          deviceId
+        );
+
+        if (isActiveHome && !categoriesDelta.unchanged) {
+          activeHomeChanged = true;
+        }
 
         // Sync Locations
-        yield call([locationService, 'syncLocations'], home.id, apiClient as ApiClient, deviceId);
+        const locationsDelta: SyncDelta<InventoryItem> = yield call(
+          [locationService, 'syncLocations'],
+          home.id,
+          apiClient as ApiClient,
+          deviceId
+        );
+
+        if (isActiveHome && !locationsDelta.unchanged) {
+          activeHomeChanged = true;
+        }
 
         // Sync Todos
-        yield call([todoService, 'syncTodos'], home.id, apiClient as ApiClient, deviceId);
+        const todosDelta: SyncDelta<InventoryItem> = yield call(
+          [todoService, 'syncTodos'],
+          home.id,
+          apiClient as ApiClient,
+          deviceId
+        );
+
+        if (isActiveHome && !todosDelta.unchanged) {
+          activeHomeChanged = true;
+        }
 
       } catch (homeError) {
         syncLogger.error(`Error syncing home ${home.id}`, homeError);
@@ -150,12 +206,15 @@ function* syncItemsSaga() {
       }
     }
 
-    // 4. Refresh UI for the currently active home
-    yield call(silentRefreshItemsSaga);
-    yield put(loadTodos());
-
-    // 5. Trigger category refresh to update CategorySelector and CategoryFilter
-    yield put(triggerCategoryRefresh());
+    // 4. Only refresh UI if active home had changes
+    if (activeHomeChanged) {
+      // Trigger category refresh to update CategorySelector and CategoryFilter
+      yield put(triggerCategoryRefresh());
+      // Also refresh todos
+      yield put(loadTodos());
+    } else {
+      syncLogger.info('No changes for active home - skipping UI refresh');
+    }
 
   } catch (error) {
     syncLogger.error('Error in sync sequence', error);

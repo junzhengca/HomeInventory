@@ -8,6 +8,7 @@ import {
   BatchSyncPushRequest,
   LocationServerData
 } from '../types/api';
+import { SyncDelta } from '../types/sync';
 import { syncLogger } from '../utils/Logger';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -170,19 +171,24 @@ class LocationService {
   }
 
   /**
-   * Sync locations with server
+   * Sync locations with server and return delta of changes
    */
   async syncLocations(
     homeId: string,
     apiClient: ApiClient,
     deviceId: string
-  ): Promise<void> {
+  ): Promise<SyncDelta<Location>> {
     syncLogger.info('Starting location sync...');
     try {
       const data = await fileSystemService.readFile<LocationsData>(LOCATIONS_FILE, homeId);
       let locations = data?.locations || [];
       const lastSyncTime = data?.lastSyncTime;
       const lastPulledVersion = data?.lastPulledVersion || 0;
+
+      // Accumulators for tracking changes
+      const updated = new Map<string, Location>();
+      const created = new Map<string, Location>();
+      const deleted = new Set<string>();
 
       // 1. Prepare Push Requests
       const pendingLocations = locations.filter(l => l.pendingCreate || l.pendingUpdate || l.pendingDelete);
@@ -231,7 +237,14 @@ class LocationService {
 
       if (!response.success) {
         syncLogger.error('Sync failed:', response);
-        return;
+        return {
+          updated: [],
+          created: [],
+          deleted: [],
+          confirmed: [],
+          unchanged: true,
+          serverTimestamp: new Date().toISOString(),
+        };
       }
 
       // CRITICAL FIX: Re-read data before applying results to capture any local changes
@@ -251,6 +264,9 @@ class LocationService {
               if (index === -1) continue;
 
               if (result.status === 'created' || result.status === 'updated') {
+                // Track as updated
+                updated.set(locations[index].id, locations[index]);
+
                 locations[index] = {
                   ...locations[index],
                   pendingCreate: false,
@@ -265,7 +281,7 @@ class LocationService {
               } else if (result.status === 'server_version' && result.winner === 'server') {
                 if (result.serverVersionData) {
                   const serverData = result.serverVersionData.data as unknown as LocationServerData;
-                  locations[index] = {
+                  const mergedLocation: Location = {
                     ...locations[index],
                     name: serverData.name,
                     icon: serverData.icon as keyof typeof Ionicons.glyphMap | undefined,
@@ -275,8 +291,15 @@ class LocationService {
                     pendingCreate: false,
                     pendingUpdate: false,
                   };
+
+                  // Track as updated
+                  updated.set(locations[index].id, mergedLocation);
+                  locations[index] = mergedLocation;
                 }
               } else if (result.status === 'deleted') {
+                // Track as deleted
+                deleted.add(locations[index].id);
+
                 locations[index] = {
                   ...locations[index],
                   pendingDelete: false,
@@ -313,9 +336,13 @@ class LocationService {
               if (index >= 0) {
                 if (!locations[index].pendingUpdate && !locations[index].pendingCreate && !locations[index].pendingDelete) {
                   locations[index] = { ...locations[index], ...newLocation };
+                  // Track as updated
+                  updated.set(entity.entityId, locations[index]);
                 }
               } else {
                 locations.push(newLocation);
+                // Track as created
+                created.set(entity.entityId, newLocation);
               }
             }
 
@@ -327,6 +354,8 @@ class LocationService {
                   deletedAt: response.serverTimestamp,
                   pendingDelete: false
                 };
+                // Track as deleted
+                deleted.add(deletedId);
               }
             }
           }
@@ -345,8 +374,26 @@ class LocationService {
 
       syncLogger.info('Location sync complete');
 
+      // Return delta
+      return {
+        updated: Array.from(updated.values()),
+        created: Array.from(created.values()),
+        deleted: Array.from(deleted),
+        confirmed: [],
+        unchanged: updated.size === 0 && created.size === 0 && deleted.size === 0,
+        serverTimestamp: response.serverTimestamp,
+      };
+
     } catch (error) {
       syncLogger.error('Error syncing locations:', error);
+      return {
+        updated: [],
+        created: [],
+        deleted: [],
+        confirmed: [],
+        unchanged: true,
+        serverTimestamp: new Date().toISOString(),
+      };
     }
   }
 }

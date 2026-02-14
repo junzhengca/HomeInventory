@@ -7,6 +7,7 @@ import {
 import { generateTodoId } from '../utils/idGenerator';
 import { ApiClient } from './ApiClient';
 import { TodoItemServerData, SyncEntityType } from '../types/api';
+import { SyncDelta } from '../types/sync';
 
 // Base file name (FileSystemService appends _homeId for scoping)
 const TODOS_FILE = 'todos.json';
@@ -148,7 +149,7 @@ class TodoService extends BaseSyncableEntityService<TodoItem, TodoItemServerData
     homeId: string,
     apiClient: ApiClient,
     deviceId: string
-  ): Promise<void> {
+  ): Promise<SyncDelta<TodoItem>> {
     return this.sync(homeId, apiClient, deviceId);
   }
 }

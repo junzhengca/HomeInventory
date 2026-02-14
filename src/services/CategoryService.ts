@@ -7,6 +7,7 @@ import {
 import { generateItemId } from '../utils/idGenerator';
 import { ApiClient } from './ApiClient';
 import { CategoryServerData, SyncEntityType } from '../types/api';
+import { SyncDelta } from '../types/sync';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 // Base file name (FileSystemService appends _homeId for scoping)
@@ -133,7 +134,7 @@ class CategoryService extends BaseSyncableEntityService<Category, CategoryServer
     homeId: string,
     apiClient: ApiClient,
     deviceId: string
-  ): Promise<void> {
+  ): Promise<SyncDelta<Category>> {
     return this.sync(homeId, apiClient, deviceId);
   }
 }
