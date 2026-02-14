@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 /**
  * Base type for all syncable, home-scoped entities.
- * All entities that sync to the server must extend this type.
+ * All entities that sync to server must extend this type.
  */
 export interface HomeScopedEntity {
+  id: string;
   homeId: string;
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
@@ -21,7 +22,6 @@ export interface HomeScopedEntity {
 }
 
 export interface Category extends HomeScopedEntity {
-  id: string;
   name: string;
   label?: string; // Chinese label - making optional/deprecated as name will be used
   isCustom: boolean; // Flag to distinguish system vs user-created categories
@@ -30,7 +30,6 @@ export interface Category extends HomeScopedEntity {
 }
 
 export interface Location extends HomeScopedEntity {
-  id: string;
   name: string; // Chinese label (will be i18n'd in future)
   icon?: keyof typeof Ionicons.glyphMap;
 }
@@ -48,7 +47,6 @@ export interface ItemBatch {
 }
 
 export interface InventoryItem extends HomeScopedEntity {
-  id: string;
   name: string;
   location: string; // Location ID (e.g., "living-room")
   detailedLocation: string; // e.g., "梳妆台"
@@ -61,7 +59,6 @@ export interface InventoryItem extends HomeScopedEntity {
 }
 
 export interface TodoItem extends HomeScopedEntity {
-  id: string;
   text: string;
   completed: boolean;
   note?: string; // Optional note field
@@ -69,7 +66,5 @@ export interface TodoItem extends HomeScopedEntity {
 }
 
 export interface TodoCategory extends HomeScopedEntity {
-  id: string;
   name: string;
 }
-
