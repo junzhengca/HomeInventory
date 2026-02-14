@@ -343,6 +343,7 @@ export const syncItems = async (
             const newItem: InventoryItem = {
               id: entity.entityId,
               name: serverData.name,
+              homeId: entity.homeId,
               location: serverData.location,
               detailedLocation: serverData.detailedLocation,
               status: serverData.status,

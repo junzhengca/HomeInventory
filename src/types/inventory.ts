@@ -1,14 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 
-export interface Category {
-  id: string;
-  name: string;
-  label?: string; // Chinese label - making optional/deprecated as name will be used
-  isCustom: boolean; // Flag to distinguish system vs user-created categories
-  icon?: keyof typeof Ionicons.glyphMap;
-  color?: string; // Hex color code for category display
+/**
+ * Base type for all syncable, home-scoped entities.
+ * All entities that sync to the server must extend this type.
+ */
+export interface HomeScopedEntity {
   homeId: string;
-
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string
   deletedAt?: string; // ISO date string - marks soft deletion
@@ -23,24 +20,19 @@ export interface Category {
   pendingDelete?: boolean;
 }
 
-export interface Location {
+export interface Category extends HomeScopedEntity {
+  id: string;
+  name: string;
+  label?: string; // Chinese label - making optional/deprecated as name will be used
+  isCustom: boolean; // Flag to distinguish system vs user-created categories
+  icon?: keyof typeof Ionicons.glyphMap;
+  color?: string; // Hex color code for category display
+}
+
+export interface Location extends HomeScopedEntity {
   id: string;
   name: string; // Chinese label (will be i18n'd in future)
-  homeId: string;
   icon?: keyof typeof Ionicons.glyphMap;
-
-  createdAt?: string; // ISO date string
-  updatedAt?: string; // ISO date string
-  deletedAt?: string; // ISO date string - marks soft deletion
-
-  // Sync metadata
-  version: number;
-  clientUpdatedAt: string;
-  serverUpdatedAt?: string;
-  lastSyncedAt?: string;
-  pendingCreate?: boolean;
-  pendingUpdate?: boolean;
-  pendingDelete?: boolean;
 }
 
 export interface ItemBatch {
@@ -55,7 +47,7 @@ export interface ItemBatch {
   createdAt: string;       // ISO date string
 }
 
-export interface InventoryItem {
+export interface InventoryItem extends HomeScopedEntity {
   id: string;
   name: string;
   location: string; // Location ID (e.g., "living-room")
@@ -66,57 +58,18 @@ export interface InventoryItem {
   warningThreshold?: number; // Warning threshold for restocking badge (defaults to 0)
   batches: ItemBatch[];      // Purchase batches
   categoryId?: string;
-  createdAt?: string; // ISO date string
-  updatedAt?: string; // ISO date string
-  deletedAt?: string; // ISO date string - marks soft deletion
-
-  // Sync metadata
-  version: number;
-  clientUpdatedAt: string;
-  serverUpdatedAt?: string;
-  lastSyncedAt?: string;
-  pendingCreate?: boolean;
-  pendingUpdate?: boolean;
-  pendingDelete?: boolean;
 }
 
-export interface TodoItem {
+export interface TodoItem extends HomeScopedEntity {
   id: string;
-  homeId: string; // Home this todo belongs to
   text: string;
   completed: boolean;
   note?: string; // Optional note field
   categoryId?: string; // Optional reference to TodoCategory
-  createdAt: string; // ISO date string
-  updatedAt?: string; // ISO date string
-  deletedAt?: string; // ISO date string - marks soft deletion
-
-  // Sync metadata
-  version: number;
-  clientUpdatedAt: string;
-  serverUpdatedAt?: string;
-  lastSyncedAt?: string;
-  pendingCreate?: boolean;
-  pendingUpdate?: boolean;
-  pendingDelete?: boolean;
 }
 
-export interface TodoCategory {
+export interface TodoCategory extends HomeScopedEntity {
   id: string;
   name: string;
-  homeId: string;
-
-  createdAt?: string; // ISO date string
-  updatedAt?: string; // ISO date string
-  deletedAt?: string; // ISO date string - marks soft deletion
-
-  // Sync metadata
-  version: number;
-  clientUpdatedAt: string;
-  serverUpdatedAt?: string;
-  lastSyncedAt?: string;
-  pendingCreate?: boolean;
-  pendingUpdate?: boolean;
-  pendingDelete?: boolean;
 }
 
