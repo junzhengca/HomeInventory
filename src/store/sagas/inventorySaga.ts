@@ -8,17 +8,11 @@ import {
   setLoading,
 } from '../slices/inventorySlice';
 import { triggerCategoryRefresh } from '../slices/refreshSlice';
-import {
-  getAllItems,
-  createItem,
-  updateItem as updateItemService,
-  deleteItem,
-  syncItems,
-} from '../../services/InventoryService';
-import { syncCategories } from '../../services/CategoryService';
-import { syncLocations } from '../../services/LocationService';
-import { syncTodos } from '../../services/TodoService';
-import { initializeHomeData } from '../../services/DataInitializationService';
+import { inventoryService } from '../../services/InventoryService';
+import { categoryService } from '../../services/CategoryService';
+import { locationService } from '../../services/LocationService';
+import { todoService } from '../../services/TodoService';
+import { dataInitializationService } from '../../services/DataInitializationService';
 import { InventoryItem } from '../../types/inventory';
 import type { RootState } from '../types';
 import { homeService } from '../../services/HomeService';
@@ -74,7 +68,7 @@ function* loadItemsSaga() {
     }
 
     yield put(setLoading(true));
-    const allItems: InventoryItem[] = yield call(getAllItems, homeId);
+    const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
     // Sort by createdAt in descending order (newest first)
     allItems.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -97,7 +91,7 @@ function* silentRefreshItemsSaga() {
       return; // No home = no items
     }
 
-    const allItems: InventoryItem[] = yield call(getAllItems, homeId);
+    const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
     // Sort by createdAt in descending order (newest first)
     allItems.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -136,19 +130,19 @@ function* syncItemsSaga() {
         syncLogger.info(`Processing home: ${home.name} (${home.id})`);
 
         // Ensure data files exist for this home
-        yield call(initializeHomeData, home.id);
+        yield call([dataInitializationService, 'initializeHomeData'], home.id);
 
         // Sync Items
-        yield call(syncItems, home.id, apiClient as ApiClient, deviceId);
+        yield call([inventoryService, 'syncItems'], home.id, apiClient as ApiClient, deviceId);
 
         // Sync Categories
-        yield call(syncCategories, home.id, apiClient as ApiClient, deviceId);
+        yield call([categoryService, 'syncCategories'], home.id, apiClient as ApiClient, deviceId);
 
         // Sync Locations
-        yield call(syncLocations, home.id, apiClient as ApiClient, deviceId);
+        yield call([locationService, 'syncLocations'], home.id, apiClient as ApiClient, deviceId);
 
         // Sync Todos
-        yield call(syncTodos, home.id, apiClient as ApiClient, deviceId);
+        yield call([todoService, 'syncTodos'], home.id, apiClient as ApiClient, deviceId);
 
       } catch (homeError) {
         syncLogger.error(`Error syncing home ${home.id}`, homeError);
@@ -178,13 +172,13 @@ function* createItemSaga(action: { type: string; payload: Omit<InventoryItem, 'i
       return;
     }
 
-    const newItem: InventoryItem | null = yield call(createItem, item, homeId);
+    const newItem: InventoryItem | null = yield call([inventoryService, 'createItem'], item, homeId);
     if (newItem) {
       // Optimistically add to state
       yield put(addItemSlice(newItem));
 
       // Refresh to ensure sync (but don't set loading)
-      const allItems: InventoryItem[] = yield call(getAllItems, homeId);
+      const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
       allItems.sort((a, b) => {
         const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -222,10 +216,10 @@ function* updateItemSaga(action: { type: string; payload: { id: string; updates:
     }
 
     // Then update in storage
-    yield call(updateItemService, id, updates, homeId);
+    yield call([inventoryService, 'updateItem'], id, updates, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allItems: InventoryItem[] = yield call(getAllItems, homeId);
+    const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
     const updatedItemFromStorage = allItems.find((item) => item.id === id);
     syncLogger.info('Item from storage after update', updatedItemFromStorage);
     allItems.sort((a, b) => {
@@ -258,10 +252,10 @@ function* deleteItemSaga(action: { type: string; payload: string }) {
     yield put(removeItemSlice(id));
 
     // Then delete from storage
-    yield call(deleteItem, id, homeId);
+    yield call([inventoryService, 'deleteItem'], id, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allItems: InventoryItem[] = yield call(getAllItems, homeId);
+    const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
     allItems.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;

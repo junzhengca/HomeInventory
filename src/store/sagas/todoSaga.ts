@@ -12,21 +12,8 @@ import {
   updateTodoCategory as updateTodoCategorySlice,
   removeTodoCategory as removeTodoCategorySlice,
 } from '../slices/todoSlice';
-import {
-  getAllTodos,
-  createTodo,
-  toggleTodo as toggleTodoService,
-  deleteTodo,
-  updateTodo,
-  syncTodos,
-} from '../../services/TodoService';
-import {
-  getAllCategories as getAllTodoCategories,
-  createCategory as createTodoCategoryService,
-  updateCategory as updateTodoCategoryService,
-  deleteCategory as deleteTodoCategoryService,
-  syncCategories as syncTodoCategories,
-} from '../../services/TodoCategoryService';
+import { todoService } from '../../services/TodoService';
+import { todoCategoryService } from '../../services/TodoCategoryService';
 import { TodoItem, TodoCategory } from '../../types/inventory';
 import type { RootState } from '../types';
 import { homeService } from '../../services/HomeService';
@@ -87,7 +74,7 @@ function* loadTodosSaga() {
     }
 
     yield put(setLoading(true));
-    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+    const allTodos: TodoItem[] = yield call([todoService, 'getAllTodos'], homeId);
     // Sort by createdAt in descending order (newest first)
     allTodos.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -114,7 +101,7 @@ function* silentRefreshTodosSaga() {
       return; // No home = no todos
     }
 
-    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+    const allTodos: TodoItem[] = yield call([todoService, 'getAllTodos'], homeId);
     // Sort by createdAt in descending order (newest first)
     allTodos.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -143,10 +130,10 @@ function* syncTodosSaga() {
 
     // 2. Sync Todo Categories
     const deviceId: string = yield call(getDeviceId);
-    yield call(syncTodoCategories, activeHomeId, apiClient as ApiClient, deviceId);
+    yield call([todoCategoryService, 'syncCategories'], activeHomeId, apiClient as ApiClient, deviceId);
 
     // 3. Sync Todos
-    yield call(syncTodos, activeHomeId, apiClient as ApiClient, deviceId);
+    yield call([todoService, 'syncTodos'], activeHomeId, apiClient as ApiClient, deviceId);
 
     // 4. Refresh UI
     yield call(silentRefreshTodosSaga);
@@ -168,13 +155,13 @@ function* addTodoSaga(action: { type: string; payload: { text: string; note?: st
       return;
     }
     // homeId comes from getFileHomeId which returns activeHomeId
-    const newTodo: TodoItem = yield call(createTodo, text, homeId, note, categoryId);
+    const newTodo: TodoItem = yield call([todoService, 'createTodo'], text, homeId, note, categoryId);
     if (newTodo) {
       // Optimistically add to state
       yield put(addTodoSlice(newTodo));
 
       // Refresh to ensure sync (but don't set loading)
-      const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+      const allTodos: TodoItem[] = yield call([todoService, 'getAllTodos'], homeId);
       allTodos.sort((a, b) => {
         const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -211,10 +198,10 @@ function* toggleTodoSaga(action: { type: string; payload: string }) {
     }
 
     // Then update in storage
-    yield call(toggleTodoService, id, homeId);
+    yield call([todoService, 'toggleTodo'], id, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+    const allTodos: TodoItem[] = yield call([todoService, 'getAllTodos'], homeId);
     allTodos.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -245,10 +232,10 @@ function* deleteTodoSaga(action: { type: string; payload: string }) {
     yield put(removeTodoSlice(id));
 
     // Then delete from storage
-    yield call(deleteTodo, id, homeId);
+    yield call([todoService, 'deleteTodo'], id, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+    const allTodos: TodoItem[] = yield call([todoService, 'getAllTodos'], homeId);
     allTodos.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -284,10 +271,10 @@ function* updateTodoSaga(action: { type: string; payload: { id: string; text: st
     }
 
     // Then update in storage
-    yield call(updateTodo, id, { text, note }, homeId);
+    yield call([todoService, 'updateTodo'], id, { text, note }, homeId);
 
     // Refresh to ensure sync (but don't set loading)
-    const allTodos: TodoItem[] = yield call(getAllTodos, homeId);
+    const allTodos: TodoItem[] = yield call([todoService, 'getAllTodos'], homeId);
     allTodos.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -311,7 +298,7 @@ function* loadTodoCategoriesSaga() {
       sagaLogger.error('Cannot load todo categories: No active home selected');
       return;
     }
-    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
+    const allCategories: TodoCategory[] = yield call([todoCategoryService, 'getAllCategories'], homeId);
     yield put(setTodoCategories(allCategories));
   } catch (error) {
     sagaLogger.error('Error loading todo categories', error);
@@ -324,7 +311,7 @@ function* silentRefreshTodoCategoriesSaga() {
     if (!homeId) {
       return;
     }
-    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
+    const allCategories: TodoCategory[] = yield call([todoCategoryService, 'getAllCategories'], homeId);
     yield put(silentSetTodoCategories(allCategories));
   } catch (error) {
     sagaLogger.error('Error silently refreshing todo categories', error);
@@ -341,12 +328,12 @@ function* addTodoCategorySaga(action: { type: string; payload: { name: string; h
       sagaLogger.error('Cannot create todo category: No active home selected');
       return;
     }
-    const newCategory: TodoCategory = yield call(createTodoCategoryService, { name }, homeId);
+    const newCategory: TodoCategory = yield call([todoCategoryService, 'createCategory'], { name }, homeId);
     if (newCategory) {
       yield put(addTodoCategorySlice(newCategory));
 
       // Refresh to ensure sync
-      const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
+      const allCategories: TodoCategory[] = yield call([todoCategoryService, 'getAllCategories'], homeId);
       yield put(setTodoCategories(allCategories));
 
       // Trigger sync
@@ -374,10 +361,10 @@ function* updateTodoCategorySaga(action: { type: string; payload: { id: string; 
     }
 
     // Then update in storage
-    yield call(updateTodoCategoryService, id, { name }, homeId as string);
+    yield call([todoCategoryService, 'updateCategory'], id, { name }, homeId as string);
 
     // Refresh to ensure sync
-    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
+    const allCategories: TodoCategory[] = yield call([todoCategoryService, 'getAllCategories'], homeId);
     yield put(setTodoCategories(allCategories));
 
     // Trigger sync
@@ -399,10 +386,10 @@ function* deleteTodoCategorySaga(action: { type: string; payload: string }) {
     yield put(removeTodoCategorySlice(id));
 
     // Then delete from storage
-    yield call(deleteTodoCategoryService, id, homeId as string);
+    yield call([todoCategoryService, 'deleteCategory'], id, homeId as string);
 
     // Refresh to ensure sync
-    const allCategories: TodoCategory[] = yield call(getAllTodoCategories, homeId);
+    const allCategories: TodoCategory[] = yield call([todoCategoryService, 'getAllCategories'], homeId);
     yield put(setTodoCategories(allCategories));
 
     // Trigger sync

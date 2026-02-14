@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { StyledProps } from '../utils/styledComponents';
 import { uiLogger } from '../utils/Logger';
 import { PageHeader, BottomActionBar } from '../components';
-import { readFile } from '../services/FileSystemService';
+import { fileSystemService } from '../services/FileSystemService';
 import { calculateBottomActionBarPadding } from '../utils/layout';
 import { useTheme } from '../theme/ThemeProvider';
 import type { RootStackParamList } from '../navigation/types';
@@ -74,7 +74,7 @@ export const ExportDataDetailScreen: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await readFile<unknown>(filename);
+      const data = await fileSystemService.readFile<unknown>(filename);
       if (data === null) {
         setError('File not found or could not be read');
       } else {

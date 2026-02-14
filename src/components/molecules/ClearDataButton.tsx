@@ -3,7 +3,7 @@ import { TouchableOpacity, View, Text, Alert } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { clearAllDataFiles } from '../../services/DataInitializationService';
+import { dataInitializationService } from '../../services/DataInitializationService';
 import { useInventory, useCategory, useTodos, useSettings } from '../../store/hooks';
 import type { StyledProps } from '../../utils/styledComponents';
 
@@ -68,7 +68,7 @@ export const ClearDataButton: React.FC<ClearDataButtonProps> = ({
           text: t('settings.clearData.confirm.confirm'),
           style: 'destructive',
           onPress: async () => {
-            const success = await clearAllDataFiles();
+            const success = await dataInitializationService.clearAllDataFiles();
             
             if (success) {
               // Refresh all contexts

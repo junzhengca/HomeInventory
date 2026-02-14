@@ -22,7 +22,7 @@ import { uiLogger } from '../utils/Logger';
 import { AuthTextInput, Button } from '../components';
 import { useAuth, useSettings, useAppDispatch } from '../store/hooks';
 import { setError } from '../store/slices/authSlice';
-import { signInWithGoogle } from '../services/GoogleAuthService';
+import { googleAuthService } from '../services/GoogleAuthService';
 import { useTheme } from '../theme/ThemeProvider';
 import type { AuthStackParamList } from '../navigation/AuthNavigator';
 
@@ -218,7 +218,7 @@ export const LoginScreen: React.FC = () => {
 
     const handleGoogleLogin = useCallback(async () => {
         try {
-            const idToken = await signInWithGoogle();
+            const idToken = await googleAuthService.signInWithGoogle();
             if (idToken) {
                 const platform = Platform.OS === 'ios' ? 'ios' : 'android';
                 googleLogin(idToken, platform);

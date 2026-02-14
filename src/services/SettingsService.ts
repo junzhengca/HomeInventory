@@ -1,57 +1,63 @@
 import { Settings, defaultSettings } from '../types/settings';
-import { readFile, writeFile } from './FileSystemService';
+import { fileSystemService } from './FileSystemService';
 import { storageLogger } from '../utils/Logger';
 
 const SETTINGS_FILE = 'settings.json';
 
-/**
- * Get current settings
- */
-export const getSettings = async (userId?: string): Promise<Settings> => {
-  const settings = await readFile<Settings>(SETTINGS_FILE, userId);
-  return settings || defaultSettings as Settings;
-};
+class SettingsService {
+  public constructor() {}
 
-/**
- * Update settings (supports partial updates)
- */
-export const updateSettings = async (updates: Partial<Settings>, userId?: string): Promise<Settings | null> => {
-  try {
-    const currentSettings = await getSettings(userId);
-    const now = new Date().toISOString();
-    const newSettings: Settings = {
-      ...currentSettings,
-      ...updates,
-      updatedAt: now,
-      createdAt: currentSettings.createdAt || now,
-    };
-
-    const success = await writeFile<Settings>(SETTINGS_FILE, newSettings, userId);
-
-    return success ? newSettings : null;
-  } catch (error) {
-    storageLogger.error('Error updating settings:', error);
-    return null;
+  /**
+   * Get current settings
+   */
+  async getSettings(userId?: string): Promise<Settings> {
+    const settings = await fileSystemService.readFile<Settings>(SETTINGS_FILE, userId);
+    return settings || defaultSettings as Settings;
   }
-};
 
-/**
- * Reset settings to defaults
- */
-export const resetToDefaults = async (userId?: string): Promise<Settings | null> => {
-  try {
-    const now = new Date().toISOString();
-    const resetSettings: Settings = {
-      ...defaultSettings,
-      createdAt: now,
-      updatedAt: now,
-    };
-    const success = await writeFile<Settings>(SETTINGS_FILE, resetSettings, userId);
+  /**
+   * Update settings (supports partial updates)
+   */
+  async updateSettings(updates: Partial<Settings>, userId?: string): Promise<Settings | null> {
+    try {
+      const currentSettings = await this.getSettings(userId);
+      const now = new Date().toISOString();
+      const newSettings: Settings = {
+        ...currentSettings,
+        ...updates,
+        updatedAt: now,
+        createdAt: currentSettings.createdAt || now,
+      };
 
-    return success ? resetSettings : null;
-  } catch (error) {
-    storageLogger.error('Error resetting settings:', error);
-    return null;
+      const success = await fileSystemService.writeFile<Settings>(SETTINGS_FILE, newSettings, userId);
+
+      return success ? newSettings : null;
+    } catch (error) {
+      storageLogger.error('Error updating settings:', error);
+      return null;
+    }
   }
-};
 
+  /**
+   * Reset settings to defaults
+   */
+  async resetToDefaults(userId?: string): Promise<Settings | null> {
+    try {
+      const now = new Date().toISOString();
+      const resetSettings: Settings = {
+        ...defaultSettings,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const success = await fileSystemService.writeFile<Settings>(SETTINGS_FILE, resetSettings, userId);
+
+      return success ? resetSettings : null;
+    } catch (error) {
+      storageLogger.error('Error resetting settings:', error);
+      return null;
+    }
+  }
+}
+
+export const settingsService = new SettingsService();
+export type { SettingsService };

@@ -15,17 +15,9 @@ import { loadSettings } from './settingsSaga';
 import {
   ApiClient,
 } from '../../services/ApiClient';
-import {
-  getAuthTokens,
-  saveAuthTokens,
-  clearAllAuthData,
-  getUser,
-  saveUser,
-  saveActiveHomeId,
-  getActiveHomeId,
-  removeActiveHomeId,
-  clearAllUserData,
-} from '../../services/AuthService';
+import { authService } from '../../services/AuthService';
+import { apiClient } from '../../services/ApiClient';
+import type { ApiClient as ApiClientType } from '../../services/ApiClient';
 import { homeService } from '../../services/HomeService';
 import { User, ErrorDetails } from '../../types/api';
 import type { RootState } from '../types';
@@ -77,7 +69,7 @@ export const accessDenied = (resourceId?: string) => ({ type: ACCESS_DENIED, pay
 
 type AuthChannelEvent = { type: string; payload?: string };
 
-function createAuthChannel(apiClient: ApiClient): EventChannel<AuthChannelEvent> {
+function createAuthChannel(apiClient: ApiClientType): EventChannel<AuthChannelEvent> {
   return eventChannel((emit) => {
     const onAuthError = (endpoint: string) => {
       emit(authError(endpoint));
@@ -99,10 +91,12 @@ function createAuthChannel(apiClient: ApiClient): EventChannel<AuthChannelEvent>
 function* initializeApiClientSaga(action: { type: string; payload: string }) {
   try {
     const apiBaseUrl = action.payload;
-    const apiClient = new ApiClient(apiBaseUrl);
+    // The apiClient singleton is already initialized with the environment variable
+    // We just need to configure it and set it in state
+    const client = apiClient;
 
     // Set up error callback for API errors (when all retries are exhausted)
-    apiClient.setOnError((errorDetails: ErrorDetails) => {
+    client.setOnError((errorDetails: ErrorDetails) => {
       authLogger.info('API error callback triggered, showing error bottom sheet');
       if (globalErrorHandler) {
         globalErrorHandler(errorDetails);
@@ -112,7 +106,7 @@ function* initializeApiClientSaga(action: { type: string; payload: string }) {
     });
 
     // Create event channel for auth events (401, 403)
-    const authChannel: EventChannel<AuthChannelEvent> = yield call(createAuthChannel, apiClient);
+    const authChannel: EventChannel<AuthChannelEvent> = yield call(createAuthChannel, client);
     yield fork(function* () {
       while (true) {
         const action: AuthChannelEvent = (yield take(authChannel)) as AuthChannelEvent;
@@ -125,7 +119,7 @@ function* initializeApiClientSaga(action: { type: string; payload: string }) {
     // Inventory and Todo sagas handle scoping explicitly.
     void (yield select((state: RootState) => state.auth.activeHomeId));
 
-    yield put(setApiClient(apiClient));
+    yield put(setApiClient(client));
 
     // Start auth check after API client is ready
     yield put(checkAuth());
@@ -137,12 +131,12 @@ function* initializeApiClientSaga(action: { type: string; payload: string }) {
 
 function* clearAuthAndLogout() {
   authLogger.info('Clearing auth data');
-  yield call(clearAllAuthData);
+  yield call([authService, 'clearAllAuthData']);
 
   // Clear the apiClient's auth token to prevent stale authenticated requests
-  const apiClient: ApiClient | null = yield select((state: RootState) => state.auth.apiClient);
-  if (apiClient) {
-    apiClient.setAuthToken('');
+  const client: ApiClientType | null = yield select((state: RootState) => state.auth.apiClient);
+  if (client) {
+    client.setAuthToken('');
   }
 
   yield put(setUser(null));
@@ -151,7 +145,7 @@ function* clearAuthAndLogout() {
 
   // Clear all user data (items, todos, categories, homes) on logout
   // Only settings should persist
-  yield call(clearAllUserData);
+  yield call([authService, 'clearAllUserData']);
 }
 
 function* handleAuthError(action: { type: string; payload?: string }) {
@@ -194,7 +188,7 @@ function* handleAccessDenied(action: { type: string; payload?: string }) {
 
 // Helper to restore or select a default active home
 function* restoreOrSelectActiveHome() {
-  let activeHomeId: string | null = (yield call(getActiveHomeId)) as string | null;
+  let activeHomeId: string | null = (yield call([authService, 'getActiveHomeId'])) as string | null;
   const allHomes = homeService.getHomes();
 
   // Validate the persisted ID
@@ -235,7 +229,7 @@ function* checkAuthSaga(): Generator {
   }
 
   try {
-    const tokens: { accessToken: string } | null = (yield call(getAuthTokens)) as { accessToken: string } | null;
+    const tokens: { accessToken: string } | null = (yield call([authService, 'getAuthTokens'])) as { accessToken: string } | null;
 
     if (!tokens || !tokens.accessToken) {
       // No tokens found - user must login (no guest mode)
@@ -258,7 +252,7 @@ function* checkAuthSaga(): Generator {
 
       // Update user if we got new data
       if (currentUser) {
-        yield call(saveUser, currentUser);
+        yield call([authService, 'saveUser'], currentUser);
         yield put(setUser(currentUser));
         yield put(setAuthenticated(true));
 
@@ -298,7 +292,7 @@ function* checkAuthSaga(): Generator {
         // This effectively enables offline mode if we have a token
         authLogger.warn('Failed to verify auth with server, checking local cache', error);
 
-        const savedUser: User | null = (yield call(getUser)) as User | null;
+        const savedUser: User | null = (yield call([authService, 'getUser'])) as User | null;
 
         if (savedUser) {
           authLogger.info('Using cached user data for offline/error mode');
@@ -368,7 +362,7 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     }
 
     // Save token
-    const saved = (yield call(saveAuthTokens, response.accessToken)) as boolean;
+    const saved = (yield call([authService, 'saveAuthTokens'], response.accessToken)) as boolean;
     if (!saved) {
       const errorMessage = 'Failed to save authentication token';
       yield put(setError(errorMessage));
@@ -377,7 +371,7 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     }
 
     // Verify token was saved
-    const savedTokens = (yield call(getAuthTokens)) as { accessToken: string } | null;
+    const savedTokens = (yield call([authService, 'getAuthTokens'])) as { accessToken: string } | null;
     if (!savedTokens || !savedTokens.accessToken) {
       const errorMessage = 'Failed to save authentication token';
       yield put(setError(errorMessage));
@@ -399,7 +393,7 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
 
     // Save user
     if (userData) {
-      yield call(saveUser, userData);
+      yield call([authService, 'saveUser'], userData);
       yield put(setUser(userData));
 
       // Check if nickname is missing
@@ -463,13 +457,13 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
     }
 
     // Save token
-    const saved = (yield call(saveAuthTokens, response.accessToken)) as boolean;
+    const saved = (yield call([authService, 'saveAuthTokens'], response.accessToken)) as boolean;
     if (!saved) {
       throw new Error('Failed to save authentication token');
     }
 
     // Verify token was saved
-    const savedTokens = (yield call(getAuthTokens)) as { accessToken: string } | null;
+    const savedTokens = (yield call([authService, 'getAuthTokens'])) as { accessToken: string } | null;
     if (!savedTokens || !savedTokens.accessToken) {
       throw new Error('Failed to save authentication token');
     }
@@ -488,7 +482,7 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
 
     // Save user
     if (userData) {
-      yield call(saveUser, userData);
+      yield call([authService, 'saveUser'], userData);
       yield put(setUser(userData));
 
       // Check if nickname is missing
@@ -557,7 +551,7 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     }
 
     // Save token
-    const saved = (yield call(saveAuthTokens, response.accessToken)) as boolean;
+    const saved = (yield call([authService, 'saveAuthTokens'], response.accessToken)) as boolean;
     if (!saved) {
       const errorMessage = 'Failed to save authentication token';
       yield put(setError(errorMessage));
@@ -566,7 +560,7 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     }
 
     // Verify token was saved
-    const savedTokens = (yield call(getAuthTokens)) as { accessToken: string } | null;
+    const savedTokens = (yield call([authService, 'getAuthTokens'])) as { accessToken: string } | null;
     if (!savedTokens || !savedTokens.accessToken) {
       const errorMessage = 'Failed to save authentication token';
       yield put(setError(errorMessage));
@@ -588,7 +582,7 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
 
     // Save user
     if (userData) {
-      yield call(saveUser, userData);
+      yield call([authService, 'saveUser'], userData);
       yield put(setUser(userData));
 
       // Check if nickname is missing
@@ -667,7 +661,7 @@ function* logoutSaga() {
 
 function* updateUserSaga(action: { type: string; payload: User }) {
   try {
-    yield call(saveUser, action.payload);
+    yield call([authService, 'saveUser'], action.payload);
     yield put(setUser(action.payload));
   } catch (error) {
     authLogger.error('Error updating user', error);
@@ -680,7 +674,7 @@ function* handleActiveHomeIdChange(action: { type: string; payload: string | nul
   authLogger.info('Active home ID changed, persisting', action.payload);
 
   if (action.payload) {
-    yield call(saveActiveHomeId, action.payload);
+    yield call([authService, 'saveActiveHomeId'], action.payload);
 
     // Sync HomeService state
     // We call this to ensure HomeService's internal state matches Redux
@@ -694,7 +688,7 @@ function* handleActiveHomeIdChange(action: { type: string; payload: string | nul
     yield put(loadTodoCategoriesAction());
     yield put(loadSettings());
   } else {
-    yield call(removeActiveHomeId);
+    yield call([authService, 'removeActiveHomeId']);
     // If no home is active, we might want to clear data or ensure HomeService knows
     // homeService.switchHome(null); // HomeService might not support null completely yet
   }

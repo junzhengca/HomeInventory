@@ -12,8 +12,8 @@ import { useInventory, useSettings, useAppSelector } from '../store/hooks';
 import { selectItemById } from '../store/slices/inventorySlice';
 import { RootStackParamList } from '../navigation/types';
 import { InventoryItem, Category } from '../types/inventory';
-import { getItemById } from '../services/InventoryService';
-import { getCategoryById } from '../services/CategoryService';
+import { inventoryService } from '../services/InventoryService';
+import { categoryService } from '../services/CategoryService';
 import { locations } from '../data/locations';
 import {
   getCurrencySymbol,
@@ -258,7 +258,7 @@ export const ItemDetailsScreen: React.FC = () => {
           navigation.goBack();
           return;
         }
-        const itemData = await getItemById(itemId, currentHomeId);
+        const itemData = await inventoryService.getItemById(itemId, currentHomeId);
         if (itemData) {
           setItem(itemData);
           // Trigger a reload of items to sync Redux
@@ -291,7 +291,7 @@ export const ItemDetailsScreen: React.FC = () => {
 
       // Load category if exists
       if (item.categoryId && activeHomeId) {
-        getCategoryById(item.categoryId, activeHomeId).then(category => {
+        categoryService.getCategoryById(item.categoryId, activeHomeId).then(category => {
           if (category) {
             setCategoryName(category.name);
             setCategoryColor(category.color);

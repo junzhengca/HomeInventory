@@ -89,12 +89,12 @@ export const CategoryManagerBottomSheet: React.FC<
   // Load categories on mount
   const loadCategories = useCallback(async () => {
     try {
-      const { getAllCategories } = await import('../../services/CategoryService');
+      const { categoryService } = await import('../../services/CategoryService');
       if (!currentHomeId) {
         setCategories([]);
         return;
       }
-      const allCategories = await getAllCategories(currentHomeId);
+      const allCategories = await categoryService.getAllCategories(currentHomeId);
       const custom = allCategories.filter((cat) => cat.isCustom);
       setCategories(custom);
     } catch (error) {
@@ -151,8 +151,7 @@ export const CategoryManagerBottomSheet: React.FC<
 
     setIsLoading(true);
     try {
-      const { createCategory, updateCategory } =
-        await import('../../services/CategoryService');
+      const { categoryService } = await import('../../services/CategoryService');
 
       let result: Category | null = null;
 
@@ -161,7 +160,7 @@ export const CategoryManagerBottomSheet: React.FC<
           setIsLoading(false);
           return;
         }
-        result = await updateCategory(editingId, {
+        result = await categoryService.updateCategory(editingId, {
           name: formData.name.trim(),
           label: formData.label.trim(),
           icon: formData.icon,
@@ -171,7 +170,7 @@ export const CategoryManagerBottomSheet: React.FC<
           setIsLoading(false);
           return;
         }
-        result = await createCategory({
+        result = await categoryService.createCategory({
           name: formData.name.trim(),
           label: formData.label.trim(),
           icon: formData.icon,
@@ -227,7 +226,7 @@ export const CategoryManagerBottomSheet: React.FC<
             style: 'destructive',
             onPress: async () => {
               try {
-                const { deleteCategory } =
+                const { categoryService } =
                   await import('../../services/CategoryService');
 
                 if (!currentHomeId) {
@@ -235,7 +234,7 @@ export const CategoryManagerBottomSheet: React.FC<
                   return;
                 }
 
-                const success = await deleteCategory(categoryId, currentHomeId);
+                const success = await categoryService.deleteCategory(categoryId, currentHomeId);
                 if (success) {
                   await loadCategories();
                   refreshCategories();

@@ -10,7 +10,7 @@ import { BottomSheetModalProvider, BottomSheetModal } from '@gorhom/bottom-sheet
 import { I18nextProvider } from 'react-i18next';
 import { Provider } from 'react-redux';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
-import { initializeDataFiles } from '../src/services/DataInitializationService';
+import { dataInitializationService } from '../src/services/DataInitializationService';
 import { homeService } from '../src/services/HomeService';
 import { ErrorBottomSheet, SetupNicknameBottomSheet, ToastProvider, InvitationBottomSheet, OfflineBadge, OfflineExplanationBottomSheet } from '../src/components';
 import { AuthNavigator } from '../src/navigation/AuthNavigator';
@@ -218,7 +218,7 @@ export default function RootLayout() {
     useEffect(() => {
         const init = async () => {
             try {
-                await initializeDataFiles();
+                await dataInitializationService.initializeDataFiles();
                 await homeService.init();
                 setIsInitialized(true);
             } catch (error) {

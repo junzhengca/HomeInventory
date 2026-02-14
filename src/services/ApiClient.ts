@@ -47,7 +47,7 @@ interface RequestOptions {
   requiresAuth?: boolean;
 }
 
-export class ApiClient {
+class ApiClient {
   private activeUserId: string | null = null;
   private baseUrl: string;
   private authToken: string | null = null;
@@ -58,6 +58,7 @@ export class ApiClient {
   private baseDelay: number = 1000; // 1 second
   private maxDelay: number = 10000; // 10 seconds
 
+  /* @private */
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
   }
@@ -819,3 +820,10 @@ export class ApiClient {
     });
   }
 }
+
+// Singleton initialization with environment-based config
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://home-inventory-api.logicore.digital';
+export const apiClient = new ApiClient(API_BASE_URL);
+
+// Export type for consumers who need it
+export type { ApiClient };

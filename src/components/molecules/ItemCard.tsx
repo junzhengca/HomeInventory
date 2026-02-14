@@ -4,7 +4,7 @@ import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { InventoryItem, Category } from '../../types/inventory';
-import { getCategoryById } from '../../services/CategoryService';
+import { categoryService } from '../../services/CategoryService';
 import { formatLocation } from '../../utils/formatters';
 import { isExpiringSoon } from '../../utils/dateUtils';
 import { getTotalAmount, getEarliestExpiry } from '../../utils/batchUtils';
@@ -170,7 +170,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onPress }) => {
     const loadCategory = async () => {
       if (item.categoryId && currentHomeId) {
         try {
-          const cat = await getCategoryById(item.categoryId, currentHomeId);
+          const cat = await categoryService.getCategoryById(item.categoryId, currentHomeId);
           setCategory(cat);
         } catch {
           setCategory(null);

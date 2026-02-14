@@ -27,7 +27,7 @@ import { Member } from '../types/api';
 import { useTheme } from '../theme/ThemeProvider';
 import { calculateBottomPadding } from '../utils/layout';
 import { formatDate } from '../utils/formatters';
-import { signInWithGoogle } from '../services/GoogleAuthService';
+import { googleAuthService } from '../services/GoogleAuthService';
 
 const Container = styled(View)`
   flex: 1;
@@ -333,7 +333,7 @@ export const ProfileScreen: React.FC = () => {
 
   const handleGoogleLogin = useCallback(async () => {
     try {
-      const idToken = await signInWithGoogle();
+      const idToken = await googleAuthService.signInWithGoogle();
       if (idToken) {
         // Get platform (ios or android)
         const platform = Platform.OS === 'ios' ? 'ios' : 'android';

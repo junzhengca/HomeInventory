@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { StyledProps } from '../utils/styledComponents';
 import { PageHeader } from '../components';
-import { listJsonFiles } from '../services/FileSystemService';
+import { fileSystemService } from '../services/FileSystemService';
 import { calculateBottomPadding } from '../utils/layout';
 import type { RootStackParamList } from '../navigation/types';
 import { uiLogger } from '../utils/Logger';
@@ -93,7 +93,7 @@ export const ExportDataScreen: React.FC = () => {
   const loadJsonFiles = useCallback(async () => {
     setIsLoading(true);
     try {
-      const files = await listJsonFiles();
+      const files = await fileSystemService.listJsonFiles();
       setJsonFiles(files.sort());
     } catch (error) {
       uiLogger.error('Error loading JSON files', error);

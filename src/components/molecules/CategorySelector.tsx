@@ -3,7 +3,7 @@ import { ScrollView, TouchableOpacity, View, Text } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
 import { Category } from '../../types/inventory';
-import { getAllCategories } from '../../services/CategoryService';
+import { categoryService } from '../../services/CategoryService';
 import { useCategory, useAppSelector } from '../../store/hooks';
 import { useHome } from '../../hooks/useHome';
 import { selectCategoryRefreshTimestamp } from '../../store/slices/refreshSlice';
@@ -92,7 +92,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         setCategories([]);
         return;
       }
-      const allCategories = await getAllCategories(currentHomeId);
+      const allCategories = await categoryService.getAllCategories(currentHomeId);
       // Add "all" category at the beginning
       const allCategory: Category = {
         id: 'all',

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Category } from '../types/inventory';
-import { getAllCategories } from '../services/CategoryService';
+import { categoryService } from '../services/CategoryService';
 import { useHome } from './useHome';
 import { useAppSelector } from '../store/hooks';
 import { selectCategoryRefreshTimestamp } from '../store/slices/refreshSlice';
@@ -20,7 +20,7 @@ export const useCategories = () => {
 
         setLoading(true);
         try {
-            const data = await getAllCategories(currentHomeId);
+            const data = await categoryService.getAllCategories(currentHomeId);
             setCategories(data);
         } catch (error) {
             uiLogger.error('Failed to load categories', error);

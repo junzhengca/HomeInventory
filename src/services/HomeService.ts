@@ -1,9 +1,9 @@
 import { BehaviorSubject, map } from 'rxjs';
-import { readFile, writeFile, deleteHomeFiles } from './FileSystemService';
+import { fileSystemService } from './FileSystemService';
 import { Home } from '../types/home';
 import { generateItemId } from '../utils/idGenerator';
 import { SyncHomesResponse, PushHomesResponse, HomeSyncData } from '../types/api';
-import { initializeHomeData } from './DataInitializationService';
+import { dataInitializationService } from './DataInitializationService';
 import { syncLogger } from '../utils/Logger';
 import { ApiClient } from './ApiClient';
 
@@ -31,13 +31,13 @@ class HomeService {
      * Does NOT create default home - homes should come from server sync or explicit creation.
      */
     async init() {
-        let data = await readFile<HomesData>(HOMES_FILE);
+        let data = await fileSystemService.readFile<HomesData>(HOMES_FILE);
 
         // If no homes exist, initialize with empty array (no default home)
         if (!data || !data.homes || data.homes.length === 0) {
             syncLogger.info('No homes found, initializing with empty list');
             data = { homes: [] };
-            await writeFile(HOMES_FILE, data);
+            await fileSystemService.writeFile(HOMES_FILE, data);
         }
 
         // Self-healing: Ensure local-only homes are marked as pendingCreate
@@ -58,7 +58,7 @@ class HomeService {
             });
 
             if (dataChanged) {
-                await writeFile(HOMES_FILE, data);
+                await fileSystemService.writeFile(HOMES_FILE, data);
             }
         }
 
@@ -92,13 +92,13 @@ class HomeService {
             };
 
             const data: HomesData = { homes: [defaultHome] };
-            const success = await writeFile(HOMES_FILE, data);
+            const success = await fileSystemService.writeFile(HOMES_FILE, data);
 
             if (success) {
                 this.homesSubject.next([defaultHome]);
                 this.currentHomeIdSubject.next(defaultHome.id);
                 // Initialize home-specific data files for the default home
-                await initializeHomeData(defaultHome.id);
+                await dataInitializationService.initializeHomeData(defaultHome.id);
                 syncLogger.info('Default home created and initialized');
                 return defaultHome;
             } else {
@@ -113,7 +113,7 @@ class HomeService {
             if (availableHome) {
                 this.currentHomeIdSubject.next(availableHome.id);
                 // Ensure home data is initialized
-                await initializeHomeData(availableHome.id);
+                await dataInitializationService.initializeHomeData(availableHome.id);
                 return availableHome;
             }
         }
@@ -127,7 +127,7 @@ class HomeService {
     async syncHomes(apiClient: ApiClient): Promise<void> {
         syncLogger.info('Starting home sync...');
         try {
-            const data = await readFile<HomesData>(HOMES_FILE);
+            const data = await fileSystemService.readFile<HomesData>(HOMES_FILE);
             const lastSyncTime = data?.lastSyncTime;
             const currentHomes = [...this.homesSubject.value];
 
@@ -169,7 +169,7 @@ class HomeService {
                             };
                         } else if (result.status === 'deleted') {
                             // Home deleted on server, remove locally
-                            await deleteHomeFiles(result.homeId);
+                            await fileSystemService.deleteHomeFiles(result.homeId);
                             // Mark for deletion by setting pendingDelete
                             currentHomes[localIndex] = {
                                 ...currentHomes[localIndex],
@@ -260,7 +260,7 @@ class HomeService {
                 syncLogger.info(`Removing ${deletedHomeIds.length} deleted homes`);
                 finalHomes = currentHomes.filter(h => !deletedHomeIds.includes(h.id));
                 for (const deletedId of deletedHomeIds) {
-                    await deleteHomeFiles(deletedId);
+                    await fileSystemService.deleteHomeFiles(deletedId);
                 }
             }
 
@@ -286,7 +286,7 @@ class HomeService {
                 lastSyncTime: syncResponse.serverTimestamp,
             };
 
-            await writeFile(HOMES_FILE, newData);
+            await fileSystemService.writeFile(HOMES_FILE, newData);
             this.homesSubject.next(finalHomes);
 
             // 6. Handle active home switch if needed
@@ -328,12 +328,12 @@ class HomeService {
         const currentHomes = this.homesSubject.value;
         const updatedHomes = [...currentHomes, newHome];
 
-        const success = await writeFile<HomesData>(HOMES_FILE, { homes: updatedHomes });
+        const success = await fileSystemService.writeFile<HomesData>(HOMES_FILE, { homes: updatedHomes });
         if (success) {
             this.homesSubject.next(updatedHomes);
             this.switchHome(newHome.id);
             // Initialize home-specific data files (categories, locations, items, todos)
-            await initializeHomeData(newHome.id);
+            await dataInitializationService.initializeHomeData(newHome.id);
             return newHome;
         }
         return null;
@@ -357,7 +357,7 @@ class HomeService {
             pendingUpdate: true,
         };
 
-        const success = await writeFile<HomesData>(HOMES_FILE, { homes: currentHomes });
+        const success = await fileSystemService.writeFile<HomesData>(HOMES_FILE, { homes: currentHomes });
         if (success) {
             this.homesSubject.next(currentHomes);
             return true;
@@ -410,7 +410,7 @@ class HomeService {
             currentHomes.push(defaultHome);
         }
 
-        const success = await writeFile<HomesData>(HOMES_FILE, { homes: currentHomes });
+        const success = await fileSystemService.writeFile<HomesData>(HOMES_FILE, { homes: currentHomes });
         if (success) {
             this.homesSubject.next(currentHomes);
 
@@ -421,7 +421,7 @@ class HomeService {
                     this.switchHome(availableHome.id);
                     // If this is a newly created default home, initialize its data files
                     if (availableHome.pendingCreate) {
-                        await initializeHomeData(availableHome.id);
+                        await dataInitializationService.initializeHomeData(availableHome.id);
                     }
                 }
             }
