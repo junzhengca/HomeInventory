@@ -52,12 +52,15 @@ jest.mock('../utils/Logger', () => ({
 import { homeService } from './HomeService';
 import { Home } from '../types/home';
 import { ApiClient } from './ApiClient';
-import { SyncHomesResponse, PushHomesResponse } from '../types/api';
+import { ListHomesResponse, CreateHomeResponse, UpdateHomeResponse, DeleteHomeResponse, LeaveHomeResponse, HomeDto } from '../types/api';
 
 describe('HomeService', () => {
   let mockApiClient: {
-    syncHomes: jest.Mock<Promise<SyncHomesResponse>, []>;
-    pushHomes: jest.Mock<Promise<PushHomesResponse>, []>;
+    listHomes: jest.Mock<Promise<ListHomesResponse>, []>;
+    createHome: jest.Mock<Promise<CreateHomeResponse>, []>;
+    updateHome: jest.Mock<Promise<UpdateHomeResponse>, []>;
+    deleteHome: jest.Mock<Promise<DeleteHomeResponse>, []>;
+    leaveHome: jest.Mock<Promise<LeaveHomeResponse>, []>;
   };
   const mockHomeId = 'test-home-123';
 
@@ -68,9 +71,16 @@ describe('HomeService', () => {
     role: 'owner',
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
-    clientUpdatedAt: '2024-01-01T00:00:00.000Z',
-    serverUpdatedAt: '2024-01-01T00:00:00.000Z',
-    pendingCreate: false,
+    ...overrides,
+  });
+
+  // Test home DTO fixture
+  const createMockHomeDto = (overrides?: Partial<HomeDto>): HomeDto => ({
+    homeId: 'home-1',
+    name: 'My Home',
+    role: 'owner',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
   });
 
@@ -80,8 +90,11 @@ describe('HomeService', () => {
 
     // Create a mock ApiClient
     mockApiClient = {
-      syncHomes: jest.fn(),
-      pushHomes: jest.fn(),
+      listHomes: jest.fn(),
+      createHome: jest.fn(),
+      updateHome: jest.fn(),
+      deleteHome: jest.fn(),
+      leaveHome: jest.fn(),
     };
 
     // Initialize service before each test

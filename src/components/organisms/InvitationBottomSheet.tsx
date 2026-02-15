@@ -172,8 +172,8 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
         try {
             await apiClient.acceptInvitation(inviteCode);
 
-            // Sync homes to get the new home
-            await homeService.syncHomes(apiClient);
+            // Fetch homes to get the new home
+            await homeService.fetchHomes(apiClient);
             showToast(t('share.invite.acceptSuccess'), 'success');
 
 

@@ -210,9 +210,9 @@ function* restoreOrSelectActiveHome() {
 }
 
 // Helper to ensure a default home exists after login/sync
-function* ensureDefaultHomeIfNeeded(): Generator {
+function* ensureDefaultHomeIfNeeded(apiClient: ApiClient): Generator {
   try {
-    yield call([homeService, homeService.ensureDefaultHome]);
+    yield call([homeService, homeService.ensureDefaultHome], apiClient);
   } catch (error) {
     authLogger.error('Error ensuring default home', error);
   }
@@ -260,11 +260,14 @@ function* checkAuthSaga(): Generator {
           yield put(setShowNicknameSetup(false));
         }
 
-        // Sync everything (Homes + Content) - this will pull homes from server first
+        // Fetch homes from server using CRUD endpoint
+        yield call([homeService, homeService.fetchHomes], apiClient);
+
+        // Sync content (everything except homes)
         yield put(syncAllAction());
 
         // After sync, ensure we have a default home if none exists
-        yield call(ensureDefaultHomeIfNeeded);
+        yield call(ensureDefaultHomeIfNeeded, apiClient);
 
         // Restore active home ID or select default
         yield call(restoreOrSelectActiveHome);
@@ -303,8 +306,8 @@ function* checkAuthSaga(): Generator {
             yield put(setShowNicknameSetup(false));
           }
 
-          // Ensure we have a home (offline mode)
-          yield call(ensureDefaultHomeIfNeeded);
+          // Ensure we have a home (offline mode) - pass apiClient for potential API calls
+          yield call(ensureDefaultHomeIfNeeded, apiClient);
 
           // Restore active home ID or select default
           yield call(restoreOrSelectActiveHome);
@@ -404,11 +407,14 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     yield put(setAuthenticated(true));
     yield put(setError(null)); // Clear error on success
 
-    // Sync everything (Homes + Content) - this will pull homes from server first
+    // Fetch homes from server using CRUD endpoint
+    yield call([homeService, homeService.fetchHomes], apiClient);
+
+    // Sync content (everything except homes)
     yield put(syncAllAction());
 
     // After sync, ensure we have a default home if none exists
-    yield call(ensureDefaultHomeIfNeeded);
+    yield call(ensureDefaultHomeIfNeeded, apiClient);
 
     // Restore active home ID or select default
     yield call(restoreOrSelectActiveHome);
@@ -492,11 +498,14 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
 
     yield put(setAuthenticated(true));
 
-    // Sync everything (Homes + Content) - this will pull homes from server first
+    // Fetch homes from server using CRUD endpoint
+    yield call([homeService, homeService.fetchHomes], apiClient);
+
+    // Sync content (everything except homes)
     yield put(syncAllAction());
 
     // After sync, ensure we have a default home if none exists
-    yield call(ensureDefaultHomeIfNeeded);
+    yield call(ensureDefaultHomeIfNeeded, apiClient);
 
     // Restore active home ID or select default
     yield call(restoreOrSelectActiveHome);
@@ -593,11 +602,14 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     yield put(setAuthenticated(true));
     yield put(setError(null)); // Clear error on success
 
-    // Sync everything (Homes + Content) - this will pull homes from server first
+    // Fetch homes from server using CRUD endpoint
+    yield call([homeService, homeService.fetchHomes], apiClient);
+
+    // Sync content (everything except homes)
     yield put(syncAllAction());
 
     // After sync, ensure we have a default home if none exists
-    yield call(ensureDefaultHomeIfNeeded);
+    yield call(ensureDefaultHomeIfNeeded, apiClient);
 
     // Restore active home ID or select default
     yield call(restoreOrSelectActiveHome);

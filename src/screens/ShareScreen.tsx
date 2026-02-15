@@ -92,12 +92,6 @@ export const ShareScreen: React.FC = () => {
   const loadMembers = useCallback(async () => {
     if (!currentHome?.id) return;
 
-    // If home is pending creation, don't fetch from server yet
-    if (currentHome.pendingCreate) {
-      setMembers([]);
-      return;
-    }
-
     setIsLoadingMembers(true);
     setMembersError(null);
     try {
@@ -112,7 +106,7 @@ export const ShareScreen: React.FC = () => {
     } finally {
       setIsLoadingMembers(false);
     }
-  }, [currentHome?.id, currentHome?.pendingCreate, getApiClient]);
+  }, [currentHome?.id, getApiClient]);
 
   React.useEffect(() => {
     if (isAuthenticated) {
@@ -123,11 +117,6 @@ export const ShareScreen: React.FC = () => {
   const handleRemoveMember = useCallback(
     async (memberUserId: string) => {
       if (!currentHome?.id) return;
-
-      if (currentHome.pendingCreate) {
-        showToast(t('common.syncing', 'Syncing in progress...'), 'info');
-        return;
-      }
 
       try {
         const apiClient = getApiClient();
@@ -141,16 +130,12 @@ export const ShareScreen: React.FC = () => {
         showToast(t('share.members.removeError', 'Failed to remove member'), 'error');
       }
     },
-    [currentHome?.id, currentHome?.pendingCreate, getApiClient, loadMembers, showToast, t]
+    [currentHome?.id, getApiClient, loadMembers, showToast, t]
   );
 
   const handleInvitePress = useCallback(() => {
-    if (currentHome?.pendingCreate) {
-      showToast(t('common.syncing', 'Syncing in progress...'), 'info');
-      return;
-    }
     inviteMenuBottomSheetRef.current?.present();
-  }, [currentHome?.pendingCreate, showToast, t]);
+  }, [showToast, t]);
 
   const getInvitationLink = useCallback(() => {
     const scheme = 'com.cluttrapp.cluttr'; // Matches app.json scheme
@@ -160,11 +145,6 @@ export const ShareScreen: React.FC = () => {
   const handleToggleInventory = useCallback(async () => {
     if (!currentHome?.id) return;
 
-    if (currentHome.pendingCreate) {
-      showToast(t('common.syncing', 'Syncing in progress...'), 'info');
-      return;
-    }
-
     const newValue = !canShareInventory;
 
     try {
@@ -173,21 +153,20 @@ export const ShareScreen: React.FC = () => {
 
       await apiClient.updateHomeSettings(currentHome.id, { canShareInventory: newValue });
       showToast(t('share.settings.updateSuccess', 'Settings updated'), 'success');
-      // HomeService will sync and update settings automatically?
-      // For now we might need to manually trigger a sync or wait for background sync
+      // Trigger a home fetch to refresh the settings
+      const apiClient2 = getApiClient();
+      if (apiClient2) {
+        const { homeService } = await import('../services/HomeService');
+        await homeService.fetchHomes(apiClient2);
+      }
     } catch (error) {
       uiLogger.error('Error updating inventory settings', error);
       showToast(t('share.settings.updateError', 'Failed to update settings'), 'error');
     }
-  }, [canShareInventory, currentHome?.id, currentHome?.pendingCreate, getApiClient, showToast, t]);
+  }, [canShareInventory, currentHome?.id, getApiClient, showToast, t]);
 
   const handleToggleTodos = useCallback(async () => {
     if (!currentHome?.id) return;
-
-    if (currentHome.pendingCreate) {
-      showToast(t('common.syncing', 'Syncing in progress...'), 'info');
-      return;
-    }
 
     const newValue = !canShareTodos;
 
@@ -197,11 +176,17 @@ export const ShareScreen: React.FC = () => {
 
       await apiClient.updateHomeSettings(currentHome.id, { canShareTodos: newValue });
       showToast(t('share.settings.updateSuccess', 'Settings updated'), 'success');
+      // Trigger a home fetch to refresh the settings
+      const apiClient2 = getApiClient();
+      if (apiClient2) {
+        const { homeService } = await import('../services/HomeService');
+        await homeService.fetchHomes(apiClient2);
+      }
     } catch (error) {
       uiLogger.error('Error updating todos settings', error);
       showToast(t('share.settings.updateError', 'Failed to update settings'), 'error');
     }
-  }, [canShareTodos, currentHome?.id, currentHome?.pendingCreate, getApiClient, showToast, t]);
+  }, [canShareTodos, currentHome?.id, getApiClient, showToast, t]);
 
   const handleLeaveHome = useCallback(() => {
     Alert.alert(

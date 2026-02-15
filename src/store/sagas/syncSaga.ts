@@ -1,7 +1,6 @@
 import { call, put, select, delay, spawn, take, actionChannel } from 'redux-saga/effects';
 import { buffers } from '@redux-saga/core';
 import { triggerCategoryRefresh } from '../slices/refreshSlice';
-import { homeService } from '../../services/HomeService';
 import { dataInitializationService } from '../../services/DataInitializationService';
 import { Home } from '../../types/home';
 import { HomeScopedEntity } from '../../types/inventory';
@@ -41,6 +40,7 @@ function getPendingIdsFromState(state: RootState, key: string): Set<string> {
 /**
  * Unified sync function that syncs ALL entity types for ALL homes.
  * Replaces both syncItemsSaga and syncTodosSaga.
+ * Note: Homes are now fetched during auth flow, not during periodic sync.
  */
 function* syncAllSaga(): Generator {
   try {
@@ -51,10 +51,8 @@ function* syncAllSaga(): Generator {
 
     syncLogger.info('Starting unified sync sequence');
 
-    // 1. Sync Homes first
-    yield call([homeService, homeService.syncHomes], apiClient);
-
-    // 2. Get all homes
+    // 1. Get all homes from HomeService (homes should already be loaded from auth flow)
+    const { homeService } = yield import('../../services/HomeService');
     const homes = (yield call([homeService, homeService.getHomes])) as Home[];
     const deviceId = (yield call(getDeviceId)) as string;
 

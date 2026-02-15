@@ -4,408 +4,173 @@
 
 Home Inventory Sync Server API
 
-**Generated:** 2026-02-02T01:14:26.685Z
+**Generated:** 2026-02-15T06:11:09.683Z
 
 ## Table of Contents
 
-- [Accounts](#accounts)
-  - [GET Get account sharing permissions](#accounts-get-account-permissions)
-  - [GET List all accessible accounts](#accounts-list-accessible-accounts)
-  - [GET List all members of the account](#accounts-list-members)
-  - [DELETE Remove a member from the account](#accounts-remove-member)
-  - [PATCH Update account sharing permissions](#accounts-update-account-settings)
-- [Ai](#ai)
-  - [POST Recognize inventory item from image](#ai-recognize-item)
+- [Todo Items](#todo-items)
+  - [GET List all todo items for a home](#todo-items-list)
+  - [POST Create a new todo item](#todo-items-create)
+  - [PATCH Update a todo item](#todo-items-update)
+  - [GET Get details of a specific todo item](#todo-items-get)
+  - [DELETE Delete a todo item](#todo-items-delete)
+- [Todo Categories](#todo-categories)
+  - [DELETE Delete a todo category](#todo-categories-delete)
+  - [PATCH Update a todo category](#todo-categories-update)
+  - [GET List all todo categories for a home](#todo-categories-list)
+  - [POST Create a new todo category](#todo-categories-create)
+  - [GET Get details of a specific todo category](#todo-categories-get)
 - [Auth](#auth)
-  - [GET Get current authenticated user](#auth-get-current-user)
   - [POST Authenticate with Google OAuth](#auth-google-login)
   - [POST Authenticate with email and password](#auth-login)
-  - [POST Create a new user account](#auth-signup)
   - [PATCH Update current user profile](#auth-update-user)
-- [Homes](#homes)
+  - [GET Get current authenticated user](#auth-get-current-user)
+  - [POST Create a new user account](#auth-signup)
 - [Images](#images)
   - [POST Upload an image to B2 storage](#images-upload-image)
-- [Invitations](#invitations)
-  - [POST Accept an invitation to join an account](#invitations-accept-invitation)
-  - [GET Get the invitation code for the account](#invitations-get-invitation-code)
-  - [POST Regenerate the invitation code](#invitations-regenerate-invitation-code)
-  - [GET Validate an invitation code](#invitations-validate-invitation)
-- [Sync](#sync)
-  - [DELETE Delete sync data for a specific file type](#sync-delete-file-data)
-  - [GET Get sync status for all file types](#sync-get-sync-status)
-  - [GET Pull sync data for a specific file type](#sync-pull-file)
-  - [POST Push sync data for a specific file type](#sync-push-file)
+- [Homes](#homes)
+  - [GET List all homes for the authenticated user](#homes-list)
+  - [PATCH Update home details](#homes-update)
+  - [DELETE Remove a member from a home](#homes-remove-member)
+  - [GET Get home invitation details](#homes-get-invitation)
+  - [DELETE Delete a home](#homes-delete)
+  - [GET Get details of a specific home](#homes-get)
+  - [PATCH Update home sharing settings](#homes-update-settings)
+  - [POST Regenerate home invitation code](#homes-regenerate-invitation)
+  - [POST Create a new home](#homes-create)
+  - [GET List all members of a home](#homes-list-members)
+- [Ai](#ai)
+  - [POST Recognize inventory item from image](#ai-recognize-item)
 - [Sync Entities](#sync-entities)
-  - [POST Combined pull and push in a single request](#sync-entities-batch-sync)
-  - [GET Get sync status for entity types in a home](#sync-entities-get-sync-status)
   - [GET Pull entities for a home and entity type](#sync-entities-pull-entities)
+  - [POST Combined pull and push in a single request](#sync-entities-batch-sync)
   - [POST Push entity changes to the server with automatic conflict resolution](#sync-entities-push-entities)
   - [DELETE Clear sync checkpoints forcing full re-sync](#sync-entities-reset-sync)
-
+  - [GET Get sync status for entity types in a home](#sync-entities-get-sync-status)
+- [Debug](#debug)
+  - [GET Interactive API Debug Dashboard](#debug-get-debugz)
+  - [POST Proxy requests to API endpoints](#debug-proxy-debugz-request)
+  - [GET Get handler metadata for debug UI](#debug-get-debugz-api)
+- [Invitations](#invitations)
 
 ---
 
-## Accounts
+## Todo Items
 
-### GET /accounts/permissions
+### GET /homes/:homeId/todos
 
-<a id="accounts-get-account-permissions"></a>
+<a id="todo-items-list"></a>
 
-**ID:** `accounts.get_account_permissions`
+**ID:** `todo_items.list`
 
-**Get account sharing permissions**
+**List all todo items for a home**
 
-Retrieves the sharing permissions for the authenticated user account. These permissions control what household members can access from this account.
+Retrieves a list of all todo items for a home. User must be a member of home. Optionally filter by completion status.
 
-**Authentication:** Required (jwt) - Requires valid JWT token
+**Authentication:** Required (jwt)
 
-**Tags:** `Accounts`
-
-#### Response (200)
-
-Account permissions retrieved successfully
-
-**Example:**
-
-```json
-{
-  "canShareInventory": true,
-  "canShareTodos": true
-}
-```
-
-#### Error Responses
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "message": "Unauthorized - invalid or expired token"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`accounts.update_account_settings`](#accounts-update-account-settings)
-- [`accounts.list_members`](#accounts-list-members)
-
-### GET /accounts
-
-<a id="accounts-list-accessible-accounts"></a>
-
-**ID:** `accounts.list_accessible_accounts`
-
-**List all accessible accounts**
-
-Retrieves a list of all accounts the authenticated user can access. This includes the user own account and all household accounts they have joined.
-
-**Authentication:** Required (jwt) - Requires valid JWT token
-
-**Tags:** `Accounts`
-
-#### Response (200)
-
-Accessible accounts retrieved successfully
-
-**Example:**
-
-```json
-{
-  "accounts": [
-    {
-      "userId": "507f1f77bcf86cd799439011",
-      "email": "me@example.com",
-      "nickname": "My Account",
-      "avatarUrl": "https://example.com/avatar1.jpg",
-      "isOwner": true,
-      "permissions": {
-        "canShareInventory": true,
-        "canShareTodos": true
-      }
-    },
-    {
-      "userId": "507f1f77bcf86cd799439012",
-      "email": "spouse@example.com",
-      "nickname": "Spouse Account",
-      "avatarUrl": "https://example.com/avatar2.jpg",
-      "isOwner": false,
-      "permissions": {
-        "canShareInventory": true,
-        "canShareTodos": false
-      },
-      "joinedAt": "2024-01-15T10:30:00.000Z"
-    }
-  ]
-}
-```
-
-#### Error Responses
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "message": "Unauthorized - invalid or expired token"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`accounts.list_members`](#accounts-list-members)
-- [`invitations.accept_invitation`](#invitations-accept-invitation)
-
-### GET /accounts/members
-
-<a id="accounts-list-members"></a>
-
-**ID:** `accounts.list_members`
-
-**List all members of the account**
-
-Retrieves a list of all members in an account. Both account owners and household members can list members for any account they have access to. Without the optional `userId` query parameter, returns members of the authenticated user's own account. With `userId` (the account owner's user ID), returns members of that account if the requester is the owner or a member of that account.
-
-**Authentication:** Required (jwt) - Requires valid JWT token
-
-**Tags:** `Accounts`
-
-#### Query Parameters
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `userId` | string | No | - | Account owner user ID\. When provided, list members of this account \(requester must be owner or member\)\. When omitted, list members of the authenticated user's own account\. |
-
-#### Response (200)
-
-Members retrieved successfully
-
-**Example:**
-
-```json
-{
-  "members": [
-    {
-      "id": "507f1f77bcf86cd799439011",
-      "email": "owner@example.com",
-      "nickname": "Account Owner",
-      "avatarUrl": "https://example.com/avatar1.jpg",
-      "joinedAt": "2024-01-01T00:00:00.000Z",
-      "isOwner": true
-    },
-    {
-      "id": "507f1f77bcf86cd799439012",
-      "email": "member@example.com",
-      "nickname": "Household Member",
-      "avatarUrl": "https://example.com/avatar2.jpg",
-      "joinedAt": "2024-01-15T10:30:00.000Z",
-      "isOwner": false
-    }
-  ]
-}
-```
-
-#### Error Responses
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "message": "Unauthorized - invalid or expired token"
-}
-```
-
-##### 403 - `FORBIDDEN`
-
-You don't have access to this account
-
-Returned when userId is provided and the requester is neither the account owner nor a member of that account\.
-
-**Example:**
-
-```json
-{
-  "message": "You don't have access to this account"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`accounts.get_account_permissions`](#accounts-get-account-permissions)
-- [`accounts.remove_member`](#accounts-remove-member)
-
-### DELETE /accounts/members/:memberId
-
-<a id="accounts-remove-member"></a>
-
-**ID:** `accounts.remove_member`
-
-**Remove a member from the account**
-
-Removes a household member from an account. Only the account owner can remove other members (no query parameter). Users can remove themselves (leave an account) by setting memberId to their own ID and providing the account ID in the userId query parameter.
-
-**Authentication:** Required (jwt) - Requires valid JWT token
-
-**Tags:** `Accounts`
+**Tags:** `Todo Items`
 
 #### Path Parameters
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `memberId` | string | Yes | ID of the member to remove, or your own ID to leave an account |
-
-#### Query Parameters
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `userId` | string | No | - | Required when removing yourself \(leaving\); ID of the account to leave\. |
+| Name     | Type   | Required | Description                        |
+| -------- | ------ | -------- | ---------------------------------- |
+| `homeId` | string | Yes      | The home ID to get todo items from |
 
 #### Response (200)
 
-Member removed successfully
+List of todo items retrieved successfully
 
 **Example:**
 
 ```json
 {
-  "success": true,
-  "message": "Member removed successfully"
+  "todoItems": [
+    {
+      "todoId": "buy-groceries",
+      "homeId": "my-home",
+      "text": "Buy groceries from the store",
+      "completed": false,
+      "completedAt": null,
+      "position": 0,
+      "categoryId": "shopping",
+      "createdBy": "507f1f77bcf86cd799439011",
+      "updatedBy": "507f1f77bcf86cd799439011",
+      "createdByDeviceId": null,
+      "updatedByDeviceId": null,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+  ]
 }
 ```
 
 #### Error Responses
 
-##### 400 - `USERID_REQUIRED_TO_LEAVE`
+##### 400 - `HOME_ID_REQUIRED`
 
-To leave an account, specify the account ID \(userId query parameter\)
+homeId is required
 
-When removing yourself \(memberId equals your ID\), userId query parameter is required
-
-**Example:**
-
-```json
-{
-  "message": "To leave an account, specify the account ID (userId query parameter)"
-}
-```
-
-##### 400 - `CANNOT_LEAVE_OWN_ACCOUNT`
-
-Cannot leave your own account
-
-The account ID in userId cannot be your own user ID
+The homeId path parameter must be provided
 
 **Example:**
 
 ```json
 {
-  "message": "Cannot leave your own account"
+  "error": "homeId_required",
+  "message": "homeId is required"
 }
 ```
 
 ##### 401 - `UNAUTHORIZED`
 
-Unauthorized \- invalid or expired token
+Unauthorized
+
+No authentication token provided
 
 **Example:**
 
 ```json
 {
-  "message": "Unauthorized - invalid or expired token"
+  "message": "Unauthorized"
 }
 ```
 
 ##### 403 - `FORBIDDEN`
 
-You don't have access to this account
+Forbidden
 
-When leaving, the user is not a member of the specified account
+User is not a member of this home
 
 **Example:**
 
 ```json
 {
-  "message": "You don't have access to this account"
+  "error": "forbidden",
+  "message": "Not a member of this home"
 }
 ```
 
-##### 404 - `MEMBER_NOT_FOUND`
+##### 404 - `HOME_NOT_FOUND`
 
-Member not found
+Home not found
 
-The specified member is not in this account
-
-**Example:**
-
-```json
-{
-  "message": "Member not found"
-}
-```
-
-##### 404 - `NOT_MEMBER_OF_ACCOUNT`
-
-You are not a member of this account
-
-When leaving, no membership exists for the specified account
+The specified home does not exist
 
 **Example:**
 
 ```json
 {
-  "message": "You are not a member of this account"
+  "error": "home_not_found",
+  "message": "Home not found"
 }
 ```
 
 ##### 500 - `SERVER_ERROR`
 
 Internal server error
+
+An unexpected error occurred on server
 
 **Example:**
 
@@ -417,112 +182,36 @@ Internal server error
 
 **Related Endpoints:**
 
-- [`accounts.list_members`](#accounts-list-members)
-- [`accounts.list_accessible_accounts`](#accounts-list-accessible-accounts)
+- [`todo_items.create`](#todo-items-create)
+- [`todo_items.get`](#todo-items-get)
+- [`todo_items.update`](#todo-items-update)
+- [`todo_items.delete`](#todo-items-delete)
 
-### PATCH /accounts/settings
+### POST /homes/:homeId/todos
 
-<a id="accounts-update-account-settings"></a>
+<a id="todo-items-create"></a>
 
-**ID:** `accounts.update_account_settings`
+**ID:** `todo_items.create`
 
-**Update account sharing permissions**
+**Create a new todo item**
 
-Updates the sharing permissions for the authenticated user account. These permissions control what household members can access from this account.
+Creates a new todo item in a home. The user must be a member of home. Each todo item has a unique todoId within the home, text content, completion status, and position.
 
-**Authentication:** Required (jwt) - Requires valid JWT token
+**Authentication:** Required (jwt)
 
-**Tags:** `Accounts`
+**Tags:** `Todo Items`
 
-#### Request Body
+#### Path Parameters
 
-**Content-Type:** `application/json`
-
-Account permission settings to update (all fields optional)
-
-**Required:** No
-
-**Example:**
-
-```json
-{
-  "canShareInventory": true,
-  "canShareTodos": false
-}
-```
-
-#### Response (200)
-
-Account settings updated successfully
-
-**Example:**
-
-```json
-{
-  "canShareInventory": true,
-  "canShareTodos": false
-}
-```
-
-#### Error Responses
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "message": "Unauthorized - invalid or expired token"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`accounts.get_account_permissions`](#accounts-get-account-permissions)
-- [`accounts.list_members`](#accounts-list-members)
-
-
----
-
-## Ai
-
-### POST /ai/recognize-item
-
-<a id="ai-recognize-item"></a>
-
-**ID:** `ai.recognize_item`
-
-**Recognize inventory item from image**
-
-Uses AI to analyze an image and extract structured inventory item data. Returns item name, status, price, amount, and other relevant fields.
-
-**Authentication:** This endpoint does NOT require authentication.
-
-**Supported image formats:** JPEG, PNG, GIF, WebP (base64 encoded)
-
-**Authentication:** Not required
-
-**Tags:** `AI`
+| Name     | Type   | Required | Description                            |
+| -------- | ------ | -------- | -------------------------------------- |
+| `homeId` | string | Yes      | The home ID to create the todo item in |
 
 #### Request Body
 
 **Content-Type:** `application/json`
 
-Image data for item recognition
+Todo item creation details
 
 **Required:** Yes
 
@@ -530,143 +219,157 @@ Image data for item recognition
 
 ```json
 {
-  "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCE..."
+  "todoId": "buy-groceries",
+  "text": "Buy groceries from the store",
+  "completed": false,
+  "position": 0
 }
 ```
 
-#### Response (200)
+#### Response (201)
 
-Item recognized successfully
+Todo item created successfully
 
 **Example:**
 
 ```json
 {
-  "success": true,
-  "item": {
-    "id": "temp-123",
-    "name": "Organic Milk",
-    "status": "using",
-    "price": 4.99,
-    "amount": 1,
-    "warningThreshold": 2,
-    "expiryDate": "2024-02-01T00:00:00.000Z",
-    "purchaseDate": "2024-01-15T00:00:00.000Z"
+  "todoItem": {
+    "todoId": "buy-groceries",
+    "homeId": "my-home",
+    "text": "Buy groceries from the store",
+    "completed": false,
+    "completedAt": null,
+    "position": 0,
+    "createdBy": "507f1f77bcf86cd799439011",
+    "updatedBy": "507f1f77bcf86cd799439011",
+    "createdByDeviceId": null,
+    "updatedByDeviceId": null,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
   }
 }
 ```
 
 #### Error Responses
 
-##### 400 - `NO_IMAGE_PROVIDED`
+##### 400 - `VALIDATION_ERROR`
 
-Image is required
+Validation error
 
-The request must include a base64\-encoded image
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": "Image is required"
-}
-```
-
-##### 500 - `AI_SERVICE_ERROR`
-
-Failed to recognize item
-
-The AI service returned an error or invalid response
+Invalid request parameters
 
 **Example:**
 
 ```json
 {
-  "success": false,
-  "error": "Failed to recognize item"
+  "error": "todoId_required",
+  "message": "todoId is required"
 }
 ```
 
-##### 500 - `SERVER_ERROR`
+##### 400 - `INVALID_TODO_ID`
 
-Internal server error
+Invalid todoId format
 
-An unexpected error occurred on the server
+todoId must be 4\-50 characters, alphanumeric with hyphens or underscores
 
 **Example:**
 
 ```json
 {
-  "success": false,
-  "error": "Internal server error"
+  "error": "invalid_todo_id",
+  "message": "todoId must be 4-50 characters, alphanumeric with hyphens or underscores"
 }
 ```
 
+##### 400 - `TEXT_REQUIRED`
 
----
+Text is required
 
-## Auth
-
-### GET /auth/me
-
-<a id="auth-get-current-user"></a>
-
-**ID:** `auth.get_current_user`
-
-**Get current authenticated user**
-
-Retrieves information about the currently authenticated user. The user is identified via the JWT token in the Authorization header.
-
-**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
-
-**Tags:** `Authentication`
-
-#### Headers
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `Authorization` | string | Yes | JWT bearer token \(format: Bearer <token>\) |
-
-#### Response (200)
-
-User information retrieved successfully
+Text cannot be empty
 
 **Example:**
 
 ```json
 {
-  "id": "507f1f77bcf86cd799439011",
-  "email": "user@example.com",
-  "nickname": "John Doe",
-  "avatarUrl": "https://example.com/avatar.jpg",
-  "invitationCode": "AB12CD34EF56GH78",
-  "accountSettings": {
-    "canShareInventory": true,
-    "canShareTodos": true
-  },
-  "memberships": [
-    {
-      "accountId": "507f1f77bcf86cd799439012",
-      "joinedAt": "2024-01-15T10:30:00.000Z"
-    }
-  ]
+  "error": "text_required",
+  "message": "text is required"
 }
 ```
 
-#### Error Responses
+##### 400 - `TEXT_TOO_LONG`
+
+Text too long
+
+Text must be 1000 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "text_too_long",
+  "message": "text must be 1000 characters or less"
+}
+```
 
 ##### 401 - `UNAUTHORIZED`
 
-Unauthorized \- invalid or expired token
+Unauthorized
 
-The JWT token is missing, invalid, or has expired
+No authentication token provided
 
 **Example:**
 
 ```json
 {
-  "message": "Unauthorized - invalid or expired token"
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Forbidden
+
+User is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+The specified home does not exist
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 409 - `TODO_ID_EXISTS`
+
+Todo ID already exists
+
+A todo with this ID already exists in this home
+
+**Example:**
+
+```json
+{
+  "error": "todo_id_exists",
+  "message": "A todo with this ID already exists in this home",
+  "suggestedTodoId": "buy-groceries-2"
 }
 ```
 
@@ -674,7 +377,7 @@ The JWT token is missing, invalid, or has expired
 
 Internal server error
 
-An unexpected error occurred on the server
+An unexpected error occurred on server
 
 **Example:**
 
@@ -686,9 +389,1426 @@ An unexpected error occurred on the server
 
 **Related Endpoints:**
 
-- [`auth.update_user`](#auth-update-user)
-- [`auth.login`](#auth-login)
-- [`auth.signup`](#auth-signup)
+- [`todo_items.list`](#todo-items-list)
+- [`todo_items.get`](#todo-items-get)
+- [`todo_items.update`](#todo-items-update)
+- [`todo_items.delete`](#todo-items-delete)
+
+### PATCH /homes/:homeId/todos/:todoId
+
+<a id="todo-items-update"></a>
+
+**ID:** `todo_items.update`
+
+**Update a todo item**
+
+Updates specific fields of an existing todo item. User must be a member of the home that contains the todo item. Only fields provided in request body will be updated. When completed status changes to true, completedAt is set. When completed changes to false, completedAt is cleared.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Todo Items`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                             |
+| -------- | ------ | -------- | --------------------------------------- |
+| `homeId` | string | Yes      | The home ID that contains the todo item |
+| `todoId` | string | Yes      | The unique identifier of the todo item  |
+
+#### Request Body
+
+**Content-Type:** `application/json`
+
+Todo item fields to update
+
+**Required:** Yes
+
+**Example:**
+
+```json
+{
+  "text": "Buy groceries from the store - updated",
+  "completed": true
+}
+```
+
+#### Response (200)
+
+Todo item updated successfully
+
+**Example:**
+
+```json
+{
+  "todoItem": {
+    "todoId": "buy-groceries",
+    "homeId": "my-home",
+    "text": "Buy groceries from the store - updated",
+    "completed": true,
+    "completedAt": "2024-01-15T11:00:00.000Z",
+    "position": 0,
+    "categoryId": "shopping",
+    "createdBy": "507f1f77bcf86cd799439011",
+    "updatedBy": "507f1f77bcf86cd799439011",
+    "createdByDeviceId": null,
+    "updatedByDeviceId": null,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T11:00:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `TODO_ID_REQUIRED`
+
+todoId is required
+
+The todoId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "todoId_required",
+  "message": "todoId is required"
+}
+```
+
+##### 400 - `INVALID_TEXT`
+
+Invalid text
+
+Text cannot be empty
+
+**Example:**
+
+```json
+{
+  "error": "invalid_text",
+  "message": "text cannot be empty"
+}
+```
+
+##### 400 - `TEXT_TOO_LONG`
+
+Text too long
+
+Text must be 1000 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "text_too_long",
+  "message": "text must be 1000 characters or less"
+}
+```
+
+##### 400 - `INVALID_POSITION`
+
+Invalid position
+
+Position must be a non\-negative number
+
+**Example:**
+
+```json
+{
+  "error": "invalid_position",
+  "message": "position must be a non-negative number"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Forbidden
+
+User is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+The specified home does not exist
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 404 - `TODO_NOT_FOUND`
+
+Todo item not found
+
+No todo item exists with the provided todoId
+
+**Example:**
+
+```json
+{
+  "error": "todo_not_found",
+  "message": "Todo item not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`todo_items.create`](#todo-items-create)
+- [`todo_items.list`](#todo-items-list)
+- [`todo_items.get`](#todo-items-get)
+- [`todo_items.delete`](#todo-items-delete)
+
+### GET /homes/:homeId/todos/:todoId
+
+<a id="todo-items-get"></a>
+
+**ID:** `todo_items.get`
+
+**Get details of a specific todo item**
+
+Retrieves detailed information about a specific todo item. User must be a member of the home that contains the todo item.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Todo Items`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                             |
+| -------- | ------ | -------- | --------------------------------------- |
+| `homeId` | string | Yes      | The home ID that contains the todo item |
+| `todoId` | string | Yes      | The unique identifier of the todo item  |
+
+#### Response (200)
+
+Todo item details retrieved successfully
+
+**Example:**
+
+```json
+{
+  "todoItem": {
+    "todoId": "buy-groceries",
+    "homeId": "my-home",
+    "text": "Buy groceries from the store",
+    "completed": false,
+    "completedAt": null,
+    "position": 0,
+    "categoryId": "shopping",
+    "createdBy": "507f1f77bcf86cd799439011",
+    "updatedBy": "507f1f77bcf86cd799439011",
+    "createdByDeviceId": null,
+    "updatedByDeviceId": null,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 400 - `TODO_ID_REQUIRED`
+
+todoId is required
+
+The todoId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "todoId_required",
+  "message": "todoId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Forbidden
+
+User is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+The specified home does not exist
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 404 - `TODO_NOT_FOUND`
+
+Todo item not found
+
+No todo item exists with the provided todoId
+
+**Example:**
+
+```json
+{
+  "error": "todo_not_found",
+  "message": "Todo item not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`todo_items.create`](#todo-items-create)
+- [`todo_items.list`](#todo-items-list)
+- [`todo_items.update`](#todo-items-update)
+- [`todo_items.delete`](#todo-items-delete)
+
+### DELETE /homes/:homeId/todos/:todoId
+
+<a id="todo-items-delete"></a>
+
+**ID:** `todo_items.delete`
+
+**Delete a todo item**
+
+Soft deletes a todo item by setting deletedAt and deletedBy fields. User must be a member of the home that contains the todo item. The todo item remains in the database but is excluded from queries.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Todo Items`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                             |
+| -------- | ------ | -------- | --------------------------------------- |
+| `homeId` | string | Yes      | The home ID that contains the todo item |
+| `todoId` | string | Yes      | The unique identifier of the todo item  |
+
+#### Response (200)
+
+Todo item deleted successfully
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "message": "Todo item deleted successfully",
+  "deletedAt": "2024-01-15T11:00:00.000Z"
+}
+```
+
+#### Error Responses
+
+##### 400 - `TODO_ID_REQUIRED`
+
+todoId is required
+
+The todoId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "todoId_required",
+  "message": "todoId is required"
+}
+```
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Forbidden
+
+User is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+The specified home does not exist
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 404 - `TODO_NOT_FOUND`
+
+Todo item not found
+
+No todo item exists with the provided todoId
+
+**Example:**
+
+```json
+{
+  "error": "todo_not_found",
+  "message": "Todo item not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`todo_items.create`](#todo-items-create)
+- [`todo_items.list`](#todo-items-list)
+- [`todo_items.get`](#todo-items-get)
+- [`todo_items.update`](#todo-items-update)
+
+---
+
+## Todo Categories
+
+### DELETE /homes/:homeId/todoCategories/:categoryId
+
+<a id="todo-categories-delete"></a>
+
+**ID:** `todo_categories.delete`
+
+**Delete a todo category**
+
+Soft deletes a todo category by setting deletedAt and deletedBy fields. User must be a member of the home that contains the category. The category remains in the database but is excluded from queries.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Todo Categories`
+
+#### Path Parameters
+
+| Name         | Type   | Required | Description                                |
+| ------------ | ------ | -------- | ------------------------------------------ |
+| `homeId`     | string | Yes      | The home ID that contains the category     |
+| `categoryId` | string | Yes      | The unique identifier of the todo category |
+
+#### Response (200)
+
+Todo category deleted successfully
+
+**Example:**
+
+```json
+{
+  "message": "Todo category deleted successfully",
+  "categoryId": "shopping"
+}
+```
+
+#### Error Responses
+
+##### 400 - `CATEGORY_ID_REQUIRED`
+
+categoryId is required
+
+The categoryId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "categoryId_required",
+  "message": "categoryId is required"
+}
+```
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Forbidden
+
+User is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+The specified home does not exist
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 404 - `CATEGORY_NOT_FOUND`
+
+Todo category not found
+
+No todo category exists with the provided categoryId
+
+**Example:**
+
+```json
+{
+  "error": "category_not_found",
+  "message": "Todo category not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`todo_categories.create`](#todo-categories-create)
+- [`todo_categories.list`](#todo-categories-list)
+- [`todo_categories.get`](#todo-categories-get)
+- [`todo_categories.update`](#todo-categories-update)
+
+### PATCH /homes/:homeId/todoCategories/:categoryId
+
+<a id="todo-categories-update"></a>
+
+**ID:** `todo_categories.update`
+
+**Update a todo category**
+
+Updates specific fields of an existing todo category. User must be a member of the home that contains the category. Only fields provided in request body will be updated.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Todo Categories`
+
+#### Path Parameters
+
+| Name         | Type   | Required | Description                                |
+| ------------ | ------ | -------- | ------------------------------------------ |
+| `homeId`     | string | Yes      | The home ID that contains the category     |
+| `categoryId` | string | Yes      | The unique identifier of the todo category |
+
+#### Request Body
+
+**Content-Type:** `application/json`
+
+Todo category fields to update
+
+**Required:** Yes
+
+**Example:**
+
+```json
+{
+  "name": "Shopping List",
+  "color": "#3498db"
+}
+```
+
+#### Response (200)
+
+Todo category updated successfully
+
+**Example:**
+
+```json
+{
+  "todoCategory": {
+    "categoryId": "shopping",
+    "homeId": "my-home",
+    "name": "Shopping List",
+    "description": "Groceries and household items",
+    "color": "#3498db",
+    "icon": "cart",
+    "position": 0,
+    "createdBy": "507f1f77bcf86cd799439011",
+    "updatedBy": "507f1f77bcf86cd799439011",
+    "createdByDeviceId": null,
+    "updatedByDeviceId": null,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T11:00:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `CATEGORY_ID_REQUIRED`
+
+categoryId is required
+
+The categoryId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "categoryId_required",
+  "message": "categoryId is required"
+}
+```
+
+##### 400 - `NAME_REQUIRED`
+
+Name is required
+
+Name cannot be empty
+
+**Example:**
+
+```json
+{
+  "error": "name_required",
+  "message": "name cannot be empty"
+}
+```
+
+##### 400 - `NAME_TOO_LONG`
+
+Name too long
+
+Name must be 100 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "name_too_long",
+  "message": "name must be 100 characters or less"
+}
+```
+
+##### 400 - `DESCRIPTION_TOO_LONG`
+
+Description too long
+
+Description must be 500 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "description_too_long",
+  "message": "description must be 500 characters or less"
+}
+```
+
+##### 400 - `INVALID_COLOR`
+
+Invalid color format
+
+Color must be a valid hex color code
+
+**Example:**
+
+```json
+{
+  "error": "invalid_color",
+  "message": "color must be a valid hex color code (e.g., #FF5733)"
+}
+```
+
+##### 400 - `ICON_TOO_LONG`
+
+Icon too long
+
+Icon must be 50 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "icon_too_long",
+  "message": "icon must be 50 characters or less"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Forbidden
+
+User is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+The specified home does not exist
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 404 - `CATEGORY_NOT_FOUND`
+
+Todo category not found
+
+No todo category exists with the provided categoryId
+
+**Example:**
+
+```json
+{
+  "error": "category_not_found",
+  "message": "Todo category not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`todo_categories.create`](#todo-categories-create)
+- [`todo_categories.list`](#todo-categories-list)
+- [`todo_categories.get`](#todo-categories-get)
+- [`todo_categories.delete`](#todo-categories-delete)
+
+### GET /homes/:homeId/todoCategories
+
+<a id="todo-categories-list"></a>
+
+**ID:** `todo_categories.list`
+
+**List all todo categories for a home**
+
+Retrieves a list of all todo categories for a home. User must be a member of the home. Categories are ordered by position.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Todo Categories`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                             |
+| -------- | ------ | -------- | --------------------------------------- |
+| `homeId` | string | Yes      | The home ID to get todo categories from |
+
+#### Response (200)
+
+List of todo categories retrieved successfully
+
+**Example:**
+
+```json
+{
+  "todoCategories": [
+    {
+      "categoryId": "shopping",
+      "homeId": "my-home",
+      "name": "Shopping",
+      "description": "Groceries and household items",
+      "color": "#FF5733",
+      "icon": "cart",
+      "position": 0,
+      "createdBy": "507f1f77bcf86cd799439011",
+      "updatedBy": "507f1f77bcf86cd799439011",
+      "createdByDeviceId": null,
+      "updatedByDeviceId": null,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+#### Error Responses
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Forbidden
+
+User is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+The specified home does not exist
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`todo_categories.create`](#todo-categories-create)
+- [`todo_categories.get`](#todo-categories-get)
+- [`todo_categories.update`](#todo-categories-update)
+- [`todo_categories.delete`](#todo-categories-delete)
+
+### POST /homes/:homeId/todoCategories
+
+<a id="todo-categories-create"></a>
+
+**ID:** `todo_categories.create`
+
+**Create a new todo category**
+
+Creates a new todo category in a home. The user must be a member of the home. Each todo category has a unique categoryId within the home, a name, optional description, color, and icon.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Todo Categories`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                                |
+| -------- | ------ | -------- | ------------------------------------------ |
+| `homeId` | string | Yes      | The home ID to create the todo category in |
+
+#### Request Body
+
+**Content-Type:** `application/json`
+
+Todo category creation details
+
+**Required:** Yes
+
+**Example:**
+
+```json
+{
+  "categoryId": "shopping",
+  "name": "Shopping",
+  "description": "Groceries and household items",
+  "color": "#FF5733",
+  "icon": "cart",
+  "position": 0
+}
+```
+
+#### Response (201)
+
+Todo category created successfully
+
+**Example:**
+
+```json
+{
+  "todoCategory": {
+    "categoryId": "shopping",
+    "homeId": "my-home",
+    "name": "Shopping",
+    "description": "Groceries and household items",
+    "color": "#FF5733",
+    "icon": "cart",
+    "position": 0,
+    "createdBy": "507f1f77bcf86cd799439011",
+    "updatedBy": "507f1f77bcf86cd799439011",
+    "createdByDeviceId": null,
+    "updatedByDeviceId": null,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `VALIDATION_ERROR`
+
+Validation error
+
+Invalid request parameters
+
+**Example:**
+
+```json
+{
+  "error": "categoryId_required",
+  "message": "categoryId is required"
+}
+```
+
+##### 400 - `INVALID_CATEGORY_ID`
+
+Invalid categoryId format
+
+categoryId must be 4\-50 characters, alphanumeric with hyphens or underscores
+
+**Example:**
+
+```json
+{
+  "error": "invalid_category_id",
+  "message": "categoryId must be 4-50 characters, alphanumeric with hyphens or underscores"
+}
+```
+
+##### 400 - `NAME_REQUIRED`
+
+Name is required
+
+Name cannot be empty
+
+**Example:**
+
+```json
+{
+  "error": "name_required",
+  "message": "name is required"
+}
+```
+
+##### 400 - `NAME_TOO_LONG`
+
+Name too long
+
+Name must be 100 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "name_too_long",
+  "message": "name must be 100 characters or less"
+}
+```
+
+##### 400 - `INVALID_COLOR`
+
+Invalid color format
+
+Color must be a valid hex color code
+
+**Example:**
+
+```json
+{
+  "error": "invalid_color",
+  "message": "color must be a valid hex color code (e.g., #FF5733)"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Forbidden
+
+User is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+The specified home does not exist
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 409 - `CATEGORY_ID_EXISTS`
+
+Category ID already exists
+
+A todo category with this ID already exists in this home
+
+**Example:**
+
+```json
+{
+  "error": "category_id_exists",
+  "message": "A todo category with this ID already exists in this home",
+  "suggestedCategoryId": "shopping-2"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`todo_categories.list`](#todo-categories-list)
+- [`todo_categories.get`](#todo-categories-get)
+- [`todo_categories.update`](#todo-categories-update)
+- [`todo_categories.delete`](#todo-categories-delete)
+
+### GET /homes/:homeId/todoCategories/:categoryId
+
+<a id="todo-categories-get"></a>
+
+**ID:** `todo_categories.get`
+
+**Get details of a specific todo category**
+
+Retrieves detailed information about a specific todo category. User must be a member of the home that contains the category.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Todo Categories`
+
+#### Path Parameters
+
+| Name         | Type   | Required | Description                                |
+| ------------ | ------ | -------- | ------------------------------------------ |
+| `homeId`     | string | Yes      | The home ID that contains the category     |
+| `categoryId` | string | Yes      | The unique identifier of the todo category |
+
+#### Response (200)
+
+Todo category details retrieved successfully
+
+**Example:**
+
+```json
+{
+  "todoCategory": {
+    "categoryId": "shopping",
+    "homeId": "my-home",
+    "name": "Shopping",
+    "description": "Groceries and household items",
+    "color": "#FF5733",
+    "icon": "cart",
+    "position": 0,
+    "createdBy": "507f1f77bcf86cd799439011",
+    "updatedBy": "507f1f77bcf86cd799439011",
+    "createdByDeviceId": null,
+    "updatedByDeviceId": null,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 400 - `CATEGORY_ID_REQUIRED`
+
+categoryId is required
+
+The categoryId path parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "categoryId_required",
+  "message": "categoryId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Forbidden
+
+User is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+The specified home does not exist
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 404 - `CATEGORY_NOT_FOUND`
+
+Todo category not found
+
+No todo category exists with the provided categoryId
+
+**Example:**
+
+```json
+{
+  "error": "category_not_found",
+  "message": "Todo category not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`todo_categories.create`](#todo-categories-create)
+- [`todo_categories.list`](#todo-categories-list)
+- [`todo_categories.update`](#todo-categories-update)
+- [`todo_categories.delete`](#todo-categories-delete)
+
+---
+
+## Auth
 
 ### POST /auth/google
 
@@ -906,104 +2026,6 @@ An unexpected error occurred on the server
 - [`auth.google_login`](#auth-google-login)
 - [`auth.get_current_user`](#auth-get-current-user)
 
-### POST /auth/signup
-
-<a id="auth-signup"></a>
-
-**ID:** `auth.signup`
-
-**Create a new user account**
-
-Registers a new user with email and password. The password must be at least 6 characters long. Returns a JWT access token upon successful registration.
-
-**Note:** If you prefer Google authentication, use the `/auth/google` endpoint instead.
-
-**Authentication:** Not required
-
-**Tags:** `Authentication`
-
-#### Request Body
-
-**Content-Type:** `application/json`
-
-User registration details
-
-**Required:** Yes
-
-**Example:**
-
-```json
-{
-  "email": "user@example.com",
-  "password": "securePassword123"
-}
-```
-
-#### Response (201)
-
-User successfully created
-
-**Example:**
-
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1MGYxZjc3YmNmODZjZDc5OTQzOTAxMSIsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsImlhdCI6MTYxNjIzOTAyMiwiZXhwIjoxNjE2MzI1NDIyfQ.signature",
-  "user": {
-    "id": "507f1f77bcf86cd799439011",
-    "email": "user@example.com"
-  }
-}
-```
-
-#### Error Responses
-
-##### 400 - `VALIDATION_ERROR`
-
-Invalid input
-
-Email and password are required, or password is too short \(minimum 6 characters\)
-
-**Example:**
-
-```json
-{
-  "message": "Email and password are required"
-}
-```
-
-##### 409 - `USER_EXISTS`
-
-User already exists
-
-An account with this email address already exists
-
-**Example:**
-
-```json
-{
-  "message": "User already exists"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-An unexpected error occurred on the server
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`auth.login`](#auth-login)
-- [`auth.google_login`](#auth-google-login)
-
 ### PATCH /auth/me
 
 <a id="auth-update-user"></a>
@@ -1020,9 +2042,9 @@ Updates the authenticated user profile. Supports updating nickname, avatar URL, 
 
 #### Headers
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `Authorization` | string | Yes | JWT bearer token \(format: Bearer <token>\) |
+| Name            | Type   | Required | Description                                 |
+| --------------- | ------ | -------- | ------------------------------------------- |
+| `Authorization` | string | Yes      | JWT bearer token \(format: Bearer <token>\) |
 
 #### Request Body
 
@@ -1123,11 +2145,185 @@ An unexpected error occurred on the server
 - [`auth.get_current_user`](#auth-get-current-user)
 - [`auth.login`](#auth-login)
 
+### GET /auth/me
 
----
+<a id="auth-get-current-user"></a>
 
-## Homes
+**ID:** `auth.get_current_user`
 
+**Get current authenticated user**
+
+Retrieves information about the currently authenticated user. The user is identified via the JWT token in the Authorization header.
+
+**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
+
+**Tags:** `Authentication`
+
+#### Headers
+
+| Name            | Type   | Required | Description                                 |
+| --------------- | ------ | -------- | ------------------------------------------- |
+| `Authorization` | string | Yes      | JWT bearer token \(format: Bearer <token>\) |
+
+#### Response (200)
+
+User information retrieved successfully
+
+**Example:**
+
+```json
+{
+  "id": "507f1f77bcf86cd799439011",
+  "email": "user@example.com",
+  "nickname": "John Doe",
+  "avatarUrl": "https://example.com/avatar.jpg",
+  "invitationCode": "AB12CD34EF56GH78",
+  "accountSettings": {
+    "canShareInventory": true,
+    "canShareTodos": true
+  },
+  "memberships": [
+    {
+      "accountId": "507f1f77bcf86cd799439012",
+      "joinedAt": "2024-01-15T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+#### Error Responses
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized \- invalid or expired token
+
+The JWT token is missing, invalid, or has expired
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized - invalid or expired token"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`auth.update_user`](#auth-update-user)
+- [`auth.login`](#auth-login)
+- [`auth.signup`](#auth-signup)
+
+### POST /auth/signup
+
+<a id="auth-signup"></a>
+
+**ID:** `auth.signup`
+
+**Create a new user account**
+
+Registers a new user with email and password. The password must be at least 6 characters long. Returns a JWT access token upon successful registration.
+
+**Note:** If you prefer Google authentication, use the `/auth/google` endpoint instead.
+
+**Authentication:** Not required
+
+**Tags:** `Authentication`
+
+#### Request Body
+
+**Content-Type:** `application/json`
+
+User registration details
+
+**Required:** Yes
+
+**Example:**
+
+```json
+{
+  "email": "user@example.com",
+  "password": "securePassword123"
+}
+```
+
+#### Response (201)
+
+User successfully created
+
+**Example:**
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1MGYxZjc3YmNmODZjZDc5OTQzOTAxMSIsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsImlhdCI6MTYxNjIzOTAyMiwiZXhwIjoxNjE2MzI1NDIyfQ.signature",
+  "user": {
+    "id": "507f1f77bcf86cd799439011",
+    "email": "user@example.com"
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `VALIDATION_ERROR`
+
+Invalid input
+
+Email and password are required, or password is too short \(minimum 6 characters\)
+
+**Example:**
+
+```json
+{
+  "message": "Email and password are required"
+}
+```
+
+##### 409 - `USER_EXISTS`
+
+User already exists
+
+An account with this email address already exists
+
+**Example:**
+
+```json
+{
+  "message": "User already exists"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`auth.login`](#auth-login)
+- [`auth.google_login`](#auth-google-login)
 
 ---
 
@@ -1225,704 +2421,69 @@ An error occurred while uploading to B2 storage
 }
 ```
 
-
 ---
 
-## Invitations
+## Homes
 
-### POST /invitations/:code/accept
+### GET /homes
 
-<a id="invitations-accept-invitation"></a>
+<a id="homes-list"></a>
 
-**ID:** `invitations.accept_invitation`
+**ID:** `homes.list`
 
-**Accept an invitation to join an account**
+**List all homes for the authenticated user**
 
-Accepts an invitation and adds the authenticated user to the target account as a household member.
+Retrieves a list of all homes the authenticated user is a member of, including homes they own and homes they have joined.
 
-**Authentication:** Required (jwt) - Requires valid JWT token
+**Authentication:** Required (jwt)
 
-**Tags:** `Invitations`
-
-#### Path Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `code` | string | Yes | 16\-character invitation code |
+**Tags:** `Homes`
 
 #### Response (200)
 
-Invitation accepted successfully
+List of homes retrieved successfully
 
 **Example:**
 
 ```json
 {
-  "success": true,
-  "message": "Successfully joined the account"
-}
-```
-
-#### Error Responses
-
-##### 400 - `ALREADY_MEMBER`
-
-Already a member of this account
-
-The user is already a member of the target account
-
-**Example:**
-
-```json
-{
-  "message": "Already a member of this account"
-}
-```
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "message": "Unauthorized - invalid or expired token"
-}
-```
-
-##### 404 - `INVALID_INVITATION_CODE`
-
-Invalid invitation code
-
-The invitation code does not exist or has expired
-
-**Example:**
-
-```json
-{
-  "message": "Invalid invitation code"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`invitations.validate_invitation`](#invitations-validate-invitation)
-- [`accounts.list_accessible_accounts`](#accounts-list-accessible-accounts)
-
-### GET /invitations/code
-
-<a id="invitations-get-invitation-code"></a>
-
-**ID:** `invitations.get_invitation_code`
-
-**Get the invitation code for the account**
-
-Retrieves the invitation code for the authenticated user account. This code can be shared with others to invite them to join the household.
-
-**Authentication:** Required (jwt) - Requires valid JWT token
-
-**Tags:** `Invitations`
-
-#### Response (200)
-
-Invitation code retrieved successfully
-
-**Example:**
-
-```json
-{
-  "invitationCode": "AB12CD34EF56GH78",
-  "settings": {
-    "canShareInventory": true,
-    "canShareTodos": true
-  },
-  "memberCount": 3,
-  "inviter": {
-    "nickname": "John Doe",
-    "avatarUrl": "https://example.com/avatars/john-doe.jpg"
-  }
-}
-```
-
-#### Error Responses
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "message": "Unauthorized - invalid or expired token"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`invitations.regenerate_invitation_code`](#invitations-regenerate-invitation-code)
-- [`invitations.validate_invitation`](#invitations-validate-invitation)
-
-### POST /invitations/code/regenerate
-
-<a id="invitations-regenerate-invitation-code"></a>
-
-**ID:** `invitations.regenerate_invitation_code`
-
-**Regenerate the invitation code**
-
-Generates a new invitation code for the authenticated user account. The old code will become invalid. Use this after sharing the code with unwanted recipients or for security reasons.
-
-**Authentication:** Required (jwt) - Requires valid JWT token
-
-**Tags:** `Invitations`
-
-#### Response (200)
-
-Invitation code regenerated successfully
-
-**Example:**
-
-```json
-{
-  "code": "ZY98XW76VU54TR32",
-  "accountEmail": "household@example.com",
-  "permissions": {
-    "canShareInventory": true,
-    "canShareTodos": true
-  }
-}
-```
-
-#### Error Responses
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "message": "Unauthorized - invalid or expired token"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`invitations.get_invitation_code`](#invitations-get-invitation-code)
-- [`invitations.validate_invitation`](#invitations-validate-invitation)
-
-### GET /invitations/:code
-
-<a id="invitations-validate-invitation"></a>
-
-**ID:** `invitations.validate_invitation`
-
-**Validate an invitation code**
-
-Validates an invitation code and returns the account information and permissions. Use this to show the user what account they are joining before accepting the invitation.
-
-**Authentication:** Not required
-
-**Tags:** `Invitations`
-
-#### Path Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `code` | string | Yes | 16\-character invitation code |
-
-#### Response (200)
-
-Invitation code is valid
-
-**Example:**
-
-```json
-{
-  "valid": true,
-  "accountEmail": "household@example.com",
-  "nickname": "John",
-  "avatarUrl": "https://example.com/avatar.jpg",
-  "permissions": {
-    "canShareInventory": true,
-    "canShareTodos": true
-  }
-}
-```
-
-#### Error Responses
-
-##### 404 - `INVALID_INVITATION_CODE`
-
-Invalid invitation code
-
-The invitation code does not exist or has expired
-
-**Example:**
-
-```json
-{
-  "valid": false,
-  "message": "Invalid invitation code"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`invitations.accept_invitation`](#invitations-accept-invitation)
-- [`invitations.get_invitation_code`](#invitations-get-invitation-code)
-
-
----
-
-## Sync
-
-### DELETE /sync/:fileType/data
-
-<a id="sync-delete-file-data"></a>
-
-**ID:** `sync.delete_file_data`
-
-**Delete sync data for a specific file type**
-
-Deletes all sync data for a given file type from the server. This operation cannot be undone. Use with caution.
-
-**Supported file types:** `categories`, `locations`, `inventoryItems`, `todoItems`, `settings`
-
-**Cross-account access:** Pass `userId` query parameter to delete from another account. Requires membership in the target account and proper permissions.
-
-**Permission requirements:**
-- `inventoryItems`: Requires `canShareInventory: true` on target account
-- `todoItems`: Requires `canShareTodos: true` on target account
-- Other types: Always allowed for members
-- Account owners: Always have full access regardless of permissions
-
-**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
-
-**Tags:** `Synchronization`
-
-#### Path Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `fileType` | enum (categories, locations, inventoryItems, todoItems, settings) | Yes | Type of file to delete |
-
-#### Query Parameters
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `userId` | string | No | - | Target account ID \(for cross\-account access\) |
-
-#### Response (200)
-
-Sync data deleted successfully
-
-**Example:**
-
-```json
-{
-  "success": true,
-  "message": "All categories data has been deleted"
-}
-```
-
-#### Error Responses
-
-##### 400 - `INVALID_FILE_TYPE`
-
-Invalid file type
-
-The fileType must be one of the supported types
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Invalid file type",
-    "code": "INVALID_FILE_TYPE",
-    "statusCode": 400
-  }
-}
-```
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Unauthorized - invalid or expired token",
-    "code": "UNAUTHORIZED",
-    "statusCode": 401
-  }
-}
-```
-
-##### 403 - `FORBIDDEN`
-
-Access denied \- insufficient permissions
-
-Thrown when trying to delete from another account without proper membership or when the target account has sharing disabled for the specific file type
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "You don't have permission to delete inventory items",
-    "code": "FORBIDDEN",
-    "statusCode": 403
-  }
-}
-```
-
-##### 404 - `ACCOUNT_NOT_FOUND`
-
-Account not found
-
-The target account does not exist
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Account not found",
-    "code": "ACCOUNT_NOT_FOUND",
-    "statusCode": 404
-  }
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Internal server error",
-    "code": "SERVER_ERROR",
-    "statusCode": 500
-  }
-}
-```
-
-**Related Endpoints:**
-
-- [`sync.pull_file`](#sync-pull-file)
-- [`sync.push_file`](#sync-push-file)
-
-### GET /sync/status
-
-<a id="sync-get-sync-status"></a>
-
-**ID:** `sync.get_sync_status`
-
-**Get sync status for all file types**
-
-Retrieves the sync metadata for all file types, including last sync time, device information, and total sync counts. Useful for displaying sync status in the client application.
-
-**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
-
-**Tags:** `Synchronization`
-
-#### Response (200)
-
-Sync status retrieved successfully
-
-**Example:**
-
-```json
-{
-  "categories": {
-    "lastSyncTime": "2024-01-15T10:30:00.000Z",
-    "lastSyncedByDeviceId": "iphone-15-pro-123",
-    "lastSyncedAt": "2024-01-15T10:30:00.000Z",
-    "clientVersion": "1.0.0",
-    "deviceName": "iPhone 15 Pro",
-    "totalSyncs": 42
-  },
-  "locations": {
-    "lastSyncTime": "2024-01-15T10:25:00.000Z",
-    "lastSyncedByDeviceId": "iphone-15-pro-123",
-    "lastSyncedAt": "2024-01-15T10:25:00.000Z",
-    "clientVersion": "1.0.0",
-    "deviceName": "iPhone 15 Pro",
-    "totalSyncs": 15
-  },
-  "inventoryItems": {
-    "lastSyncTime": "2024-01-15T10:28:00.000Z",
-    "lastSyncedByDeviceId": "macbook-pro-456",
-    "lastSyncedAt": "2024-01-15T10:28:00.000Z",
-    "clientVersion": "1.0.0",
-    "deviceName": "MacBook Pro",
-    "totalSyncs": 128
-  },
-  "todoItems": {
-    "lastSyncTime": "2024-01-15T10:20:00.000Z",
-    "lastSyncedByDeviceId": "iphone-15-pro-123",
-    "lastSyncedAt": "2024-01-15T10:20:00.000Z",
-    "clientVersion": "1.0.0",
-    "deviceName": "iPhone 15 Pro",
-    "totalSyncs": 8
-  },
-  "settings": {
-    "lastSyncTime": "2024-01-15T10:30:00.000Z",
-    "lastSyncedByDeviceId": "iphone-15-pro-123",
-    "lastSyncedAt": "2024-01-15T10:30:00.000Z",
-    "clientVersion": "1.0.0",
-    "deviceName": "iPhone 15 Pro",
-    "totalSyncs": 55
-  }
-}
-```
-
-#### Error Responses
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "message": "Unauthorized - invalid or expired token"
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "message": "Internal server error"
-}
-```
-
-**Related Endpoints:**
-
-- [`sync.pull_file`](#sync-pull-file)
-- [`sync.push_file`](#sync-push-file)
-
-### GET /sync/:fileType/pull
-
-<a id="sync-pull-file"></a>
-
-**ID:** `sync.pull_file`
-
-**Pull sync data for a specific file type**
-
-Retrieves the latest sync data for a given file type. Supports pulling from other accounts (household sharing) when proper permissions are granted.
-
-**Supported file types:** `categories`, `locations`, `inventoryItems`, `todoItems`, `settings`
-
-**Cross-account access:** Pass `userId` query parameter to pull from another account. Requires membership in the target account and proper permissions.
-
-**Permission requirements:**
-- `inventoryItems`: Requires `canShareInventory: true` on target account
-- `todoItems`: Requires `canShareTodos: true` on target account
-- Other types: Always allowed for members
-- Account owners: Always have full access regardless of permissions
-
-**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
-
-**Tags:** `Synchronization`
-
-#### Path Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `fileType` | enum (categories, locations, inventoryItems, todoItems, settings) | Yes | Type of file to sync |
-
-#### Query Parameters
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `userId` | string | No | - | Target account ID \(for cross\-account access\) |
-
-#### Response (200)
-
-Sync data retrieved successfully
-
-**Example:**
-
-```json
-{
-  "success": true,
-  "data": [
+  "homes": [
     {
-      "id": "1",
-      "name": "Category 1"
-    },
-    {
-      "id": "2",
-      "name": "Category 2"
+      "homeId": "my-home",
+      "name": "My Home",
+      "address": "123 Main St",
+      "invitationCode": "ABCD1234EFGH5678",
+      "owner": {
+        "userId": "507f1f77bcf86cd799439011",
+        "email": "user@example.com",
+        "nickname": "User",
+        "avatarUrl": "https://example.com/avatar.jpg"
+      },
+      "settings": {
+        "canShareInventory": true,
+        "canShareTodos": true
+      },
+      "memberCount": 3,
+      "isOwner": true,
+      "createdAt": "2024-01-15T10:30:00.000Z"
     }
-  ],
-  "serverTimestamp": "2024-01-15T10:30:00.000Z",
-  "lastSyncTime": "2024-01-15T10:25:00.000Z"
+  ]
 }
 ```
 
 #### Error Responses
 
-##### 400 - `INVALID_USER_ID`
-
-User ID is required
-
-When using cross\-account access, userId must be provided
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "User ID is required",
-    "code": "INVALID_USER_ID",
-    "statusCode": 400
-  }
-}
-```
-
-##### 400 - `INVALID_FILE_TYPE`
-
-Invalid file type
-
-The fileType must be one of the supported types
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Invalid file type",
-    "code": "INVALID_FILE_TYPE",
-    "statusCode": 400
-  }
-}
-```
-
 ##### 401 - `UNAUTHORIZED`
 
-Unauthorized \- invalid or expired token
+Unauthorized
+
+No authentication token provided
 
 **Example:**
 
 ```json
 {
-  "success": false,
-  "error": {
-    "message": "Unauthorized - invalid or expired token",
-    "code": "UNAUTHORIZED",
-    "statusCode": 401
-  }
-}
-```
-
-##### 403 - `FORBIDDEN`
-
-Access denied \- insufficient permissions
-
-Thrown when trying to access another account without proper membership or when the target account has sharing disabled for the specific file type
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "You don't have permission to sync inventory items",
-    "code": "FORBIDDEN",
-    "statusCode": 403
-  }
-}
-```
-
-##### 404 - `ACCOUNT_NOT_FOUND`
-
-Account not found
-
-The target account does not exist
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Account not found",
-    "code": "ACCOUNT_NOT_FOUND",
-    "statusCode": 404
-  }
+  "message": "Unauthorized"
 }
 ```
 
@@ -1930,60 +2491,48 @@ The target account does not exist
 
 Internal server error
 
+An unexpected error occurred on the server
+
 **Example:**
 
 ```json
 {
-  "success": false,
-  "error": {
-    "message": "Internal server error",
-    "code": "SERVER_ERROR",
-    "statusCode": 500
-  }
+  "message": "Internal server error"
 }
 ```
 
 **Related Endpoints:**
 
-- [`sync.push_file`](#sync-push-file)
-- [`sync.get_sync_status`](#sync-get-sync-status)
-- [`sync.delete_file_data`](#sync-delete-file-data)
+- [`homes.create`](#homes-create)
+- [`homes.get`](#homes-get)
+- [`homes.update`](#homes-update)
+- [`homes.delete`](#homes-delete)
 
-### POST /sync/:fileType/push
+### PATCH /homes/:homeId
 
-<a id="sync-push-file"></a>
+<a id="homes-update"></a>
 
-**ID:** `sync.push_file`
+**ID:** `homes.update`
 
-**Push sync data for a specific file type**
+**Update home details**
 
-Uploads sync data for a given file type to the server. Supports pushing to shared accounts (household sharing) when proper permissions are granted.
+Updates the name and/or address of a home. Only the home owner can update home details. Fields not included in the request body are not modified.
 
-**Supported file types:** `categories`, `locations`, `inventoryItems`, `todoItems`, `settings`
+**Authentication:** Required (jwt)
 
-**Cross-account access:** Pass `userId` in request body to push to another account. Requires membership in the target account and proper permissions.
-
-**Permission requirements:**
-- `inventoryItems`: Requires `canShareInventory: true` on target account
-- `todoItems`: Requires `canShareTodos: true` on target account
-- Other types: Always allowed for members
-- Account owners: Always have full access regardless of permissions
-
-**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
-
-**Tags:** `Synchronization`
+**Tags:** `Homes`
 
 #### Path Parameters
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `fileType` | enum (categories, locations, inventoryItems, todoItems, settings) | Yes | Type of file to sync |
+| Name     | Type   | Required | Description                       |
+| -------- | ------ | -------- | --------------------------------- |
+| `homeId` | string | Yes      | The unique identifier of the home |
 
 #### Request Body
 
 **Content-Type:** `application/json`
 
-Sync data to upload
+Home details to update
 
 **Required:** Yes
 
@@ -1991,85 +2540,1479 @@ Sync data to upload
 
 ```json
 {
-  "version": "1.0.0",
-  "deviceId": "iphone-15-pro-123",
-  "syncTimestamp": "2024-01-15T10:30:00.000Z",
-  "data": [
-    {
-      "id": "1",
-      "name": "Category 1"
-    },
-    {
-      "id": "2",
-      "name": "Category 2"
-    }
-  ],
-  "deviceName": "iPhone 15 Pro",
-  "userId": "507f1f77bcf86cd799439011"
+  "name": "Updated Home Name",
+  "address": "456 Oak Ave, Newtown, USA"
 }
 ```
 
 #### Response (200)
 
-Sync data uploaded successfully
+Home updated successfully
+
+**Example:**
+
+```json
+{
+  "home": {
+    "homeId": "my-home",
+    "name": "Updated Home Name",
+    "address": "456 Oak Ave, Newtown, USA"
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 400 - `INVALID_NAME`
+
+Name cannot be empty
+
+The provided name is empty or only whitespace
+
+**Example:**
+
+```json
+{
+  "error": "invalid_name",
+  "message": "name cannot be empty"
+}
+```
+
+##### 400 - `NAME_TOO_LONG`
+
+Name too long
+
+Name must be 100 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "name_too_long",
+  "message": "name must be 100 characters or less"
+}
+```
+
+##### 400 - `ADDRESS_TOO_LONG`
+
+Address too long
+
+Address must be 500 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "address_too_long",
+  "message": "address must be 500 characters or less"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Only the owner can update this home
+
+User is not the owner of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Only the owner can update this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+No home exists with the provided homeId
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`homes.get`](#homes-get)
+- [`homes.create`](#homes-create)
+- [`homes.delete`](#homes-delete)
+
+### DELETE /homes/:homeId/members/:userId
+
+<a id="homes-remove-member"></a>
+
+**ID:** `homes.remove_member`
+
+**Remove a member from a home**
+
+Removes a member from a home. The home owner can remove any member except themselves. Regular members can only remove themselves (leave the home). Owners must delete the home instead of removing themselves.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Homes`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                                           |
+| -------- | ------ | -------- | ----------------------------------------------------- |
+| `homeId` | string | Yes      | The unique identifier of the home                     |
+| `userId` | string | Yes      | The ID of the user to remove \(or self when leaving\) |
+
+#### Response (200)
+
+Member removed successfully
 
 **Example:**
 
 ```json
 {
   "success": true,
-  "serverTimestamp": "2024-01-15T10:30:05.000Z",
-  "lastSyncTime": "2024-01-15T10:30:05.000Z",
-  "entriesCount": 2,
-  "message": "categories synced successfully"
+  "message": "Member removed successfully"
 }
 ```
 
 #### Error Responses
 
-##### 400 - `INVALID_USER_ID`
+##### 400 - `HOME_ID_REQUIRED`
 
-User ID is required
+homeId is required
 
-When using cross\-account access, userId must be provided
+The homeId parameter must be provided
 
 **Example:**
 
 ```json
 {
-  "success": false,
-  "error": {
-    "message": "User ID is required",
-    "code": "INVALID_USER_ID",
-    "statusCode": 400
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 400 - `USER_ID_REQUIRED`
+
+userId is required
+
+The userId parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "userId_required",
+  "message": "userId is required"
+}
+```
+
+##### 400 - `CANNOT_REMOVE_SELF`
+
+Owner cannot leave their own home
+
+Owners cannot remove themselves from their home\. Delete the home instead\.
+
+**Example:**
+
+```json
+{
+  "error": "cannot_remove_self",
+  "message": "Owner cannot leave their own home. Delete the home instead."
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Not a member of this home
+
+User is not a member of the requested home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 403 - `FORBIDDEN_REMOVE_OTHERS`
+
+Only owner can remove other members
+
+Regular members cannot remove other members, only themselves
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Only the owner can remove other members"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+No home exists with the provided homeId
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 404 - `MEMBER_NOT_FOUND`
+
+Member not found in this home
+
+The specified userId is not a member of this home
+
+**Example:**
+
+```json
+{
+  "error": "member_not_found",
+  "message": "Member not found in this home"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`homes.list_members`](#homes-list-members)
+- [`homes.get`](#homes-get)
+
+### GET /homes/:homeId/invitation
+
+<a id="homes-get-invitation"></a>
+
+**ID:** `homes.get_invitation`
+
+**Get home invitation details**
+
+Retrieves the invitation code, sharing settings, member count, and basic home info. Only the home owner can view invitation details. Use this to share the invitation code with others.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Homes`, `Invitations`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                       |
+| -------- | ------ | -------- | --------------------------------- |
+| `homeId` | string | Yes      | The unique identifier of the home |
+
+#### Response (200)
+
+Invitation details retrieved successfully
+
+**Example:**
+
+```json
+{
+  "invitationCode": "ABCD1234EFGH5678",
+  "settings": {
+    "canShareInventory": true,
+    "canShareTodos": true
+  },
+  "memberCount": 3,
+  "home": {
+    "homeId": "my-home",
+    "name": "My Home"
   }
 }
 ```
 
-##### 400 - `INVALID_FILE_TYPE`
+#### Error Responses
 
-Invalid file type
+##### 400 - `HOME_ID_REQUIRED`
 
-The fileType must be one of the supported types
+homeId is required
+
+The homeId parameter must be provided
 
 **Example:**
 
 ```json
 {
-  "success": false,
-  "error": {
-    "message": "Invalid file type",
-    "code": "INVALID_FILE_TYPE",
-    "statusCode": 400
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Only the owner can view invitation details
+
+User is not the owner of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Only the owner can view invitation details"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+No home exists with the provided homeId
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`homes.regenerate_invitation`](#homes-regenerate-invitation)
+- [`homes.get`](#homes-get)
+- [`homes.update_settings`](#homes-update-settings)
+
+### DELETE /homes/:homeId
+
+<a id="homes-delete"></a>
+
+**ID:** `homes.delete`
+
+**Delete a home**
+
+Soft deletes a home. Only the home owner can delete their home. The home is marked as deleted but retained in the database for data recovery purposes.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Homes`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                                 |
+| -------- | ------ | -------- | ------------------------------------------- |
+| `homeId` | string | Yes      | The unique identifier of the home to delete |
+
+#### Response (200)
+
+Home deleted successfully
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "message": "Home deleted successfully",
+  "deletedAt": "2024-01-20T14:30:00.000Z"
+}
+```
+
+#### Error Responses
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Only the owner can delete this home
+
+User is not the owner of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Only the owner can delete this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+No home exists with the provided homeId
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`homes.get`](#homes-get)
+- [`homes.update`](#homes-update)
+- [`homes.create`](#homes-create)
+
+### GET /homes/:homeId
+
+<a id="homes-get"></a>
+
+**ID:** `homes.get`
+
+**Get details of a specific home**
+
+Retrieves detailed information about a specific home, including owner info, settings, and member count. User must be a member of the home.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Homes`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                       |
+| -------- | ------ | -------- | --------------------------------- |
+| `homeId` | string | Yes      | The unique identifier of the home |
+
+#### Response (200)
+
+Home details retrieved successfully
+
+**Example:**
+
+```json
+{
+  "home": {
+    "homeId": "my-home",
+    "name": "My Home",
+    "address": "123 Main St, Anytown, USA",
+    "invitationCode": "ABCD1234EFGH5678",
+    "settings": {
+      "canShareInventory": true,
+      "canShareTodos": true
+    },
+    "owner": {
+      "userId": "507f1f77bcf86cd799439011",
+      "email": "user@example.com",
+      "nickname": "User",
+      "avatarUrl": "https://example.com/avatar.jpg"
+    },
+    "memberCount": 3,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-20T14:22:00.000Z"
   }
 }
 ```
 
-##### 400 - `INVALID_DATA`
+#### Error Responses
 
-Missing required fields \(version, deviceId, syncTimestamp, data\)
+##### 400 - `HOME_ID_REQUIRED`
 
-Required sync fields are missing from request body
+homeId is required
+
+The homeId parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Not a member of this home
+
+User is not a member of the requested home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+No home exists with the provided homeId
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`homes.list`](#homes-list)
+- [`homes.create`](#homes-create)
+- [`homes.update`](#homes-update)
+- [`homes.delete`](#homes-delete)
+
+### PATCH /homes/:homeId/settings
+
+<a id="homes-update-settings"></a>
+
+**ID:** `homes.update_settings`
+
+**Update home sharing settings**
+
+Updates the sharing permissions for a home. Controls whether members can share inventory items and/or todo items. Only the home owner can update settings.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Homes`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                       |
+| -------- | ------ | -------- | --------------------------------- |
+| `homeId` | string | Yes      | The unique identifier of the home |
+
+#### Request Body
+
+**Content-Type:** `application/json`
+
+Settings to update
+
+**Required:** Yes
+
+**Example:**
+
+```json
+{
+  "canShareInventory": true,
+  "canShareTodos": true
+}
+```
+
+#### Response (200)
+
+Settings updated successfully
+
+**Example:**
+
+```json
+{
+  "settings": {
+    "canShareInventory": true,
+    "canShareTodos": true
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Only the owner can update home settings
+
+User is not the owner of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Only the owner can update home settings"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+No home exists with the provided homeId
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`homes.get`](#homes-get)
+- [`homes.invitation.get`](#homes-invitation-get)
+- [`homes.update`](#homes-update)
+
+### POST /homes/:homeId/invitation/regenerate
+
+<a id="homes-regenerate-invitation"></a>
+
+**ID:** `homes.regenerate_invitation`
+
+**Regenerate home invitation code**
+
+Generates a new random 16-character invitation code for the home, invalidating the previous code. Only the home owner can regenerate the invitation code. Use this when you want to revoke existing access or for security reasons.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Homes`, `Invitations`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                       |
+| -------- | ------ | -------- | --------------------------------- |
+| `homeId` | string | Yes      | The unique identifier of the home |
+
+#### Response (200)
+
+New invitation code generated successfully
+
+**Example:**
+
+```json
+{
+  "invitationCode": "XYZW9876ABCD4321"
+}
+```
+
+#### Error Responses
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Only the owner can regenerate invitation code
+
+User is not the owner of this home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Only the owner can regenerate invitation code"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+No home exists with the provided homeId
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`homes.get_invitation`](#homes-get-invitation)
+- [`homes.get`](#homes-get)
+
+### POST /homes
+
+<a id="homes-create"></a>
+
+**ID:** `homes.create`
+
+**Create a new home**
+
+Creates a new home with the authenticated user as the owner. Each home has a unique homeId, name, optional address, and auto-generated invitation code for sharing.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Homes`
+
+#### Request Body
+
+**Content-Type:** `application/json`
+
+Home creation details
+
+**Required:** Yes
+
+**Example:**
+
+```json
+{
+  "homeId": "my-home",
+  "name": "My Home",
+  "address": "123 Main St, Anytown, USA"
+}
+```
+
+#### Response (201)
+
+Home created successfully
+
+**Example:**
+
+```json
+{
+  "home": {
+    "homeId": "my-home",
+    "name": "My Home",
+    "address": "123 Main St, Anytown, USA",
+    "invitationCode": "ABCD1234EFGH5678",
+    "owner": {
+      "userId": "507f1f77bcf86cd799439011",
+      "email": "user@example.com",
+      "nickname": "User"
+    },
+    "settings": {
+      "canShareInventory": false,
+      "canShareTodos": false
+    },
+    "memberCount": 0,
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `VALIDATION_ERROR`
+
+Validation error
+
+Invalid request parameters
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 400 - `INVALID_HOME_ID`
+
+Invalid homeId format
+
+homeId must be 3\-30 characters, alphanumeric with hyphens
+
+**Example:**
+
+```json
+{
+  "error": "invalid_homeId",
+  "message": "homeId must be 3-30 characters, alphanumeric with hyphens"
+}
+```
+
+##### 400 - `NAME_REQUIRED`
+
+Name is required
+
+Name cannot be empty
+
+**Example:**
+
+```json
+{
+  "error": "name_required",
+  "message": "name is required"
+}
+```
+
+##### 400 - `NAME_TOO_LONG`
+
+Name too long
+
+Name must be 100 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "name_too_long",
+  "message": "name must be 100 characters or less"
+}
+```
+
+##### 400 - `ADDRESS_TOO_LONG`
+
+Address too long
+
+Address must be 500 characters or less
+
+**Example:**
+
+```json
+{
+  "error": "address_too_long",
+  "message": "address must be 500 characters or less"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 404 - `USER_NOT_FOUND`
+
+User not found
+
+Authenticated user does not exist
+
+**Example:**
+
+```json
+{
+  "error": "user_not_found",
+  "message": "User not found"
+}
+```
+
+##### 409 - `HOME_ID_EXISTS`
+
+Home ID already exists
+
+A home with this ID already exists \(excluding soft\-deleted homes\)
+
+**Example:**
+
+```json
+{
+  "error": "homeId_exists",
+  "message": "A home with this ID already exists",
+  "suggestedHomeId": "my-home-2"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`homes.list`](#homes-list)
+- [`homes.get`](#homes-get)
+- [`homes.update`](#homes-update)
+- [`homes.delete`](#homes-delete)
+- [`homes.invitation.get`](#homes-invitation-get)
+
+### GET /homes/:homeId/members
+
+<a id="homes-list-members"></a>
+
+**ID:** `homes.list_members`
+
+**List all members of a home**
+
+Retrieves a list of all members of a home, including the owner and regular members. Returns user details like email, nickname, avatar, role, and join date. User must be a member of the home to view members.
+
+**Authentication:** Required (jwt)
+
+**Tags:** `Homes`
+
+#### Path Parameters
+
+| Name     | Type   | Required | Description                       |
+| -------- | ------ | -------- | --------------------------------- |
+| `homeId` | string | Yes      | The unique identifier of the home |
+
+#### Query Parameters
+
+| Name             | Type    | Required | Default | Description                                                    |
+| ---------------- | ------- | -------- | ------- | -------------------------------------------------------------- |
+| `includePending` | boolean | No       | -       | Whether to include pending members \(reserved for future use\) |
+
+#### Response (200)
+
+Members retrieved successfully
+
+**Example:**
+
+```json
+{
+  "members": [
+    {
+      "userId": "507f1f77bcf86cd799439011",
+      "email": "owner@example.com",
+      "nickname": "Owner",
+      "avatarUrl": "https://example.com/avatar.jpg",
+      "role": "owner",
+      "isOwner": true,
+      "joinedAt": "2024-01-15T10:30:00.000Z"
+    },
+    {
+      "userId": "507f1f77bcf86cd799439012",
+      "email": "member@example.com",
+      "nickname": "Member",
+      "avatarUrl": "https://example.com/avatar2.jpg",
+      "role": "member",
+      "isOwner": false,
+      "joinedAt": "2024-01-16T14:20:00.000Z"
+    }
+  ]
+}
+```
+
+#### Error Responses
+
+##### 400 - `HOME_ID_REQUIRED`
+
+homeId is required
+
+The homeId parameter must be provided
+
+**Example:**
+
+```json
+{
+  "error": "homeId_required",
+  "message": "homeId is required"
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized
+
+No authentication token provided
+
+**Example:**
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+Not a member of this home
+
+User is not a member of the requested home
+
+**Example:**
+
+```json
+{
+  "error": "forbidden",
+  "message": "Not a member of this home"
+}
+```
+
+##### 404 - `HOME_NOT_FOUND`
+
+Home not found
+
+No home exists with the provided homeId
+
+**Example:**
+
+```json
+{
+  "error": "home_not_found",
+  "message": "Home not found"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+**Related Endpoints:**
+
+- [`homes.remove_member`](#homes-remove-member)
+- [`homes.get`](#homes-get)
+
+---
+
+## Ai
+
+### POST /ai/recognize-item
+
+<a id="ai-recognize-item"></a>
+
+**ID:** `ai.recognize_item`
+
+**Recognize inventory item from image**
+
+Uses AI to analyze an image and extract structured inventory item data. Returns item name, status, price, amount, and other relevant fields.
+
+**Authentication:** This endpoint does NOT require authentication.
+
+**Supported image formats:** JPEG, PNG, GIF, WebP (base64 encoded)
+
+**Authentication:** Not required
+
+**Tags:** `AI`
+
+#### Request Body
+
+**Content-Type:** `application/json`
+
+Image data for item recognition
+
+**Required:** Yes
+
+**Example:**
+
+```json
+{
+  "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCE..."
+}
+```
+
+#### Response (200)
+
+Item recognized successfully
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "item": {
+    "id": "temp-123",
+    "name": "Organic Milk",
+    "status": "using",
+    "price": 4.99,
+    "amount": 1,
+    "warningThreshold": 2,
+    "expiryDate": "2024-02-01T00:00:00.000Z",
+    "purchaseDate": "2024-01-15T00:00:00.000Z"
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `NO_IMAGE_PROVIDED`
+
+Image is required
+
+The request must include a base64\-encoded image
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": "Image is required"
+}
+```
+
+##### 500 - `AI_SERVICE_ERROR`
+
+Failed to recognize item
+
+The AI service returned an error or invalid response
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": "Failed to recognize item"
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+An unexpected error occurred on the server
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": "Internal server error"
+}
+```
+
+---
+
+## Sync Entities
+
+### GET /sync/entities/pull
+
+<a id="sync-entities-pull-entities"></a>
+
+**ID:** `sync_entities.pull_entities`
+
+**Pull entities for a home and entity type**
+
+Retrieves entities that have been created, updated, or deleted since a given timestamp. Supports incremental sync for efficient data transfer.
+
+**Supported entity types:** `inventoryItems`, `todoItems`, `categories`, `locations`, `settings`
+
+**Permission requirements:**
+
+- `inventoryItems`: Members require `canShareInventory: true` on the home
+- `todoItems`: Members require `canShareTodos: true` on the home
+- Other types: Always allowed for members
+- Home owners: Always have full access regardless of permissions
+
+**Conflict Resolution:** Automatic last-write-wins based on timestamps. Never prompts users.
+
+**Soft Deletes:** Deleted entities are tracked for 90 days before permanent deletion.
+
+**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
+
+**Tags:** `Synchronization`
+
+#### Query Parameters
+
+| Name             | Type                                                              | Required | Default | Description                                                                               |
+| ---------------- | ----------------------------------------------------------------- | -------- | ------- | ----------------------------------------------------------------------------------------- |
+| `homeId`         | string                                                            | Yes      | -       | Home ID to pull entities from                                                             |
+| `entityType`     | enum (inventoryItems, todoItems, categories, locations, settings) | Yes      | -       | Type of entities to pull                                                                  |
+| `deviceId`       | string                                                            | Yes      | -       | Client device identifier for checkpoint tracking                                          |
+| `since`          | string                                                            | No       | -       | ISO 8601 timestamp for incremental sync \(only return entities modified after this time\) |
+| `includeDeleted` | boolean                                                           | No       | -       | Include soft\-deleted entities in response                                                |
+
+#### Response (200)
+
+Entities retrieved successfully
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "entities": [
+    {
+      "entityId": "inv_12345",
+      "entityType": "inventoryItems",
+      "homeId": "my-family-home",
+      "data": {
+        "id": "inv_12345",
+        "name": "Milk",
+        "status": "using",
+        "price": 3.99,
+        "amount": 1,
+        "category": "dairy",
+        "location": "refrigerator"
+      },
+      "version": 5,
+      "updatedAt": "2024-01-15T10:30:00.000Z",
+      "updatedBy": {
+        "userId": "507f1f77bcf86cd799439011",
+        "email": "user@example.com",
+        "nickname": "John"
+      },
+      "updatedByDeviceId": "iphone-15-pro"
+    }
+  ],
+  "deletedEntityIds": ["inv_67890"],
+  "serverTimestamp": "2024-01-15T10:35:00.000Z",
+  "checkpoint": {
+    "homeId": "my-family-home",
+    "entityType": "inventoryItems",
+    "lastSyncedAt": "2024-01-15T10:35:00.000Z",
+    "lastPulledVersion": 100
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `INVALID_HOME_ID`
+
+homeId is required
 
 **Example:**
 
@@ -2077,9 +4020,56 @@ Required sync fields are missing from request body
 {
   "success": false,
   "error": {
-    "message": "Missing required fields (version, deviceId, syncTimestamp, data)",
-    "code": "INVALID_DATA",
-    "statusCode": 400
+    "message": "homeId is required",
+    "code": "INVALID_HOME_ID"
+  }
+}
+```
+
+##### 400 - `INVALID_ENTITY_TYPE`
+
+entityType is required
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "entityType is required",
+    "code": "INVALID_ENTITY_TYPE"
+  }
+}
+```
+
+##### 400 - `INVALID_DEVICE_ID`
+
+deviceId is required
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "deviceId is required",
+    "code": "INVALID_DEVICE_ID"
+  }
+}
+```
+
+##### 400 - `INVALID_TIMESTAMP`
+
+since must be a valid ISO date
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "since must be a valid ISO date",
+    "code": "INVALID_TIMESTAMP"
   }
 }
 ```
@@ -2095,36 +4085,16 @@ Unauthorized \- invalid or expired token
   "success": false,
   "error": {
     "message": "Unauthorized - invalid or expired token",
-    "code": "UNAUTHORIZED",
-    "statusCode": 401
+    "code": "UNAUTHORIZED"
   }
 }
 ```
 
 ##### 403 - `FORBIDDEN`
 
-Access denied \- insufficient permissions
+You do not have permission to pull this entity type
 
-Thrown when trying to push to another account without proper membership or when the target account has sharing disabled for the specific file type
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "You don't have permission to sync inventory items",
-    "code": "FORBIDDEN",
-    "statusCode": 403
-  }
-}
-```
-
-##### 404 - `ACCOUNT_NOT_FOUND`
-
-Account not found
-
-The target account does not exist
+Thrown when a member tries to pull inventoryItems or todoItems without the required permission
 
 **Example:**
 
@@ -2132,9 +4102,8 @@ The target account does not exist
 {
   "success": false,
   "error": {
-    "message": "Account not found",
-    "code": "ACCOUNT_NOT_FOUND",
-    "statusCode": 404
+    "message": "You do not have permission to pull this entity type",
+    "code": "FORBIDDEN"
   }
 }
 ```
@@ -2150,22 +4119,17 @@ Internal server error
   "success": false,
   "error": {
     "message": "Internal server error",
-    "code": "SERVER_ERROR",
-    "statusCode": 500
+    "code": "SERVER_ERROR"
   }
 }
 ```
 
 **Related Endpoints:**
 
-- [`sync.pull_file`](#sync-pull-file)
-- [`sync.get_sync_status`](#sync-get-sync-status)
-- [`sync.delete_file_data`](#sync-delete-file-data)
-
-
----
-
-## Sync Entities
+- [`sync_entities.push_entities`](#sync-entities-push-entities)
+- [`sync_entities.batch_sync`](#sync-entities-batch-sync)
+- [`sync_entities.get_sync_status`](#sync-entities-get-sync-status)
+- [`sync_entities.reset_sync`](#sync-entities-reset-sync)
 
 ### POST /sync/entities/batch
 
@@ -2182,6 +4146,7 @@ Performs multiple pull and push operations in a single request for efficient syn
 **Push Requests:** Pushes entity changes with automatic conflict resolution.
 
 **Advantages:**
+
 - Single round-trip for multiple entity types
 - Atomic operation per entity type
 - Efficient bandwidth usage
@@ -2417,382 +4382,6 @@ Internal server error
 - [`sync_entities.push_entities`](#sync-entities-push-entities)
 - [`sync_entities.get_sync_status`](#sync-entities-get-sync-status)
 
-### GET /sync/entities/status
-
-<a id="sync-entities-get-sync-status"></a>
-
-**ID:** `sync_entities.get_sync_status`
-
-**Get sync status for entity types in a home**
-
-Returns the sync status for entity types including last sync time, versions, and whether pull or push is needed.
-
-**Status Information:**
-- `lastSyncedAt` - Timestamp of last successful sync
-- `lastPulledVersion` - Version number from last pull
-- `lastPushedVersion` - Version number from last push
-- `serverVersion` - Current version on server
-- `needsPull` - Whether server has newer data
-- `needsPush` - Whether client has unpushed changes
-
-**Use Cases:**
-- Display sync status in UI
-- Determine if sync is needed
-- Show sync progress indicators
-
-**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
-
-**Tags:** `Synchronization`
-
-#### Query Parameters
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `homeId` | string | Yes | - | Home ID to check sync status for |
-| `entityType` | enum (inventoryItems, todoItems, categories, locations, settings) | No | - | Specific entity type to check, or all if omitted |
-| `deviceId` | string | Yes | - | Client device identifier |
-
-#### Response (200)
-
-Sync status retrieved successfully
-
-**Example:**
-
-```json
-{
-  "success": true,
-  "status": {
-    "inventoryItems": {
-      "homeId": "my-family-home",
-      "entityType": "inventoryItems",
-      "lastSyncedAt": "2024-01-15T10:30:00.000Z",
-      "lastPulledVersion": 100,
-      "lastPushedVersion": 98,
-      "pendingLocalChanges": 5,
-      "serverVersion": 102,
-      "needsPull": true,
-      "needsPush": true
-    },
-    "todoItems": {
-      "homeId": "my-family-home",
-      "entityType": "todoItems",
-      "lastSyncedAt": "2024-01-15T09:00:00.000Z",
-      "lastPulledVersion": 50,
-      "lastPushedVersion": 50,
-      "pendingLocalChanges": 0,
-      "serverVersion": 50,
-      "needsPull": false,
-      "needsPush": false
-    },
-    "categories": {
-      "homeId": "my-family-home",
-      "entityType": "categories",
-      "lastSyncedAt": null,
-      "lastPulledVersion": 0,
-      "lastPushedVersion": 0,
-      "pendingLocalChanges": 0,
-      "serverVersion": 0,
-      "needsPull": false,
-      "needsPush": false
-    }
-  }
-}
-```
-
-#### Error Responses
-
-##### 400 - `INVALID_HOME_ID`
-
-homeId is required
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "homeId is required",
-    "code": "INVALID_HOME_ID"
-  }
-}
-```
-
-##### 400 - `INVALID_DEVICE_ID`
-
-deviceId is required
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "deviceId is required",
-    "code": "INVALID_DEVICE_ID"
-  }
-}
-```
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Unauthorized - invalid or expired token",
-    "code": "UNAUTHORIZED"
-  }
-}
-```
-
-##### 403 - `FORBIDDEN`
-
-You are not a member of this home
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "You are not a member of this home",
-    "code": "FORBIDDEN"
-  }
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Internal server error",
-    "code": "SERVER_ERROR"
-  }
-}
-```
-
-**Related Endpoints:**
-
-- [`sync_entities.pull_entities`](#sync-entities-pull-entities)
-- [`sync_entities.push_entities`](#sync-entities-push-entities)
-- [`sync_entities.batch_sync`](#sync-entities-batch-sync)
-- [`sync_entities.reset_sync`](#sync-entities-reset-sync)
-
-### GET /sync/entities/pull
-
-<a id="sync-entities-pull-entities"></a>
-
-**ID:** `sync_entities.pull_entities`
-
-**Pull entities for a home and entity type**
-
-Retrieves entities that have been created, updated, or deleted since a given timestamp. Supports incremental sync for efficient data transfer.
-
-**Supported entity types:** `inventoryItems`, `todoItems`, `categories`, `locations`, `settings`
-
-**Permission requirements:**
-- `inventoryItems`: Members require `canShareInventory: true` on the home
-- `todoItems`: Members require `canShareTodos: true` on the home
-- Other types: Always allowed for members
-- Home owners: Always have full access regardless of permissions
-
-**Conflict Resolution:** Automatic last-write-wins based on timestamps. Never prompts users.
-
-**Soft Deletes:** Deleted entities are tracked for 90 days before permanent deletion.
-
-**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
-
-**Tags:** `Synchronization`
-
-#### Query Parameters
-
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `homeId` | string | Yes | - | Home ID to pull entities from |
-| `entityType` | enum (inventoryItems, todoItems, categories, locations, settings) | Yes | - | Type of entities to pull |
-| `deviceId` | string | Yes | - | Client device identifier for checkpoint tracking |
-| `since` | string | No | - | ISO 8601 timestamp for incremental sync \(only return entities modified after this time\) |
-| `includeDeleted` | boolean | No | - | Include soft\-deleted entities in response |
-
-#### Response (200)
-
-Entities retrieved successfully
-
-**Example:**
-
-```json
-{
-  "success": true,
-  "entities": [
-    {
-      "entityId": "inv_12345",
-      "entityType": "inventoryItems",
-      "homeId": "my-family-home",
-      "data": {
-        "id": "inv_12345",
-        "name": "Milk",
-        "status": "using",
-        "price": 3.99,
-        "amount": 1,
-        "category": "dairy",
-        "location": "refrigerator"
-      },
-      "version": 5,
-      "updatedAt": "2024-01-15T10:30:00.000Z",
-      "updatedBy": {
-        "userId": "507f1f77bcf86cd799439011",
-        "email": "user@example.com",
-        "nickname": "John"
-      },
-      "updatedByDeviceId": "iphone-15-pro"
-    }
-  ],
-  "deletedEntityIds": [
-    "inv_67890"
-  ],
-  "serverTimestamp": "2024-01-15T10:35:00.000Z",
-  "checkpoint": {
-    "homeId": "my-family-home",
-    "entityType": "inventoryItems",
-    "lastSyncedAt": "2024-01-15T10:35:00.000Z",
-    "lastPulledVersion": 100
-  }
-}
-```
-
-#### Error Responses
-
-##### 400 - `INVALID_HOME_ID`
-
-homeId is required
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "homeId is required",
-    "code": "INVALID_HOME_ID"
-  }
-}
-```
-
-##### 400 - `INVALID_ENTITY_TYPE`
-
-entityType is required
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "entityType is required",
-    "code": "INVALID_ENTITY_TYPE"
-  }
-}
-```
-
-##### 400 - `INVALID_DEVICE_ID`
-
-deviceId is required
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "deviceId is required",
-    "code": "INVALID_DEVICE_ID"
-  }
-}
-```
-
-##### 400 - `INVALID_TIMESTAMP`
-
-since must be a valid ISO date
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "since must be a valid ISO date",
-    "code": "INVALID_TIMESTAMP"
-  }
-}
-```
-
-##### 401 - `UNAUTHORIZED`
-
-Unauthorized \- invalid or expired token
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Unauthorized - invalid or expired token",
-    "code": "UNAUTHORIZED"
-  }
-}
-```
-
-##### 403 - `FORBIDDEN`
-
-You do not have permission to pull this entity type
-
-Thrown when a member tries to pull inventoryItems or todoItems without the required permission
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "You do not have permission to pull this entity type",
-    "code": "FORBIDDEN"
-  }
-}
-```
-
-##### 500 - `SERVER_ERROR`
-
-Internal server error
-
-**Example:**
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Internal server error",
-    "code": "SERVER_ERROR"
-  }
-}
-```
-
-**Related Endpoints:**
-
-- [`sync_entities.push_entities`](#sync-entities-push-entities)
-- [`sync_entities.batch_sync`](#sync-entities-batch-sync)
-- [`sync_entities.get_sync_status`](#sync-entities-get-sync-status)
-- [`sync_entities.reset_sync`](#sync-entities-reset-sync)
-
 ### POST /sync/entities/push
 
 <a id="sync-entities-push-entities"></a>
@@ -2804,6 +4393,7 @@ Internal server error
 Pushes entity changes to the server with automatic last-write-wins conflict resolution. Each entity is synced independently based on timestamps.
 
 **Conflict Resolution:**
+
 - Compares `clientUpdatedAt` with `serverUpdatedAt`
 - Client wins if newer: Server updates with client data
 - Server wins if newer or equal: Returns server version to client
@@ -2811,14 +4401,17 @@ Pushes entity changes to the server with automatic last-write-wins conflict reso
 - **NEVER prompts users** - All conflict resolution is automatic
 
 **Pending Operations:**
+
 - `pendingCreate: true` - Entity was created offline
 - `pendingDelete: true` - Entity was deleted offline
 
 **Soft Delete Handling:**
+
 - If client deletes while server has newer update: Server wins, entity is restored
 - If client updates while server has deleted: Server delete wins if newer
 
 **Entity ID Collision:**
+
 - Returns error if entity ID already exists
 - Suggests alternative entity ID for retry
 
@@ -2828,11 +4421,11 @@ Pushes entity changes to the server with automatic last-write-wins conflict reso
 
 #### Query Parameters
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `homeId` | string | Yes | - | Home ID to push entities to |
-| `entityType` | enum (inventoryItems, todoItems, categories, locations, settings) | Yes | - | Type of entities being pushed |
-| `deviceId` | string | Yes | - | Client device identifier for tracking changes |
+| Name         | Type                                                              | Required | Default | Description                                   |
+| ------------ | ----------------------------------------------------------------- | -------- | ------- | --------------------------------------------- |
+| `homeId`     | string                                                            | Yes      | -       | Home ID to push entities to                   |
+| `entityType` | enum (inventoryItems, todoItems, categories, locations, settings) | Yes      | -       | Type of entities being pushed                 |
+| `deviceId`   | string                                                            | Yes      | -       | Client device identifier for tracking changes |
 
 #### Request Body
 
@@ -3092,17 +4685,20 @@ Internal server error
 Clears sync checkpoints for a user/device/home/entityType combination, forcing a full re-sync on the next sync operation.
 
 **Use Cases:**
+
 - Client data corruption requiring full refresh
 - Sync state is out of sync
 - Troubleshooting sync issues
 - User wants to start fresh
 
 **Effect:**
+
 - Deletes sync checkpoints for specified criteria
 - Next pull/push will be treated as initial sync
 - No data is deleted from the server
 
 **Parameters:**
+
 - `homeId` (required): Home to reset
 - `entityType` (optional): Specific entity type, or all if omitted
 - `deviceId` (required): Device to reset for
@@ -3113,11 +4709,11 @@ Clears sync checkpoints for a user/device/home/entityType combination, forcing a
 
 #### Query Parameters
 
-| Name | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `homeId` | string | Yes | - | Home ID to reset sync checkpoints for |
-| `entityType` | enum (inventoryItems, todoItems, categories, locations, settings) | No | - | Specific entity type to reset, or all if omitted |
-| `deviceId` | string | Yes | - | Client device identifier to reset checkpoints for |
+| Name         | Type                                                              | Required | Default | Description                                       |
+| ------------ | ----------------------------------------------------------------- | -------- | ------- | ------------------------------------------------- |
+| `homeId`     | string                                                            | Yes      | -       | Home ID to reset sync checkpoints for             |
+| `entityType` | enum (inventoryItems, todoItems, categories, locations, settings) | No       | -       | Specific entity type to reset, or all if omitted  |
+| `deviceId`   | string                                                            | Yes      | -       | Client device identifier to reset checkpoints for |
 
 #### Response (200)
 
@@ -3228,9 +4824,331 @@ Internal server error
 - [`sync_entities.push_entities`](#sync-entities-push-entities)
 - [`sync_entities.get_sync_status`](#sync-entities-get-sync-status)
 
+### GET /sync/entities/status
+
+<a id="sync-entities-get-sync-status"></a>
+
+**ID:** `sync_entities.get_sync_status`
+
+**Get sync status for entity types in a home**
+
+Returns the sync status for entity types including last sync time, versions, and whether pull or push is needed.
+
+**Status Information:**
+
+- `lastSyncedAt` - Timestamp of last successful sync
+- `lastPulledVersion` - Version number from last pull
+- `lastPushedVersion` - Version number from last push
+- `serverVersion` - Current version on server
+- `needsPull` - Whether server has newer data
+- `needsPush` - Whether client has unpushed changes
+
+**Use Cases:**
+
+- Display sync status in UI
+- Determine if sync is needed
+- Show sync progress indicators
+
+**Authentication:** Required (jwt) - Requires valid JWT token from login/signup/google_login
+
+**Tags:** `Synchronization`
+
+#### Query Parameters
+
+| Name         | Type                                                              | Required | Default | Description                                      |
+| ------------ | ----------------------------------------------------------------- | -------- | ------- | ------------------------------------------------ |
+| `homeId`     | string                                                            | Yes      | -       | Home ID to check sync status for                 |
+| `entityType` | enum (inventoryItems, todoItems, categories, locations, settings) | No       | -       | Specific entity type to check, or all if omitted |
+| `deviceId`   | string                                                            | Yes      | -       | Client device identifier                         |
+
+#### Response (200)
+
+Sync status retrieved successfully
+
+**Example:**
+
+```json
+{
+  "success": true,
+  "status": {
+    "inventoryItems": {
+      "homeId": "my-family-home",
+      "entityType": "inventoryItems",
+      "lastSyncedAt": "2024-01-15T10:30:00.000Z",
+      "lastPulledVersion": 100,
+      "lastPushedVersion": 98,
+      "pendingLocalChanges": 5,
+      "serverVersion": 102,
+      "needsPull": true,
+      "needsPush": true
+    },
+    "todoItems": {
+      "homeId": "my-family-home",
+      "entityType": "todoItems",
+      "lastSyncedAt": "2024-01-15T09:00:00.000Z",
+      "lastPulledVersion": 50,
+      "lastPushedVersion": 50,
+      "pendingLocalChanges": 0,
+      "serverVersion": 50,
+      "needsPull": false,
+      "needsPush": false
+    },
+    "categories": {
+      "homeId": "my-family-home",
+      "entityType": "categories",
+      "lastSyncedAt": null,
+      "lastPulledVersion": 0,
+      "lastPushedVersion": 0,
+      "pendingLocalChanges": 0,
+      "serverVersion": 0,
+      "needsPull": false,
+      "needsPush": false
+    }
+  }
+}
+```
+
+#### Error Responses
+
+##### 400 - `INVALID_HOME_ID`
+
+homeId is required
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "homeId is required",
+    "code": "INVALID_HOME_ID"
+  }
+}
+```
+
+##### 400 - `INVALID_DEVICE_ID`
+
+deviceId is required
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "deviceId is required",
+    "code": "INVALID_DEVICE_ID"
+  }
+}
+```
+
+##### 401 - `UNAUTHORIZED`
+
+Unauthorized \- invalid or expired token
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Unauthorized - invalid or expired token",
+    "code": "UNAUTHORIZED"
+  }
+}
+```
+
+##### 403 - `FORBIDDEN`
+
+You are not a member of this home
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "You are not a member of this home",
+    "code": "FORBIDDEN"
+  }
+}
+```
+
+##### 500 - `SERVER_ERROR`
+
+Internal server error
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Internal server error",
+    "code": "SERVER_ERROR"
+  }
+}
+```
+
+**Related Endpoints:**
+
+- [`sync_entities.pull_entities`](#sync-entities-pull-entities)
+- [`sync_entities.push_entities`](#sync-entities-push-entities)
+- [`sync_entities.batch_sync`](#sync-entities-batch-sync)
+- [`sync_entities.reset_sync`](#sync-entities-reset-sync)
+
+---
+
+## Debug
+
+### GET /debugz
+
+<a id="debug-get-debugz"></a>
+
+**ID:** `debug.get_debugz`
+
+**Interactive API Debug Dashboard**
+
+Renders a Postman-like UI for testing API endpoints. Automatically populates with handler metadata. Allows setting auth tokens and sending requests to test the API. Only available in non-production environments.
+
+**Authentication:** Not required
+
+**Tags:** `Debug`
+
+#### Response (200)
+
+Returns HTML debug dashboard
+
+#### Error Responses
+
+##### 404 - `NOT_FOUND`
+
+Debug endpoint not available in production
+
+The debug endpoint is disabled in production mode
+
+**Example:**
+
+```json
+{
+  "message": "Not Found"
+}
+```
+
+### POST /debugz/proxy
+
+<a id="debug-proxy-debugz-request"></a>
+
+**ID:** `debug.proxy_debugz_request`
+
+**Proxy requests to API endpoints**
+
+Proxies requests from the debug UI to actual API endpoints. Allows testing endpoints with custom auth tokens. Only available in non-production environments.
+
+**Authentication:** Not required
+
+**Tags:** `Debug`
+
+#### Query Parameters
+
+| Name     | Type   | Required | Default | Description                         |
+| -------- | ------ | -------- | ------- | ----------------------------------- |
+| `method` | string | No       | -       | HTTP method to use \(default: GET\) |
+| `path`   | string | Yes      | -       | API endpoint path to proxy to       |
+
+#### Request Body
+
+**Content-Type:** `application/json`
+
+Request configuration
+
+**Required:** Yes
+
+**Example:**
+
+```json
+{
+  "authToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "requestBody": {
+    "email": "user@example.com",
+    "password": "password123"
+  }
+}
+```
+
+#### Response (200)
+
+Proxied response
+
+#### Error Responses
+
+##### 400 - `BAD_REQUEST`
+
+Target path is required
+
+The path query parameter is required
+
+##### 404 - `NOT_FOUND`
+
+Debug endpoint not available in production
+
+The debug endpoint is disabled in production mode
+
+##### 500 - `PROXY_ERROR`
+
+Failed to proxy request
+
+An error occurred while proxying the request
+
+**Related Endpoints:**
+
+- [`debug.get_debugz`](#debug-get-debugz)
+- [`debug.get_debugz_api`](#debug-get-debugz-api)
+
+### GET /debugz/api
+
+<a id="debug-get-debugz-api"></a>
+
+**ID:** `debug.get_debugz_api`
+
+**Get handler metadata for debug UI**
+
+Returns all registered handler metadata organized by category. Used by the debug dashboard to populate the endpoint list. Only available in non-production environments.
+
+**Authentication:** Not required
+
+**Tags:** `Debug`
+
+#### Response (200)
+
+Handler metadata organized by category
+
+#### Error Responses
+
+##### 404 - `NOT_FOUND`
+
+Debug endpoint not available in production
+
+The debug endpoint is disabled in production mode
+
+**Example:**
+
+```json
+{
+  "message": "Not Found"
+}
+```
+
+**Related Endpoints:**
+
+- [`debug.get_debugz`](#debug-get-debugz)
+
+---
+
+## Invitations
 
 ---
 
 ---
 
-*Documentation generated from 25 endpoints*
+_Documentation generated from 35 endpoints_

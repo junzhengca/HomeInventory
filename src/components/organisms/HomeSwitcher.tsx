@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View, Text, TouchableOpacity, Modal, FlatList, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, FlatList, TouchableWithoutFeedback, StyleSheet, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -120,7 +120,7 @@ const AddButtonText = styled(Text)`
 
 export const HomeSwitcher: React.FC = () => {
   const { t } = useTranslation();
-  const { currentHome, homes, switchHome } = useHome();
+  const { currentHome, homes, switchHome, loadingState } = useHome();
   const theme = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const addHomeSheetRef = useRef<BottomSheetModal>(null);
@@ -240,27 +240,33 @@ export const HomeSwitcher: React.FC = () => {
               <TouchableWithoutFeedback>
                 <View>
                   <HeaderText>{t('home.switcher.title')}</HeaderText>
-                  <FlatList
-                    data={homes}
-                    keyExtractor={item => item.id}
-                    scrollEnabled={false}
-                    renderItem={({ item }) => (
-                      <HomeItem
-                        isSelected={item.id === currentHome?.id}
-                        onPress={() => handleSwitch(item.id)}
-                      >
-                        <HomeItemInfo>
-                          <HomeItemName>
-                            {item.name}
-                          </HomeItemName>
-                          <HomeItemAddress>{item.address || t('home.switcher.noAddress')}</HomeItemAddress>
-                        </HomeItemInfo>
-                        {item.id === currentHome?.id && (
-                          <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                        )}
-                      </HomeItem>
-                    )}
-                  />
+                  {loadingState.isLoading && loadingState.operation === 'list' ? (
+                    <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                      <ActivityIndicator size="small" color={theme.colors.primary} />
+                    </View>
+                  ) : (
+                    <FlatList
+                      data={homes}
+                      keyExtractor={item => item.id}
+                      scrollEnabled={false}
+                      renderItem={({ item }) => (
+                        <HomeItem
+                          isSelected={item.id === currentHome?.id}
+                          onPress={() => handleSwitch(item.id)}
+                        >
+                          <HomeItemInfo>
+                            <HomeItemName>
+                              {item.name}
+                            </HomeItemName>
+                            <HomeItemAddress>{item.address || t('home.switcher.noAddress')}</HomeItemAddress>
+                          </HomeItemInfo>
+                          {item.id === currentHome?.id && (
+                            <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                          )}
+                        </HomeItem>
+                      )}
+                    />
+                  )}
                   <AddButton onPress={handleOpenAdd}>
                     <AddIconContainer>
                       <Ionicons name="add" size={20} color={theme.colors.primary} />

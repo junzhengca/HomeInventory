@@ -1,29 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { homeService } from '../services/HomeService';
-import { Home } from '../types/home';
+import { Home, HomeLoadingState } from '../types/home';
 import { setActiveHomeId } from '../store/slices/authSlice';
 import { RootState } from '../store';
+import { ApiClient } from '../services/ApiClient';
 
 export const useHome = () => {
     const dispatch = useDispatch();
     const [homes, setHomes] = useState<Home[]>([]);
+    const [loadingState, setLoadingState] = useState<HomeLoadingState>(homeService.getLoadingState());
 
     // Use Redux as the source of truth for the active home ID
     const activeHomeId = useSelector((state: RootState) => state.auth.activeHomeId);
-
     const [currentHome, setCurrentHome] = useState<Home | undefined>(undefined);
 
+    // Subscribe to HomeService changes
     useEffect(() => {
-        const homesSub = homeService.homes$.subscribe(setHomes);
-        // We removed the subscription to currentHomeId$ that was dispatching setActiveHomeId
-        // to avoid infinite loops and race conditions. Redux is now the master.
+        const unsubscribe = homeService.subscribe(() => {
+            setHomes(homeService.getHomes());
+            setLoadingState(homeService.getLoadingState());
+        });
+
+        // Initial load
+        setHomes(homeService.getHomes());
 
         return () => {
-            homesSub.unsubscribe();
+            unsubscribe();
         };
     }, []);
 
+    // Update currentHome when activeHomeId or homes change
     useEffect(() => {
         if (activeHomeId && homes.length > 0) {
             setCurrentHome(homes.find((h) => h.id === activeHomeId));
@@ -40,29 +47,42 @@ export const useHome = () => {
         }
     }, [activeHomeId, homes, dispatch]);
 
-    const handleSwitchHome = (homeId: string) => {
+    // Sync loading state from service
+    useEffect(() => {
+        const unsubscribe = homeService.subscribe(() => {
+            setLoadingState(homeService.getLoadingState());
+        });
+        setLoadingState(homeService.getLoadingState());
+        return unsubscribe;
+    }, []);
+
+    const handleSwitchHome = useCallback((homeId: string) => {
         // Just dispatch the action, the saga will handle persistence and service sync
         dispatch(setActiveHomeId(homeId));
-    };
+        homeService.switchHome(homeId);
+    }, [dispatch]);
 
-    const handleCreateHome = async (name: string, address?: string) => {
-        // Create in service
-        const newHome = await homeService.createHome(name, address);
+    const handleFetchHomes = useCallback(async (apiClient: ApiClient) => {
+        return await homeService.fetchHomes(apiClient);
+    }, []);
+
+    const handleCreateHome = useCallback(async (apiClient: ApiClient, name: string, address?: string) => {
+        const newHome = await homeService.createHome(apiClient, name, address);
         if (newHome) {
             // Dispatch action to update Redux and persist
             dispatch(setActiveHomeId(newHome.id));
             return newHome;
         }
         return null;
-    };
+    }, [dispatch]);
 
-    const handleUpdateHome = async (id: string, updates: Partial<Home>) => {
-        return await homeService.updateHome(id, updates);
-    };
+    const handleUpdateHome = useCallback(async (apiClient: ApiClient, id: string, updates: { name?: string; address?: string }) => {
+        return await homeService.updateHome(apiClient, id, updates);
+    }, []);
 
-    const handleDeleteHome = async (id: string) => {
+    const handleDeleteHome = useCallback(async (apiClient: ApiClient, id: string) => {
         const wasActiveHome = activeHomeId === id;
-        const success = await homeService.deleteHome(id);
+        const success = await homeService.deleteHome(apiClient, id);
         if (success && wasActiveHome) {
             // HomeService has already switched internally; sync Redux with the next available home
             const availableHomes = homeService.getHomes();
@@ -71,18 +91,40 @@ export const useHome = () => {
             }
         }
         return success;
-    };
+    }, [activeHomeId, dispatch]);
+
+    const handleEnsureDefaultHome = useCallback(async (apiClient: ApiClient) => {
+        const home = await homeService.ensureDefaultHome(apiClient);
+        if (home) {
+            dispatch(setActiveHomeId(home.id));
+        }
+        return home;
+    }, [dispatch]);
+
+    const handleInit = useCallback(async () => {
+        await homeService.init();
+        // Initialize homes from service after init
+        setHomes(homeService.getHomes());
+        // Set initial home if not set in Redux
+        if (!activeHomeId) {
+            const currentHome = homeService.getCurrentHome();
+            if (currentHome) {
+                dispatch(setActiveHomeId(currentHome.id));
+            }
+        }
+    }, [activeHomeId, dispatch]);
 
     return {
         homes,
         currentHomeId: activeHomeId,
         currentHome,
+        loadingState,
         createHome: handleCreateHome,
         updateHome: handleUpdateHome,
         deleteHome: handleDeleteHome,
         switchHome: handleSwitchHome,
-        syncHomes: homeService.syncHomes.bind(homeService),
-        init: homeService.init.bind(homeService),
+        fetchHomes: handleFetchHomes,
+        ensureDefaultHome: handleEnsureDefaultHome,
+        init: handleInit,
     };
 };
-

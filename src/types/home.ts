@@ -14,18 +14,19 @@ export interface Home {
         canShareTodos: boolean;
     };
     invitationCode?: string;
+    memberCount?: number;
+    isOwner?: boolean;
     createdAt: string;
     updatedAt: string;
+}
 
-    // Sync metadata
-    serverUpdatedAt?: string;
-    clientUpdatedAt?: string;
-    lastSyncedAt?: string;
+/**
+ * Loading state for home operations
+ */
+export type HomeOperationType = 'list' | 'create' | 'update' | 'delete' | 'leave';
 
-    // Pending operations
-    pendingCreate?: boolean;
-    pendingUpdate?: boolean;
-    pendingLeave?: boolean;
-    pendingJoin?: boolean;
-    pendingDelete?: boolean;
+export interface HomeLoadingState {
+    isLoading: boolean;
+    operation: HomeOperationType | null;
+    error: string | null;
 }

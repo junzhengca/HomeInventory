@@ -73,7 +73,7 @@ export const SettingsScreen: React.FC = () => {
   const { user, getApiClient } = useAuth();
   const toast = useToast();
 
-  const { currentHome, deleteHome, syncHomes } = useHome();
+  const { currentHome, deleteHome, fetchHomes } = useHome();
   const editHomeSheetRef = useRef<BottomSheetModal>(null);
 
   const handleEditHomePress = useCallback(() => {
@@ -95,12 +95,10 @@ export const SettingsScreen: React.FC = () => {
           text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
-            const success = await deleteHome(currentHome.id);
+            const apiClient = getApiClient();
+            if (!apiClient) return;
+            const success = await deleteHome(apiClient, currentHome.id);
             if (success) {
-              const apiClient = getApiClient();
-              if (user && apiClient) {
-                syncHomes(apiClient).catch((err: unknown) => uiLogger.error('Error syncing homes', err));
-              }
               toast.showToast(t('settings.deleteHome.success'));
             } else {
               Alert.alert(t('common.error'), t('settings.deleteHome.error'));

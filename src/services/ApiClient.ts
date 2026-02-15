@@ -38,6 +38,15 @@ import {
   SyncHomesResponse,
   PushHomesRequest,
   PushHomesResponse,
+  ListHomesResponse,
+  CreateHomeRequest,
+  CreateHomeResponse,
+  UpdateHomeRequest,
+  UpdateHomeResponse,
+  GetHomeResponse,
+  DeleteHomeResponse,
+  LeaveHomeResponse,
+  HomeMembersResponse,
 } from '../types/api';
 import { apiLogger } from '../utils/Logger';
 
@@ -621,10 +630,94 @@ class ApiClient {
   }
 
   // =============================================================================
-  // Sync Endpoints
+  // Home CRUD Endpoints
   // =============================================================================
 
   /**
+   * GET /api/homes
+   * List all homes for the authenticated user
+   */
+  async listHomes(): Promise<ListHomesResponse> {
+    return this.request<ListHomesResponse>('/api/homes', {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * POST /api/homes
+   * Create a new home
+   */
+  async createHome(request: CreateHomeRequest): Promise<CreateHomeResponse> {
+    return this.request<CreateHomeResponse>('/api/homes', {
+      method: 'POST',
+      body: request,
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * GET /api/homes/:homeId
+   * Get details of a specific home
+   */
+  async getHome(homeId: string): Promise<GetHomeResponse> {
+    return this.request<GetHomeResponse>(`/api/homes/${homeId}`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * PATCH /api/homes/:homeId
+   * Update a home
+   */
+  async updateHome(homeId: string, request: UpdateHomeRequest): Promise<UpdateHomeResponse> {
+    return this.request<UpdateHomeResponse>(`/api/homes/${homeId}`, {
+      method: 'PATCH',
+      body: request,
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * DELETE /api/homes/:homeId
+   * Delete a home (only for owners)
+   */
+  async deleteHome(homeId: string): Promise<DeleteHomeResponse> {
+    return this.request<DeleteHomeResponse>(`/api/homes/${homeId}`, {
+      method: 'DELETE',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * DELETE /api/homes/:homeId/members/:userId
+   * Leave a home (for members)
+   */
+  async leaveHome(homeId: string, userId: string): Promise<LeaveHomeResponse> {
+    return this.request<LeaveHomeResponse>(`/api/homes/${homeId}/members/${userId}`, {
+      method: 'DELETE',
+      requiresAuth: true,
+    });
+  }
+
+  /**
+   * GET /api/homes/:homeId/members
+   * List all members of a home
+   */
+  async listHomeMembers(homeId: string): Promise<HomeMembersResponse> {
+    return this.request<HomeMembersResponse>(`/api/homes/${homeId}/members`, {
+      method: 'GET',
+      requiresAuth: true,
+    });
+  }
+
+  // =============================================================================
+  // Sync Endpoints (Deprecated)
+  // =============================================================================
+
+  /**
+   * @deprecated Use listHomes() instead
    * GET /api/homes/sync
    * Sync homes list with server
    * @param since Optional ISO 8601 timestamp for incremental sync
@@ -645,6 +738,7 @@ class ApiClient {
   }
 
   /**
+   * @deprecated Use createHome()/updateHome() instead
    * POST /api/homes/sync
    * Push local home changes to server
    */

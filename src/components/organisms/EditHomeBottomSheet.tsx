@@ -26,6 +26,19 @@ const FormContainer = styled.View`
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
+const ErrorBanner = styled.View`
+  background-color: ${({ theme }: StyledProps) => theme.colors.error};
+  padding: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  margin-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.sm}px;
+`;
+
+const ErrorText = styled.Text`
+  color: ${({ theme }: StyledProps) => theme.colors.surface};
+  font-size: 12px;
+`;
+
 const FooterContainer = styled.View<{
     bottomInset: number;
     showSafeArea: boolean;
@@ -56,12 +69,11 @@ export const EditHomeBottomSheet: React.FC<EditHomeBottomSheetProps> = ({
     const { t } = useTranslation();
     const theme = useTheme();
     const insets = useSafeAreaInsets();
-    const { updateHome, syncHomes } = useHome();
+    const { updateHome, loadingState } = useHome();
     const { getApiClient, isAuthenticated } = useAuth();
     const { isKeyboardVisible } = useKeyboardVisibility();
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
 
     const nameInputRef = useRef<TextInput>(null);
     const addressInputRef = useRef<TextInput>(null);
@@ -81,26 +93,26 @@ export const EditHomeBottomSheet: React.FC<EditHomeBottomSheetProps> = ({
     const handleSubmit = async () => {
         if (!name.trim() || !home) return;
 
-        setIsLoading(true);
+        if (!isAuthenticated) {
+            uiLogger.error('Cannot update home: user not authenticated');
+            return;
+        }
+
+        const apiClient = getApiClient();
+        if (!apiClient) {
+            uiLogger.error('Cannot update home: API client not available');
+            return;
+        }
+
         try {
-            const success = await updateHome(home.id, { name, address });
+            const success = await updateHome(apiClient, home.id, { name, address });
 
             if (success) {
-                // Trigger sync to push updates to server
-                if (isAuthenticated) {
-                    const apiClient = getApiClient();
-                    if (apiClient) {
-                        syncHomes(apiClient).catch((err: unknown) => uiLogger.error('Background sync failed', err));
-                    }
-                }
-
                 handleClose();
                 onHomeUpdated?.();
             }
         } catch (error) {
             uiLogger.error('Failed to update home', error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -116,8 +128,16 @@ export const EditHomeBottomSheet: React.FC<EditHomeBottomSheetProps> = ({
         []
     );
 
+    const isLoading = loadingState.operation === 'update' && loadingState.isLoading;
+    const error = loadingState.operation === 'update' ? loadingState.error : null;
+
     const renderFooter = useCallback(() => (
         <FooterContainer bottomInset={insets.bottom} showSafeArea={!isKeyboardVisible}>
+            {error && (
+                <ErrorBanner style={{ marginBottom: 8 }}>
+                    <ErrorText>{error}</ErrorText>
+                </ErrorBanner>
+            )}
             <Button
                 label={t('home.edit.submit')}
                 onPress={handleSubmit}
@@ -126,7 +146,7 @@ export const EditHomeBottomSheet: React.FC<EditHomeBottomSheetProps> = ({
                 fullWidth
             />
         </FooterContainer>
-    ), [insets.bottom, isKeyboardVisible, handleSubmit, name, isLoading, t]);
+    ), [insets.bottom, isKeyboardVisible, handleSubmit, name, isLoading, error, t]);
 
     const footerHeight = 82 + (isKeyboardVisible ? 0 : insets.bottom);
 

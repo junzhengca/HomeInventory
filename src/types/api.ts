@@ -491,9 +491,80 @@ export interface ErrorDetails {
 
 // =============================================================================
 // =============================================================================
-// Home Sync Response Types
+// Home CRUD Types
 // =============================================================================
 
+/**
+ * @deprecated Use Home from src/types/home.ts instead
+ */
+export interface HomeDto {
+  homeId: string;
+  name: string;
+  address?: string;
+  invitationCode?: string;
+  settings?: {
+    canShareInventory: boolean;
+    canShareTodos: boolean;
+  };
+  memberCount?: number;
+  owner?: {
+    userId: string;
+    email: string;
+    nickname: string;
+    avatarUrl?: string;
+  };
+  role?: 'owner' | 'member';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ListHomesResponse {
+  homes: HomeDto[];
+}
+
+export interface CreateHomeRequest {
+  homeId: string;
+  name: string;
+  address?: string;
+}
+
+export interface CreateHomeResponse {
+  home: HomeDto;
+}
+
+export interface UpdateHomeRequest {
+  name?: string;
+  address?: string;
+}
+
+export interface UpdateHomeResponse {
+  home: HomeDto;
+}
+
+export interface GetHomeResponse {
+  home: HomeDto;
+}
+
+export interface DeleteHomeResponse {
+  success: boolean;
+}
+
+export interface LeaveHomeResponse {
+  success: boolean;
+}
+
+export interface HomeMembersResponse {
+  members: Member[];
+}
+
+// =============================================================================
+// =============================================================================
+// Home Sync Response Types (Deprecated - use CRUD endpoints instead)
+// =============================================================================
+
+/**
+ * @deprecated Use ListHomesResponse instead
+ */
 export interface HomeSyncData {
   homeId: string;
   name: string;
@@ -516,6 +587,9 @@ export interface HomeSyncData {
   serverUpdatedAt?: string;
 }
 
+/**
+ * @deprecated Use ListHomesResponse instead
+ */
 export interface SyncHomesResponse {
   homes: HomeSyncData[];
   deletedHomeIds: string[];
@@ -523,6 +597,9 @@ export interface SyncHomesResponse {
   serverTimestamp: string;
 }
 
+/**
+ * @deprecated Use CreateHomeRequest/UpdateHomeRequest instead
+ */
 export interface PushHomesRequest {
   homes: {
     homeId: string;
@@ -537,6 +614,9 @@ export interface PushHomesRequest {
   lastSyncedAt?: string;
 }
 
+/**
+ * @deprecated
+ */
 export interface HomeSyncResult {
   homeId: string;
   status: 'created' | 'updated' | 'server_version' | 'error' | 'deleted';
@@ -549,6 +629,9 @@ export interface HomeSyncResult {
   };
 }
 
+/**
+ * @deprecated
+ */
 export interface PushHomesResponse {
   results: HomeSyncResult[];
   newHomesFromServer: HomeSyncData[];

@@ -1,464 +1,370 @@
-import { BehaviorSubject, map } from 'rxjs';
 import { fileSystemService } from './FileSystemService';
-import { Home } from '../types/home';
+import { Home, HomeLoadingState, HomeOperationType } from '../types/home';
 import { generateItemId } from '../utils/idGenerator';
-import { SyncHomesResponse, PushHomesResponse, HomeSyncData } from '../types/api';
 import { dataInitializationService } from './DataInitializationService';
 import { syncLogger } from '../utils/Logger';
 import { ApiClient } from './ApiClient';
+import {
+    ListHomesResponse,
+    CreateHomeRequest,
+    UpdateHomeRequest,
+    DeleteHomeResponse,
+    LeaveHomeResponse,
+    HomeDto,
+} from '../types/api';
 
 const HOMES_FILE = 'homes.json';
 
 interface HomesData {
     homes: Home[];
-    lastSyncTime?: string;
 }
 
 class HomeService {
-    // Using BehaviorSubject to hold the current state
-    private homesSubject = new BehaviorSubject<Home[]>([]);
-    private currentHomeIdSubject = new BehaviorSubject<string | null>(null);
+    // Simple state instead of RxJS BehaviorSubject
+    private homes: Home[] = [];
+    private currentHomeId: string | null = null;
+    private listeners: Set<() => void> = new Set();
 
-    // Expose observables for components to consume
-    // Filter out homes that are pending deletion or pending leave so the UI updates immediately
-    homes$ = this.homesSubject.asObservable().pipe(
-        map(homes => homes.filter(h => !h.pendingDelete && !h.pendingLeave))
-    );
-    currentHomeId$ = this.currentHomeIdSubject.asObservable();
+    // Loading state tracking
+    private loadingState: HomeLoadingState = {
+        isLoading: false,
+        operation: null,
+        error: null,
+    };
 
     /**
      * Initialize the service: read homes from disk.
-     * Does NOT create default home - homes should come from server sync or explicit creation.
+     * Does NOT create default home - homes should come from server or explicit creation.
      */
-    async init() {
-        let data = await fileSystemService.readFile<HomesData>(HOMES_FILE);
+    async init(): Promise<void> {
+        const data = await fileSystemService.readFile<HomesData>(HOMES_FILE);
+        const homesData = data || { homes: [] };
 
         // If no homes exist, initialize with empty array (no default home)
-        if (!data || !data.homes || data.homes.length === 0) {
+        if (!homesData.homes || homesData.homes.length === 0) {
             syncLogger.info('No homes found, initializing with empty list');
-            data = { homes: [] };
-            await fileSystemService.writeFile(HOMES_FILE, data);
+            homesData.homes = [];
+            await fileSystemService.writeFile(HOMES_FILE, homesData);
         }
 
-        // Self-healing: Ensure local-only homes are marked as pendingCreate
-        let dataChanged = false;
-        if (data && data.homes) {
-            data.homes = data.homes.map(home => {
-                // If a home has no server timestamp and isn't marked for creation/joining, it's a "lost" local home
-                if (!home.serverUpdatedAt && !home.pendingCreate && !home.pendingJoin) {
-                    syncLogger.info(`Repaired home ${home.id} (missing sync flags)`);
-                    dataChanged = true;
-                    return {
-                        ...home,
-                        pendingCreate: true,
-                        clientUpdatedAt: home.clientUpdatedAt || home.updatedAt || new Date().toISOString()
-                    };
-                }
-                return home;
-            });
-
-            if (dataChanged) {
-                await fileSystemService.writeFile(HOMES_FILE, data);
+        // Migration: Clean up legacy sync metadata from existing homes
+        const cleanedHomes = homesData.homes.map(home => {
+            const legacyKeys = [
+                'serverUpdatedAt', 'clientUpdatedAt', 'lastSyncedAt',
+                'pendingCreate', 'pendingUpdate', 'pendingLeave', 'pendingJoin', 'pendingDelete'
+            ];
+            const hasLegacyKeys = legacyKeys.some(key => key in home);
+            if (hasLegacyKeys) {
+                syncLogger.info(`Migrating home ${home.id}, removing sync metadata`);
+                const cleaned = { ...home };
+                legacyKeys.forEach(key => delete (cleaned as Record<string, unknown>)[key]);
+                return cleaned as Home;
             }
+            return home;
+        });
+
+        // If migration happened, persist the cleaned data
+        if (cleanedHomes.length !== homesData.homes.length ||
+            cleanedHomes.some((h, i) => h !== homesData.homes[i])) {
+            homesData.homes = cleanedHomes;
+            await fileSystemService.writeFile(HOMES_FILE, homesData);
         }
 
-        this.homesSubject.next(data.homes);
+        this.homes = homesData.homes;
 
         // Set initial home (first one) if not already set
-        if (!this.currentHomeIdSubject.value && data.homes.length > 0) {
-            // Find first available home (not pending delete/leave)
-            const availableHome = data.homes.find(h => !h.pendingDelete && !h.pendingLeave);
-            if (availableHome) {
-                this.currentHomeIdSubject.next(availableHome.id);
-            }
+        if (!this.currentHomeId && this.homes.length > 0) {
+            this.currentHomeId = this.homes[0].id;
         }
     }
 
     /**
-     * Ensure at least one home exists, creating default if needed
+     * Subscribe to home state changes
+     * @returns Unsubscribe function
      */
-    async ensureDefaultHome(): Promise<Home | null> {
-        const homes = this.getHomes();
-
-        if (homes.length === 0) {
-            syncLogger.info('No homes found, creating default home...');
-            const defaultHome: Home = {
-                id: generateItemId(),
-                name: 'My Home',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                clientUpdatedAt: new Date().toISOString(),
-                pendingCreate: true,
-            };
-
-            const data: HomesData = { homes: [defaultHome] };
-            const success = await fileSystemService.writeFile(HOMES_FILE, data);
-
-            if (success) {
-                this.homesSubject.next([defaultHome]);
-                this.currentHomeIdSubject.next(defaultHome.id);
-                // Initialize home-specific data files for the default home
-                await dataInitializationService.initializeHomeData(defaultHome.id);
-                syncLogger.info('Default home created and initialized');
-                return defaultHome;
-            } else {
-                syncLogger.error('Failed to write default home');
-                return null;
-            }
-        }
-
-        // If we have homes but no active home, set the first one
-        if (!this.currentHomeIdSubject.value) {
-            const availableHome = homes.find(h => !h.pendingDelete && !h.pendingLeave);
-            if (availableHome) {
-                this.currentHomeIdSubject.next(availableHome.id);
-                // Ensure home data is initialized
-                await dataInitializationService.initializeHomeData(availableHome.id);
-                return availableHome;
-            }
-        }
-
-        return this.getCurrentHome();
+    subscribe(callback: () => void): () => void {
+        this.listeners.add(callback);
+        return () => {
+            this.listeners.delete(callback);
+        };
     }
 
     /**
-     * Sync homes with server
+     * Notify all listeners of state change
      */
-    async syncHomes(apiClient: ApiClient): Promise<void> {
-        syncLogger.info('Starting home sync...');
+    private notifyListeners(): void {
+        this.listeners.forEach(cb => cb());
+    }
+
+    /**
+     * Get current loading state
+     */
+    getLoadingState(): HomeLoadingState {
+        return { ...this.loadingState };
+    }
+
+    /**
+     * Set loading state
+     */
+    private setLoading(operation: HomeOperationType | null, error: string | null = null): void {
+        this.loadingState = {
+            isLoading: operation !== null,
+            operation,
+            error,
+        };
+        this.notifyListeners();
+    }
+
+    /**
+     * Persist homes to local storage
+     */
+    private async persist(): Promise<void> {
+        const data: HomesData = { homes: this.homes };
+        await fileSystemService.writeFile(HOMES_FILE, data);
+    }
+
+    /**
+     * Convert API DTO to domain model
+     */
+    private dtoToHome(dto: HomeDto): Home {
+        const now = new Date().toISOString();
+        return {
+            id: dto.homeId,
+            name: dto.name,
+            address: dto.address,
+            role: dto.role,
+            owner: dto.owner,
+            settings: dto.settings,
+            invitationCode: dto.invitationCode,
+            memberCount: dto.memberCount,
+            isOwner: dto.role === 'owner',
+            createdAt: dto.createdAt || now,
+            updatedAt: dto.updatedAt || now,
+        };
+    }
+
+    /**
+     * Fetch homes from server
+     */
+    async fetchHomes(apiClient: ApiClient): Promise<Home[]> {
+        this.setLoading('list');
         try {
-            const data = await fileSystemService.readFile<HomesData>(HOMES_FILE);
-            const lastSyncTime = data?.lastSyncTime;
-            const currentHomes = [...this.homesSubject.value];
+            const response = await apiClient.listHomes() as ListHomesResponse;
+            const homes = response.homes.map(dto => this.dtoToHome(dto));
 
-            // 1. Identify pending changes
-            const pendingHomes = currentHomes.filter(h => h.pendingCreate || h.pendingUpdate || h.pendingLeave || h.pendingJoin || h.pendingDelete);
+            // Merge with local homes (preserve local homes that haven't been synced yet)
+            const syncedHomeIds = new Set(homes.map(h => h.id));
+            const localOnlyHomes = this.homes.filter(h => !syncedHomeIds.has(h.id));
 
-            let syncResponse: SyncHomesResponse | PushHomesResponse;
+            const mergedHomes = [...homes, ...localOnlyHomes];
+            this.homes = mergedHomes;
 
-            if (pendingHomes.length > 0) {
-                syncLogger.info(`Pushing ${pendingHomes.length} pending changes...`);
-                const pushResponse = await apiClient.pushHomes({
-                    homes: pendingHomes.map(h => ({
-                        homeId: h.id,
-                        name: h.name,
-                        address: h.address,
-                        clientUpdatedAt: h.clientUpdatedAt || h.updatedAt,
-                        pendingCreate: h.pendingCreate,
-                        pendingUpdate: h.pendingUpdate,
-                        pendingLeave: h.pendingLeave,
-                        pendingJoin: h.pendingJoin,
-                        pendingDelete: h.pendingDelete,
-                    })),
-                    lastSyncedAt: lastSyncTime,
-                });
-                syncResponse = pushResponse;
+            // Persist merged list
+            await this.persist();
 
-                // Handle results of push
-                for (const result of pushResponse.results) {
-                    const localIndex = currentHomes.findIndex(h => h != null && h.id === result.homeId);
-                    if (localIndex >= 0) {
-                        if (result.status === 'created' || result.status === 'updated') {
-                            // Clear pending flags on success
-                            currentHomes[localIndex] = {
-                                ...currentHomes[localIndex],
-                                pendingCreate: false,
-                                pendingUpdate: false,
-                                serverUpdatedAt: result.serverUpdatedAt,
-                                lastSyncedAt: pushResponse.serverTimestamp,
-                            };
-                        } else if (result.status === 'deleted') {
-                            // Home deleted on server, remove locally
-                            await fileSystemService.deleteHomeFiles(result.homeId);
-                            // Mark for deletion by setting pendingDelete
-                            currentHomes[localIndex] = {
-                                ...currentHomes[localIndex],
-                                pendingDelete: true,
-                            };
-                        } else if (result.status === 'server_version' && result.winner === 'server') {
-                            // Server won conflict, update local data
-                            currentHomes[localIndex] = {
-                                ...currentHomes[localIndex],
-                                ...(result.serverVersion ?? {}),
-                                id: result.homeId,
-                                pendingCreate: false,
-                                pendingUpdate: false,
-                                serverUpdatedAt: result.serverUpdatedAt,
-                                lastSyncedAt: pushResponse.serverTimestamp,
-                            };
-                        }
-                    }
-                }
-
-                // Filter out homes marked for deletion
-                const filteredHomes = currentHomes.filter(h => !h.pendingDelete);
-                // Update array in place
-                currentHomes.length = 0;
-                currentHomes.push(...filteredHomes);
-
-                // Handle errors (like homeId collisions)
-                if ((syncResponse as PushHomesResponse).errors) {
-                    (syncResponse as PushHomesResponse).errors.forEach((error) => {
-                        if (error.code === 'homeId_exists' && error.suggestedHomeId) {
-                            syncLogger.info(`homeId collision for ${error.homeId}, retrying with ${error.suggestedHomeId}`);
-                            const localIndex = currentHomes.findIndex(h => h != null && h.id === error.homeId);
-                            if (localIndex >= 0) {
-                                currentHomes[localIndex] = {
-                                    ...currentHomes[localIndex],
-                                    id: error.suggestedHomeId,
-                                };
-                            }
-                            // Note: The next sync loop will pick this up and try again
-                        }
-                    });
-                }
-            } else {
-                syncLogger.info('No pending changes, pulling updates...');
-                syncResponse = await apiClient.syncHomes(lastSyncTime, true);
+            // Ensure we have an active home
+            if (!this.currentHomeId && this.homes.length > 0) {
+                this.currentHomeId = this.homes[0].id;
             }
 
-            // 2. Process updates from server (new homes found on server)
-            const serverHomes: HomeSyncData[] = 'homes' in syncResponse
-                ? (syncResponse as SyncHomesResponse).homes
-                : (syncResponse as PushHomesResponse).newHomesFromServer;
-            serverHomes.forEach((serverHome) => {
-                const homeId = serverHome.homeId;
-                const existingIndex = currentHomes.findIndex(h => h.id === homeId);
-                const now = new Date().toISOString();
-                const mappedHome: Home = {
-                    id: homeId,
-                    name: serverHome.name,
-                    address: serverHome.address,
-                    role: serverHome.role,
-                    owner: serverHome.owner,
-                    settings: serverHome.settings,
-                    invitationCode: serverHome.invitationCode,
-                    createdAt: serverHome.createdAt || now,
-                    updatedAt: serverHome.updatedAt || now,
-                    serverUpdatedAt: serverHome.serverUpdatedAt || serverHome.updatedAt,
-                    lastSyncedAt: syncResponse.serverTimestamp,
-                };
-
-                if (existingIndex >= 0) {
-                    // Update existing (if not pending local changes that we just decided to keep)
-                    if (!currentHomes[existingIndex].pendingUpdate && !currentHomes[existingIndex].pendingCreate) {
-                        currentHomes[existingIndex] = {
-                            ...currentHomes[existingIndex],
-                            ...mappedHome,
-                        };
-                    }
-                } else {
-                    // Add new home
-                    currentHomes.push(mappedHome);
-                }
-            });
-
-            // 3. Handle deletions
-            const deletedHomeIds = syncResponse.deletedHomeIds || [];
-            let finalHomes = currentHomes;
-            if (deletedHomeIds.length > 0) {
-                syncLogger.info(`Removing ${deletedHomeIds.length} deleted homes`);
-                finalHomes = currentHomes.filter(h => !deletedHomeIds.includes(h.id));
-                for (const deletedId of deletedHomeIds) {
-                    await fileSystemService.deleteHomeFiles(deletedId);
-                }
-            }
-
-            // 4. Ensure at least one home exists after sync
-            const availableAfterSync = finalHomes.filter(h => !h.pendingDelete && !h.pendingLeave);
-            if (availableAfterSync.length === 0) {
-                syncLogger.info('No homes remaining after sync, creating new default home...');
-                const now = new Date().toISOString();
-                const defaultHome: Home = {
-                    id: generateItemId(),
-                    name: 'My Home',
-                    createdAt: now,
-                    updatedAt: now,
-                    clientUpdatedAt: now,
-                    pendingCreate: true,
-                };
-                finalHomes.push(defaultHome);
-            }
-
-            // 5. Persist
-            const newData: HomesData = {
-                homes: finalHomes,
-                lastSyncTime: syncResponse.serverTimestamp,
-            };
-
-            await fileSystemService.writeFile(HOMES_FILE, newData);
-            this.homesSubject.next(finalHomes);
-
-            // 6. Handle active home switch if needed
-            const activeId = this.currentHomeIdSubject.value;
-            // Check if active home was permanently deleted or is now pending delete/leave
-            const activeHome = finalHomes.find(h => h.id === activeId);
-            if (!activeHome || activeHome.pendingDelete || activeHome.pendingLeave) {
-                // Find next available home
-                const nextHome = finalHomes.find(h => !h.pendingDelete && !h.pendingLeave);
-                if (nextHome) {
-                    syncLogger.info('Active home was deleted or unavailable, switching...');
-                    this.switchHome(nextHome.id);
-                }
-            }
-
-            syncLogger.info('Sync complete');
-
+            this.setLoading(null);
+            this.notifyListeners();
+            return this.homes;
         } catch (error) {
-            syncLogger.error('Error syncing homes:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to fetch homes';
+            syncLogger.error('Failed to fetch homes:', error);
+            this.setLoading(null, errorMessage);
+            throw error;
         }
     }
 
     /**
-     * Create a new home and switch to it.
+     * Create a new home and switch to it
      */
-    async createHome(name: string, address?: string): Promise<Home | null> {
-        const now = new Date().toISOString();
-        const newHome: Home = {
-            id: generateItemId(),
-            name,
-            address,
-            role: 'owner',
-            createdAt: now,
-            updatedAt: now,
-            clientUpdatedAt: now,
-            pendingCreate: true,
-        };
+    async createHome(apiClient: ApiClient, name: string, address?: string): Promise<Home | null> {
+        this.setLoading('create');
+        try {
+            const newId = generateItemId();
+            const request: CreateHomeRequest = {
+                homeId: newId,
+                name,
+                address,
+            };
 
-        const currentHomes = this.homesSubject.value;
-        const updatedHomes = [...currentHomes, newHome];
+            const response = await apiClient.createHome(request) as { home: HomeDto };
+            const newHome = this.dtoToHome(response.home);
 
-        const success = await fileSystemService.writeFile<HomesData>(HOMES_FILE, { homes: updatedHomes });
-        if (success) {
-            this.homesSubject.next(updatedHomes);
+            // Add to homes list
+            this.homes.push(newHome);
+            await this.persist();
+
+            // Switch to the new home
             this.switchHome(newHome.id);
-            // Initialize home-specific data files (categories, locations, items, todos)
+
+            // Initialize home-specific data files
             await dataInitializationService.initializeHomeData(newHome.id);
+
+            this.setLoading(null);
+            this.notifyListeners();
             return newHome;
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to create home';
+            syncLogger.error('Failed to create home:', error);
+            this.setLoading(null, errorMessage);
+            throw error;
         }
-        return null;
     }
 
     /**
-     * Update an existing home locally.
+     * Update an existing home
      */
-    async updateHome(id: string, updates: Partial<Home>): Promise<boolean> {
-        const currentHomes = [...this.homesSubject.value];
-        const index = currentHomes.findIndex(h => h.id === id);
+    async updateHome(apiClient: ApiClient, id: string, updates: { name?: string; address?: string }): Promise<boolean> {
+        this.setLoading('update');
+        try {
+            const request: UpdateHomeRequest = updates;
+            const response = await apiClient.updateHome(id, request) as { home: HomeDto };
 
-        if (index < 0) return false;
+            // Update local home
+            const index = this.homes.findIndex(h => h.id === id);
+            if (index >= 0) {
+                this.homes[index] = this.dtoToHome(response.home);
+                await this.persist();
+                this.notifyListeners();
+            }
 
-        const now = new Date().toISOString();
-        currentHomes[index] = {
-            ...currentHomes[index],
-            ...updates,
-            updatedAt: now,
-            clientUpdatedAt: now,
-            pendingUpdate: true,
-        };
-
-        const success = await fileSystemService.writeFile<HomesData>(HOMES_FILE, { homes: currentHomes });
-        if (success) {
-            this.homesSubject.next(currentHomes);
+            this.setLoading(null);
             return true;
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to update home';
+            syncLogger.error('Failed to update home:', error);
+            this.setLoading(null, errorMessage);
+            return false;
         }
-        return false;
     }
 
     /**
-     * Delete (or leave) a home.
+     * Delete (or leave) a home
      */
-    async deleteHome(id: string): Promise<boolean> {
-        const currentHomes = [...this.homesSubject.value];
-        const index = currentHomes.findIndex(h => h.id === id);
+    async deleteHome(apiClient: ApiClient, id: string): Promise<boolean> {
+        this.setLoading('delete');
+        try {
+            const home = this.homes.find(h => h.id === id);
+            if (!home) {
+                this.setLoading(null, 'Home not found');
+                return false;
+            }
 
-        if (index < 0) return false;
+            // Determine if we're deleting (owner) or leaving (member)
+            const userId = home.owner?.userId;
+            if (!userId) {
+                this.setLoading(null, 'User ID not found');
+                return false;
+            }
 
-        const home = currentHomes[index];
-        const now = new Date().toISOString();
+            if (home.role === 'owner') {
+                await apiClient.deleteHome(id) as DeleteHomeResponse;
+            } else {
+                await apiClient.leaveHome(id, userId) as LeaveHomeResponse;
+            }
 
-        if (home.role === 'owner') {
-            // Owner deleting the home
-            currentHomes[index] = {
-                ...home,
-                updatedAt: now,
-                clientUpdatedAt: now,
-                pendingDelete: true,
-            };
-        } else {
-            // Member leaving the home
-            currentHomes[index] = {
-                ...home,
-                updatedAt: now,
-                clientUpdatedAt: now,
-                pendingLeave: true,
-            };
-        }
+            // Remove from local list
+            const wasActiveHome = this.currentHomeId === id;
+            this.homes = this.homes.filter(h => h.id !== id);
+            await this.persist();
 
-        // If this was the last available home, create a new default home
-        const availableAfterDelete = currentHomes.filter(h => !h.pendingDelete && !h.pendingLeave);
-        if (availableAfterDelete.length === 0) {
-            syncLogger.info('Last home deleted, creating new default home...');
-            const defaultHome: Home = {
-                id: generateItemId(),
-                name: 'My Home',
-                createdAt: now,
-                updatedAt: now,
-                clientUpdatedAt: now,
-                pendingCreate: true,
-            };
-            currentHomes.push(defaultHome);
-        }
-
-        const success = await fileSystemService.writeFile<HomesData>(HOMES_FILE, { homes: currentHomes });
-        if (success) {
-            this.homesSubject.next(currentHomes);
-
-            // If we're deleting/leaving the current home, switch to another one
-            if (this.currentHomeIdSubject.value === id) {
-                const availableHome = currentHomes.find(h => h.id !== id && !h.pendingLeave && !h.pendingDelete);
-                if (availableHome) {
-                    this.switchHome(availableHome.id);
-                    // If this is a newly created default home, initialize its data files
-                    if (availableHome.pendingCreate) {
-                        await dataInitializationService.initializeHomeData(availableHome.id);
-                    }
+            // If we deleted the active home, switch to another one
+            if (wasActiveHome) {
+                if (this.homes.length > 0) {
+                    this.switchHome(this.homes[0].id);
+                } else {
+                    this.currentHomeId = null;
                 }
             }
+
+            // Delete home-specific files
+            await fileSystemService.deleteHomeFiles(id);
+
+            this.setLoading(null);
+            this.notifyListeners();
             return true;
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to delete home';
+            syncLogger.error('Failed to delete home:', error);
+            this.setLoading(null, errorMessage);
+            return false;
         }
-        return false;
     }
 
     /**
-     * Switch the active home.
+     * Switch the active home
      */
-    switchHome(id: string) {
-        const home = this.homesSubject.value.find((h) => h.id === id);
+    switchHome(id: string): void {
+        const home = this.homes.find((h) => h.id === id);
         if (home) {
-            this.currentHomeIdSubject.next(id);
+            this.currentHomeId = id;
+            this.notifyListeners();
         } else {
             syncLogger.warn(`Attempted to switch to non-existent homeId: ${id}`);
         }
     }
 
     /**
-     * Get the current home object synchronously.
-     * Returns undefined if current home is pending delete/leave.
+     * Get the current home object synchronously
      */
     getCurrentHome(): Home | null {
-        const id = this.currentHomeIdSubject.value;
-        const home = this.homesSubject.value.find((h) => h.id === id);
-        if (home && (home.pendingDelete || home.pendingLeave)) return null;
-        return home ?? null;
+        if (!this.currentHomeId) return null;
+        return this.homes.find((h) => h.id === this.currentHomeId) ?? null;
     }
 
     /**
-     * Get all homes synchronously.
-     * Filter pending delete/leave homes.
+     * Get all homes synchronously
      */
     getHomes(): Home[] {
-        return this.homesSubject.value.filter(h => !h.pendingDelete && !h.pendingLeave);
+        return [...this.homes];
+    }
+
+    /**
+     * Ensure at least one home exists, creating default if needed
+     */
+    async ensureDefaultHome(apiClient: ApiClient): Promise<Home | null> {
+        const homes = this.getHomes();
+
+        if (homes.length === 0) {
+            syncLogger.info('No homes found, creating default home...');
+            try {
+                const newHome = await this.createHome(apiClient, 'My Home');
+                if (newHome) {
+                    syncLogger.info('Default home created and initialized');
+                    return newHome;
+                }
+            } catch (error) {
+                syncLogger.error('Failed to create default home via API, falling back to local-only home', error);
+                // Fallback: create local-only home
+                const now = new Date().toISOString();
+                const defaultHome: Home = {
+                    id: generateItemId(),
+                    name: 'My Home',
+                    createdAt: now,
+                    updatedAt: now,
+                };
+
+                this.homes.push(defaultHome);
+                await this.persist();
+                this.switchHome(defaultHome.id);
+                await dataInitializationService.initializeHomeData(defaultHome.id);
+                return defaultHome;
+            }
+            return null;
+        }
+
+        // If we have homes but no active home, set the first one
+        if (!this.currentHomeId && homes.length > 0) {
+            this.switchHome(homes[0].id);
+            await dataInitializationService.initializeHomeData(homes[0].id);
+            return homes[0];
+        }
+
+        return this.getCurrentHome();
     }
 }
 

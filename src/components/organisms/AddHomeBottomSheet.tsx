@@ -25,6 +25,19 @@ const FormContainer = styled.View`
   padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
+const ErrorBanner = styled.View`
+  background-color: ${({ theme }: StyledProps) => theme.colors.error};
+  padding: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  margin-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.sm}px;
+`;
+
+const ErrorText = styled.Text`
+  color: ${({ theme }: StyledProps) => theme.colors.surface};
+  font-size: 12px;
+`;
+
 const FooterContainer = styled.View<{
     bottomInset: number;
     showSafeArea: boolean;
@@ -53,12 +66,11 @@ export const AddHomeBottomSheet: React.FC<AddHomeBottomSheetProps> = ({
     const { t } = useTranslation();
     const theme = useTheme();
     const insets = useSafeAreaInsets();
-    const { createHome, syncHomes } = useHome();
+    const { createHome, loadingState } = useHome();
     const { getApiClient, isAuthenticated } = useAuth();
     const { isKeyboardVisible } = useKeyboardVisibility();
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
 
     const nameInputRef = useRef<TextInput>(null);
     const addressInputRef = useRef<TextInput>(null);
@@ -71,17 +83,19 @@ export const AddHomeBottomSheet: React.FC<AddHomeBottomSheetProps> = ({
     const handleSubmit = async () => {
         if (!name.trim()) return;
 
-        setIsLoading(true);
-        try {
-            await createHome(name, address);
+        if (!isAuthenticated) {
+            uiLogger.error('Cannot create home: user not authenticated');
+            return;
+        }
 
-            // Trigger sync to push home to server
-            if (isAuthenticated) {
-                const apiClient = getApiClient();
-                if (apiClient) {
-                    syncHomes(apiClient).catch((err: unknown) => uiLogger.error('Background sync failed', err));
-                }
-            }
+        const apiClient = getApiClient();
+        if (!apiClient) {
+            uiLogger.error('Cannot create home: API client not available');
+            return;
+        }
+
+        try {
+            await createHome(apiClient, name, address);
 
             // Clear inputs and state
             setName('');
@@ -93,8 +107,6 @@ export const AddHomeBottomSheet: React.FC<AddHomeBottomSheetProps> = ({
             onHomeCreated?.();
         } catch (error) {
             uiLogger.error('Failed to create home', error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -110,8 +122,16 @@ export const AddHomeBottomSheet: React.FC<AddHomeBottomSheetProps> = ({
         []
     );
 
+    const isLoading = loadingState.operation === 'create' && loadingState.isLoading;
+    const error = loadingState.operation === 'create' ? loadingState.error : null;
+
     const renderFooter = useCallback(() => (
         <FooterContainer bottomInset={insets.bottom} showSafeArea={!isKeyboardVisible}>
+            {error && (
+                <ErrorBanner style={{ marginBottom: 8 }}>
+                    <ErrorText>{error}</ErrorText>
+                </ErrorBanner>
+            )}
             <Button
                 label={t('home.create.submit')}
                 onPress={handleSubmit}
@@ -120,7 +140,7 @@ export const AddHomeBottomSheet: React.FC<AddHomeBottomSheetProps> = ({
                 fullWidth
             />
         </FooterContainer>
-    ), [insets.bottom, isKeyboardVisible, handleSubmit, name, isLoading]);
+    ), [insets.bottom, isKeyboardVisible, handleSubmit, name, isLoading, error, t]);
 
     // Estimated height of footer: 16px (top) + 16px (bottom) + 50px (button) = ~82px + inset
     // When keyboard is visible, safe area is removed, so we just use base height
