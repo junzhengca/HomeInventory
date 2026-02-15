@@ -1,7 +1,7 @@
 import React, { memo, useState } from 'react';
 import styled from 'styled-components/native';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
-import { View, TextInput, StyleProp, ViewStyle } from 'react-native';
+import { View, TextInput, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { StyledProps } from '../../utils/styledComponents';
 
@@ -71,7 +71,7 @@ export interface UncontrolledInputProps {
   placeholderTextColor: string;
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
   onSubmitEditing?: () => void;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewStyle;
   error?: boolean;
   errorMessage?: string;
   noBorder?: boolean;
@@ -127,7 +127,8 @@ export const UncontrolledInput = memo(
         <UncontrolledInputWrapper hasError={error} style={style}>
           <InputInnerWrapper hasError={error}>
             <Input
-              ref={ref}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ref={ref as any}
               placeholder={placeholder}
               defaultValue={defaultValue}
               onChangeText={onChangeText}

@@ -9,8 +9,9 @@ import {
   setShowNicknameSetup,
   setActiveHomeId,
 } from '../slices/authSlice';
-import { loadItems, syncItemsAction } from './inventorySaga';
+import { loadItems } from './inventorySaga';
 import { loadTodos, loadTodoCategoriesAction } from './todoSaga';
+import { syncAllAction } from './syncSaga';
 import { loadSettings } from './settingsSaga';
 import { ApiClient, apiClient, type ApiClient as ApiClientType } from '../../services/ApiClient';
 import { authService } from '../../services/AuthService';
@@ -260,7 +261,7 @@ function* checkAuthSaga(): Generator {
         }
 
         // Sync everything (Homes + Content) - this will pull homes from server first
-        yield put(syncItemsAction());
+        yield put(syncAllAction());
 
         // After sync, ensure we have a default home if none exists
         yield call(ensureDefaultHomeIfNeeded);
@@ -404,7 +405,7 @@ function* loginSaga(action: { type: string; payload: { email: string; password: 
     yield put(setError(null)); // Clear error on success
 
     // Sync everything (Homes + Content) - this will pull homes from server first
-    yield put(syncItemsAction());
+    yield put(syncAllAction());
 
     // After sync, ensure we have a default home if none exists
     yield call(ensureDefaultHomeIfNeeded);
@@ -492,7 +493,7 @@ function* signupSaga(action: { type: string; payload: { email: string; password:
     yield put(setAuthenticated(true));
 
     // Sync everything (Homes + Content) - this will pull homes from server first
-    yield put(syncItemsAction());
+    yield put(syncAllAction());
 
     // After sync, ensure we have a default home if none exists
     yield call(ensureDefaultHomeIfNeeded);
@@ -593,7 +594,7 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
     yield put(setError(null)); // Clear error on success
 
     // Sync everything (Homes + Content) - this will pull homes from server first
-    yield put(syncItemsAction());
+    yield put(syncAllAction());
 
     // After sync, ensure we have a default home if none exists
     yield call(ensureDefaultHomeIfNeeded);

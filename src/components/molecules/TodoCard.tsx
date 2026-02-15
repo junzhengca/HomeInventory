@@ -413,11 +413,9 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                     textContentType="none"
                     autoComplete="off"
                     underlineColorAndroid="transparent"
-                    includeFontPadding={false}
                     textAlignVertical="top"
                     style={{
                       borderWidth: 0,
-                      outline: 'none',
                       position: 'absolute',
                       top: 0,
                       left: 0,
@@ -426,7 +424,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                       height: '100%',
                       padding: 0,
                       margin: 0,
-                    }}
+                    } as import('react-native').ViewStyle}
                   />
                 </View>
               ) : (
@@ -487,7 +485,6 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                       scrollEnabled={false}
                       placeholder={t('notes.addNote')}
                       underlineColorAndroid="transparent"
-                      includeFontPadding={false}
                       textAlignVertical="top"
                       style={{ minHeight: 0 }}
                     />
@@ -542,9 +539,8 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                       textContentType="none"
                       autoComplete="off"
                       underlineColorAndroid="transparent"
-                      includeFontPadding={false}
                       textAlignVertical="top"
-                      style={{ borderWidth: 0, outline: 'none' }}
+                      style={{ borderWidth: 0 } as import('react-native').TextStyle}
                     />
                   )}
                 </NotesInputContainer>

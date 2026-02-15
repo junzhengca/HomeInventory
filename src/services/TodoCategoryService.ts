@@ -96,7 +96,7 @@ class TodoCategoryService extends BaseSyncableEntityService<
     getLocalizedNames: () => Record<string, string>
   ): Promise<void> {
     try {
-      const data = await this.readFile();
+      const data = await this.readFileScoped(homeId);
       const categories = data?.categories || [];
 
       // Check which default categories are missing
@@ -147,15 +147,17 @@ class TodoCategoryService extends BaseSyncableEntityService<
     getLocalizedNames: () => Record<string, string>
   ): Promise<void> {
     try {
-      const data = await this.readFile();
+      const data = await this.readFileScoped(homeId);
       const categories = data?.categories || [];
       const localizedNames = getLocalizedNames();
 
+      let hasChanges = false;
       const updatedCategories = categories.map((cat) => {
         const isDefault = defaultCategoryIds.includes(cat.id);
         if (isDefault) {
           const localizedName = localizedNames[cat.id];
           if (localizedName && cat.name !== localizedName) {
+            hasChanges = true;
             const now = new Date().toISOString();
             return {
               ...cat,
@@ -170,14 +172,17 @@ class TodoCategoryService extends BaseSyncableEntityService<
         return cat;
       });
 
-      await this.writeFile(
-        {
-          categories: updatedCategories,
-          lastSyncTime: data?.lastSyncTime,
-          lastPulledVersion: data?.lastPulledVersion,
-        },
-        homeId
-      );
+      // Only write if something actually changed
+      if (hasChanges) {
+        await this.writeFile(
+          {
+            categories: updatedCategories,
+            lastSyncTime: data?.lastSyncTime,
+            lastPulledVersion: data?.lastPulledVersion,
+          },
+          homeId
+        );
+      }
 
       syncLogger.info(`Relocalized todo categories for home ${homeId}`);
     } catch (error) {

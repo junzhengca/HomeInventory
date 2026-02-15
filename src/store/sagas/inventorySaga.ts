@@ -1,4 +1,4 @@
-import { call, put, select, takeLatest, delay, spawn } from 'redux-saga/effects';
+import { call, put, select, takeLatest } from 'redux-saga/effects';
 import {
   setItems,
   silentSetItems,
@@ -6,25 +6,13 @@ import {
   updateItem as updateItemSlice,
   removeItem as removeItemSlice,
   setLoading,
-  upsertItems,
-  addItems,
-  removeItems,
 } from '../slices/inventorySlice';
-import { triggerCategoryRefresh } from '../slices/refreshSlice';
 import { inventoryService } from '../../services/InventoryService';
-import { categoryService } from '../../services/CategoryService';
-import { locationService } from '../../services/LocationService';
-import { todoService } from '../../services/TodoService';
-import { dataInitializationService } from '../../services/DataInitializationService';
 import { InventoryItem } from '../../types/inventory';
-import { SyncDelta } from '../../types/sync';
 import type { RootState } from '../types';
-import { homeService } from '../../services/HomeService';
-import { Home } from '../../types/home';
-import { loadTodos } from './todoSaga';
-import { ApiClient } from '../../services/ApiClient';
-import { getDeviceId } from '../../utils/deviceUtils';
 import { syncLogger } from '../../utils/Logger';
+import { getActiveHomeId } from './helpers/getActiveHomeId';
+import { requestSync } from './syncSaga';
 
 // Action types
 const LOAD_ITEMS = 'inventory/LOAD_ITEMS';
@@ -32,7 +20,6 @@ const SILENT_REFRESH_ITEMS = 'inventory/SILENT_REFRESH_ITEMS';
 const CREATE_ITEM = 'inventory/CREATE_ITEM';
 const UPDATE_ITEM = 'inventory/UPDATE_ITEM';
 const DELETE_ITEM = 'inventory/DELETE_ITEM';
-const SYNC_ITEMS = 'inventory/SYNC_ITEMS';
 
 // Action creators
 export const loadItems = () => ({ type: LOAD_ITEMS });
@@ -46,21 +33,17 @@ export const updateItemAction = (id: string, updates: Partial<Omit<InventoryItem
   payload: { id, updates },
 });
 export const deleteItemAction = (id: string) => ({ type: DELETE_ITEM, payload: id });
-export const syncItemsAction = () => ({ type: SYNC_ITEMS });
-
 
 function* getFileHomeId() {
-  const state: RootState = yield select();
-  const { activeHomeId } = state.auth;
+  const homeId: string | undefined = yield call(getActiveHomeId);
 
-  if (!activeHomeId) {
-    // Either throw or show error and return
+  if (!homeId) {
     syncLogger.error('No active home - cannot load items');
-    yield put(setItems([])); // Clear items
-    return; // Stop execution
+    yield put(setItems([]));
+    return;
   }
 
-  return activeHomeId;
+  return homeId;
 }
 
 function* loadItemsSaga() {
@@ -68,18 +51,31 @@ function* loadItemsSaga() {
     const homeId: string | undefined = yield call(getFileHomeId);
     if (!homeId) {
       yield put(setLoading(false));
-      return; // No home = no items
+      return;
     }
 
     yield put(setLoading(true));
     const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
+
+    // CRITICAL: Preserve pending edits from current Redux state
+    const currentState: RootState = yield select();
+    const currentItems = currentState.inventory.items;
+    const pendingItems = currentItems.filter(i => i.pendingUpdate || i.pendingCreate);
+    const pendingItemIds = new Set(pendingItems.map(i => i.id));
+
+    // Merge: storage items (synced) + pending items (local edits)
+    const mergedItems: InventoryItem[] = [
+      ...pendingItems,
+      ...allItems.filter(i => !pendingItemIds.has(i.id))
+    ];
+
     // Sort by createdAt in descending order (newest first)
-    allItems.sort((a, b) => {
+    mergedItems.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return bTime - aTime;
     });
-    yield put(setItems(allItems));
+    yield put(setItems(mergedItems));
   } catch (error) {
     syncLogger.error('Error loading items', error);
   } finally {
@@ -89,139 +85,39 @@ function* loadItemsSaga() {
 
 function* silentRefreshItemsSaga() {
   try {
-    // Silent refresh - no loading state changes
     const homeId: string | undefined = yield call(getFileHomeId);
     if (!homeId) {
-      return; // No home = no items
+      return;
     }
 
     const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
-    // Sort by createdAt in descending order (newest first)
-    allItems.sort((a, b) => {
+
+    // CRITICAL: Preserve pending edits from current Redux state
+    const currentState: RootState = yield select();
+    const currentItems = currentState.inventory.items;
+    const pendingItems = currentItems.filter(i => i.pendingUpdate || i.pendingCreate);
+    const pendingItemIds = new Set(pendingItems.map(i => i.id));
+
+    // Merge: storage items (synced) + pending items (local edits)
+    const mergedItems: InventoryItem[] = [
+      ...pendingItems,
+      ...allItems.filter(i => !pendingItemIds.has(i.id))
+    ];
+
+    // Sort by createdAt descending
+    mergedItems.sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return bTime - aTime;
     });
-    // Use silentSetItems to update without touching loading state
-    yield put(silentSetItems(allItems));
+
+    yield put(silentSetItems(mergedItems));
   } catch (error) {
     syncLogger.error('Error silently refreshing items', error);
-    // Don't throw - silent refresh should fail silently
   }
 }
 
-function* syncItemsSaga() {
-  try {
-    const state: RootState = yield select();
-    const { apiClient, isAuthenticated, activeHomeId } = state.auth;
-
-    if (!apiClient || !isAuthenticated) return;
-
-    syncLogger.info('Starting comprehensive sync sequence');
-
-    // 1. Sync Homes first
-    yield call([homeService, homeService.syncHomes], apiClient);
-
-    // 2. Get all homes to iterate through
-    const homes: Home[] = yield call([homeService, homeService.getHomes]);
-    const deviceId: string = yield call(getDeviceId);
-
-    syncLogger.info(`Syncing content for ${homes.length} homes`);
-
-    // Track if any changes occurred for the active home
-    let activeHomeChanged = false;
-
-    // 3. For each household, sync everything inside
-    for (const home of homes) {
-      try {
-        syncLogger.info(`Processing home: ${home.name} (${home.id})`);
-
-        // Ensure data files exist for this home
-        yield call([dataInitializationService, 'initializeHomeData'], home.id);
-
-        const isActiveHome = home.id === activeHomeId;
-
-        // Sync Items and get delta
-        const itemsDelta: SyncDelta<InventoryItem> = yield call(
-          [inventoryService, 'syncItems'],
-          home.id,
-          apiClient as ApiClient,
-          deviceId
-        );
-
-        if (isActiveHome && !itemsDelta.unchanged) {
-          activeHomeChanged = true;
-
-          // Dispatch targeted updates - process 'created' before 'updated' to ensure new entities are added before updates
-          if (itemsDelta.created.length > 0) {
-            yield put(addItems(itemsDelta.created));
-          }
-          if (itemsDelta.updated.length > 0) {
-            yield put(upsertItems(itemsDelta.updated));
-          }
-          if (itemsDelta.deleted.length > 0) {
-            yield put(removeItems(itemsDelta.deleted));
-          }
-        }
-
-        // Sync Categories
-        const categoriesDelta: SyncDelta<InventoryItem> = yield call(
-          [categoryService, 'syncCategories'],
-          home.id,
-          apiClient as ApiClient,
-          deviceId
-        );
-
-        if (isActiveHome && !categoriesDelta.unchanged) {
-          activeHomeChanged = true;
-        }
-
-        // Sync Locations
-        const locationsDelta: SyncDelta<InventoryItem> = yield call(
-          [locationService, 'syncLocations'],
-          home.id,
-          apiClient as ApiClient,
-          deviceId
-        );
-
-        if (isActiveHome && !locationsDelta.unchanged) {
-          activeHomeChanged = true;
-        }
-
-        // Sync Todos
-        const todosDelta: SyncDelta<InventoryItem> = yield call(
-          [todoService, 'syncTodos'],
-          home.id,
-          apiClient as ApiClient,
-          deviceId
-        );
-
-        if (isActiveHome && !todosDelta.unchanged) {
-          activeHomeChanged = true;
-        }
-
-      } catch (homeError) {
-        syncLogger.error(`Error syncing home ${home.id}`, homeError);
-        // Continue to next home even if one fails
-      }
-    }
-
-    // 4. Only refresh UI if active home had changes
-    if (activeHomeChanged) {
-      // Trigger category refresh to update CategorySelector and CategoryFilter
-      yield put(triggerCategoryRefresh());
-      // Also refresh todos
-      yield put(loadTodos());
-    } else {
-      syncLogger.info('No changes for active home - skipping UI refresh');
-    }
-
-  } catch (error) {
-    syncLogger.error('Error in sync sequence', error);
-  }
-}
-
-function* createItemSaga(action: { type: string; payload: Omit<InventoryItem, 'id'> }) {
+function* createItemSaga(action: { type: string; payload: Omit<InventoryItem, 'id'> }): Generator {
   const item = action.payload;
 
   try {
@@ -233,29 +129,16 @@ function* createItemSaga(action: { type: string; payload: Omit<InventoryItem, 'i
 
     const newItem: InventoryItem | null = yield call([inventoryService, 'createItem'], item, homeId);
     if (newItem) {
-      // Optimistically add to state
       yield put(addItemSlice(newItem));
-
-      // Refresh to ensure sync (but don't set loading)
-      const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
-      allItems.sort((a, b) => {
-        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bTime - aTime;
-      });
-      yield put(setItems(allItems));
-
-      // Trigger sync
-      yield put(syncItemsAction());
+      yield put(requestSync());
     }
   } catch (error) {
     syncLogger.error('Error creating item', error);
-    // Revert on error by refreshing
     yield loadItemsSaga();
   }
 }
 
-function* updateItemSaga(action: { type: string; payload: { id: string; updates: Partial<Omit<InventoryItem, 'id'>> } }) {
+function* updateItemSaga(action: { type: string; payload: { id: string; updates: Partial<Omit<InventoryItem, 'id'>> } }): Generator {
   const { id, updates } = action.payload;
   syncLogger.info(`updateItemSaga called with id: ${id}`, updates);
 
@@ -266,7 +149,6 @@ function* updateItemSaga(action: { type: string; payload: { id: string; updates:
       return;
     }
 
-    // Optimistically update to state
     const currentItems: InventoryItem[] = yield select((state: RootState) => state.inventory.items);
     const itemToUpdate = currentItems.find((item) => item.id === id);
     if (itemToUpdate) {
@@ -274,30 +156,15 @@ function* updateItemSaga(action: { type: string; payload: { id: string; updates:
       yield put(updateItemSlice(updatedItem));
     }
 
-    // Then update in storage
     yield call([inventoryService, 'updateItem'], id, updates, homeId);
-
-    // Refresh to ensure sync (but don't set loading)
-    const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
-    const updatedItemFromStorage = allItems.find((item) => item.id === id);
-    syncLogger.info('Item from storage after update', updatedItemFromStorage);
-    allItems.sort((a, b) => {
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return bTime - aTime;
-    });
-    yield put(setItems(allItems));
-
-    // Trigger sync
-    yield put(syncItemsAction());
+    yield put(requestSync());
   } catch (error) {
     syncLogger.error('Error updating item', error);
-    // Revert on error by refreshing
     yield loadItemsSaga();
   }
 }
 
-function* deleteItemSaga(action: { type: string; payload: string }) {
+function* deleteItemSaga(action: { type: string; payload: string }): Generator {
   const id = action.payload;
 
   try {
@@ -307,26 +174,11 @@ function* deleteItemSaga(action: { type: string; payload: string }) {
       return;
     }
 
-    // Optimistically remove from state
     yield put(removeItemSlice(id));
-
-    // Then delete from storage
     yield call([inventoryService, 'deleteItem'], id, homeId);
-
-    // Refresh to ensure sync (but don't set loading)
-    const allItems: InventoryItem[] = yield call([inventoryService, 'getAllItems'], homeId);
-    allItems.sort((a, b) => {
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return bTime - aTime;
-    });
-    yield put(setItems(allItems));
-
-    // Trigger sync
-    yield put(syncItemsAction());
+    yield put(requestSync());
   } catch (error) {
     syncLogger.error('Error deleting item', error);
-    // Revert on error by refreshing
     yield loadItemsSaga();
   }
 }
@@ -338,21 +190,4 @@ export function* inventorySaga() {
   yield takeLatest(CREATE_ITEM, createItemSaga);
   yield takeLatest(UPDATE_ITEM, updateItemSaga);
   yield takeLatest(DELETE_ITEM, deleteItemSaga);
-  yield takeLatest(SYNC_ITEMS, syncItemsSaga);
-
-  // Start periodic sync
-  yield spawn(periodicSyncSaga);
 }
-
-function* periodicSyncSaga() {
-  while (true) {
-    // Wait 5 minutes
-    yield delay(5 * 60 * 1000);
-    const state: RootState = yield select();
-    if (state.auth.isAuthenticated) {
-      syncLogger.info('Triggering periodic sync');
-      yield put(syncItemsAction());
-    }
-  }
-}
-

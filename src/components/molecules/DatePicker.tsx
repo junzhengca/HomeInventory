@@ -83,26 +83,26 @@ const ButtonContainer = styled(View)`
   gap: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
-const Button = styled(TouchableOpacity)`
+const Button = styled(TouchableOpacity).attrs({ activeOpacity: 0.7 }) <{ $variant?: 'primary' | 'secondary' }>`
   flex: 1;
-  background-color: ${({ theme, variant }: StyledPropsWith<{ variant?: 'primary' | 'secondary' }>) =>
-    variant === 'secondary' ? theme.colors.background : theme.colors.primary};
+  background-color: ${({ theme, $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
+    $variant === 'secondary' ? theme.colors.background : theme.colors.primary};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
   padding: ${({ theme }: StyledProps) => theme.spacing.sm + 2}px;
   align-items: center;
   justify-content: center;
   min-height: 44;
-  border-width: ${({ variant }: StyledPropsWith<{ variant?: 'primary' | 'secondary' }>) =>
-    variant === 'secondary' ? 1 : 0}px;
-  border-color: ${({ theme, variant }: StyledPropsWith<{ variant?: 'primary' | 'secondary' }>) =>
-    variant === 'secondary' ? theme.colors.border : 'transparent'};
+  border-width: ({ $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
+    $variant === 'secondary' ? 1 : 0}px;
+  border-color: ${({ theme, $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
+    $variant === 'secondary' ? theme.colors.border : 'transparent'};
 `;
 
-const ButtonText = styled(Text)<{ variant?: 'primary' | 'secondary' }>`
+const ButtonText = styled(Text) <{ $variant?: 'primary' | 'secondary' }>`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
-  color: ${({ theme, variant }: StyledPropsWith<{ variant?: 'primary' | 'secondary' }>) =>
-    variant === 'secondary' ? theme.colors.text : theme.colors.surface};
+  color: ${({ theme, $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
+    $variant === 'secondary' ? theme.colors.text : theme.colors.surface};
 `;
 
 export interface DatePickerProps {
@@ -283,11 +283,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               />
 
               <ButtonContainer>
-                <Button variant="secondary" onPress={handleClose} activeOpacity={0.7}>
-                  <ButtonText variant="secondary">{t('datePicker.cancel')}</ButtonText>
+                <Button $variant="secondary" onPress={handleClose}>
+                  <ButtonText $variant="secondary">{t('datePicker.cancel')}</ButtonText>
                 </Button>
-                <Button variant="primary" onPress={handleConfirm} activeOpacity={0.7}>
-                  <ButtonText variant="primary">{t('datePicker.confirm')}</ButtonText>
+                <Button $variant="primary" onPress={handleConfirm}>
+                  <ButtonText $variant="primary">{t('datePicker.confirm')}</ButtonText>
                 </Button>
               </ButtonContainer>
             </ModalContent>

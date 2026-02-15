@@ -98,6 +98,26 @@ module.exports = {
         'no-undef': 'off',
       },
     },
+    {
+      files: ['*.spec.ts', '*.test.ts', '**/__tests__/**/*.ts', '*.spec.tsx', '*.test.tsx', 'jest.setup.js'],
+      env: {
+        jest: true,
+      },
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        jest: 'readonly',
+      },
+      rules: {
+        'no-undef': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+      },
+    },
   ],
   settings: {
     react: {

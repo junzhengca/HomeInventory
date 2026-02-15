@@ -1,7 +1,7 @@
 import React, { memo, useState } from 'react';
 import styled from 'styled-components/native';
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet';
-import { View, StyleProp } from 'react-native';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { StyledProps } from '../../utils/styledComponents';
 
@@ -63,7 +63,7 @@ export interface MemoizedInputProps {
   onSubmitEditing?: () => void;
   onBlur?: () => void;
   onFocus?: () => void;
-  style?: StyleProp<unknown>;
+  style?: React.ComponentProps<typeof View>['style'];
   error?: boolean;
   errorMessage?: string;
   noBorder?: boolean;

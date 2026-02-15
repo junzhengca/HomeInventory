@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { TouchableOpacity, View, Text, Alert } from 'react-native';
+import { TouchableOpacity, View, Text, Alert, type TextStyle } from 'react-native';
 import styled from 'styled-components/native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -301,14 +301,20 @@ export const ErrorBottomSheet: React.FC<ErrorBottomSheetProps> = ({
               {errorDetails.requestHeaders && (
                 <DetailRow>
                   <DetailLabel>{t('errorBottomSheet.fields.headers')}</DetailLabel>
-                  <DetailText>{JSON.stringify(errorDetails.requestHeaders, null, 2)}</DetailText>
+                  <Text style={{ fontFamily: 'monospace', fontSize: theme.typography.fontSize.sm, color: theme.colors.text, lineHeight: theme.typography.fontSize.sm * 1.5 }}>
+                    {JSON.stringify(errorDetails.requestHeaders, null, 2)}
+                  </Text>
                 </DetailRow>
               )}
-              {errorDetails.requestBody && (
-                <DetailRowLast>
-                  <DetailLabel>{t('errorBottomSheet.fields.body')}</DetailLabel>
-                  <DetailText>{JSON.stringify(errorDetails.requestBody, null, 2)}</DetailText>
-                </DetailRowLast>
+              {errorDetails.requestBody != null && (
+                <View style={{ marginBottom: 0 }}>
+                  <Text style={{ fontSize: theme.typography.fontSize.sm, fontWeight: '500' as TextStyle['fontWeight'], color: theme.colors.textSecondary, marginBottom: theme.typography.fontSize.sm }}>
+                    {t('errorBottomSheet.fields.body')}
+                  </Text>
+                  <Text style={{ fontFamily: 'monospace', fontSize: theme.typography.fontSize.sm, color: theme.colors.text, lineHeight: theme.typography.fontSize.sm * 1.5 }}>
+                    {JSON.stringify(errorDetails.requestBody, null, 2) as React.ReactNode}
+                  </Text>
+                </View>
               )}
             </DetailContainer>
           </Section>
@@ -320,16 +326,20 @@ export const ErrorBottomSheet: React.FC<ErrorBottomSheetProps> = ({
                 {errorDetails.status && (
                   <DetailRow>
                     <DetailLabel>{t('errorBottomSheet.fields.status')}</DetailLabel>
-                    <DetailText>
+                    <Text style={{ fontFamily: 'monospace', fontSize: theme.typography.fontSize.sm, color: theme.colors.text, lineHeight: theme.typography.fontSize.sm * 1.5 }}>
                       {errorDetails.status} {errorDetails.statusText || ''}
-                    </DetailText>
+                    </Text>
                   </DetailRow>
                 )}
-                {errorDetails.responseBody && (
-                  <DetailRowLast>
-                    <DetailLabel>{t('errorBottomSheet.fields.responseBody')}</DetailLabel>
-                    <DetailText>{JSON.stringify(errorDetails.responseBody, null, 2) as React.ReactNode}</DetailText>
-                  </DetailRowLast>
+                {errorDetails.responseBody != null && (
+                  <View style={{ marginBottom: 0 }}>
+                    <Text style={{ fontSize: theme.typography.fontSize.sm, fontWeight: '500' as TextStyle['fontWeight'], color: theme.colors.textSecondary, marginBottom: theme.typography.fontSize.sm }}>
+                      {t('errorBottomSheet.fields.responseBody')}
+                    </Text>
+                    <Text style={{ fontFamily: 'monospace', fontSize: theme.typography.fontSize.sm, color: theme.colors.text, lineHeight: theme.typography.fontSize.sm * 1.5 }}>
+                      {JSON.stringify(errorDetails.responseBody, null, 2) as React.ReactNode}
+                    </Text>
+                  </View>
                 )}
               </DetailContainer>
             </Section>

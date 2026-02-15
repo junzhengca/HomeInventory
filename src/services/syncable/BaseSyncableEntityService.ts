@@ -817,4 +817,18 @@ export abstract class BaseSyncableEntityService<
     }
     return false;
   }
+
+  /**
+   * Check if there are any pending changes for the given home
+   * @returns true if any entity has pendingCreate, pendingUpdate, or pendingDelete
+   */
+  async hasPendingChanges(homeId: string): Promise<boolean> {
+    try {
+      const entities = await this.getAllForSync(homeId);
+      return entities.some(e => e.pendingCreate || e.pendingUpdate || e.pendingDelete);
+    } catch (error) {
+      syncLogger.error(`Error checking pending changes for ${this.config.entityName}:`, error);
+      return false;
+    }
+  }
 }

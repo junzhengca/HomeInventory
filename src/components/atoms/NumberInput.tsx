@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useRef, useImperativeHandle, useState, useEffect } from 'react';
-import { TouchableOpacity, TextInput, StyleProp, View } from 'react-native';
+import { TouchableOpacity, TextInput, View, type ViewStyle } from 'react-native';
 import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { StyledProps } from '../../utils/styledComponents';
@@ -73,7 +73,7 @@ export interface NumberInputProps {
   placeholderTextColor: string;
   min?: number; // Optional minimum value
   max?: number; // Optional maximum value
-  style?: StyleProp<unknown>;
+  style?: ViewStyle;
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
   error?: boolean;
   errorMessage?: string;
