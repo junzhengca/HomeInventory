@@ -29,6 +29,7 @@ export const store = configureStore({
         ignoredPaths: [
           'auth.apiClient',
           'refresh.categoryCallbacks',
+          'inventory.updatingItemIds',
         ],
       },
     }).concat(sagaMiddleware),
