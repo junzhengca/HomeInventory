@@ -68,4 +68,3 @@ export const theme: Theme = {
     full: 9999,
   },
 };
-

@@ -3,6 +3,7 @@ import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
 import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
+import { SectionTitle } from '../atoms';
 
 export type CurrencyOption = {
   id: string;
@@ -18,32 +19,6 @@ export interface CurrencySelectorProps {
 
 const Container = styled(View)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xl}px;
-`;
-
-const Header = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
-`;
-
-const IconContainer = styled(View)`
-  width: 24px;
-  height: 24px;
-  margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-  align-items: center;
-  justify-content: center;
-`;
-
-const Icon = styled(Text)`
-  font-size: 18px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-`;
-
-const Title = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
 `;
 
 const OptionsScroll = styled(ScrollView).attrs(() => ({
@@ -127,12 +102,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
 
   return (
     <Container>
-      <Header>
-        <IconContainer>
-          <Icon>$</Icon>
-        </IconContainer>
-        <Title>{t('settings.currency')}</Title>
-      </Header>
+      <SectionTitle title={t('settings.currency')} iconText="$" />
       <OptionsScroll>
         <OptionsContainer>
           {uniqueCurrencies.map((currency) => {

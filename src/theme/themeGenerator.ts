@@ -54,7 +54,7 @@ const commonLightColors = {
   textSecondary: '#757575',
   textLight: '#9E9E9E',
   border: '#E0E0E0',
-  borderLight: '#F0F0F0',
+  borderLight: '#F2F5F9',
   error: '#D32F2F',
   errorLight: '#FFEBEE',
   success: '#388E3C',
@@ -83,7 +83,10 @@ const commonDarkColors = {
 };
 
 // Theme color palettes (light mode)
-const themeLightPalettes: Record<string, Omit<Theme['colors'], keyof typeof commonLightColors>> = {
+const themeLightPalettes: Record<
+  string,
+  Omit<Theme['colors'], keyof typeof commonLightColors>
+> = {
   'warm-sun': {
     primary: '#FF701E',
     primaryDark: '#E65100',
@@ -94,7 +97,7 @@ const themeLightPalettes: Record<string, Omit<Theme['colors'], keyof typeof comm
     background: '#FFF9F2',
     inputFocus: '#FFE0B2',
   },
-  'ocean': {
+  ocean: {
     primary: '#2463EB',
     primaryDark: '#1E40AF',
     primaryLight: '#60A5FA',
@@ -104,7 +107,7 @@ const themeLightPalettes: Record<string, Omit<Theme['colors'], keyof typeof comm
     background: '#F0F7FF',
     inputFocus: '#BBDEFB',
   },
-  'forest': {
+  forest: {
     primary: '#00A67D',
     primaryDark: '#00796B',
     primaryLight: '#4DB6AC',
@@ -114,7 +117,7 @@ const themeLightPalettes: Record<string, Omit<Theme['colors'], keyof typeof comm
     background: '#F1FBF9',
     inputFocus: '#C8E6C9',
   },
-  'lilac': {
+  lilac: {
     primary: '#8B46FF',
     primaryDark: '#6A1B9A',
     primaryLight: '#B388FF',
@@ -127,7 +130,10 @@ const themeLightPalettes: Record<string, Omit<Theme['colors'], keyof typeof comm
 };
 
 // Theme color palettes (dark mode)
-const themeDarkPalettes: Record<string, Omit<Theme['colors'], keyof typeof commonDarkColors>> = {
+const themeDarkPalettes: Record<
+  string,
+  Omit<Theme['colors'], keyof typeof commonDarkColors>
+> = {
   'warm-sun': {
     primary: '#FF8A50',
     primaryDark: '#FF701E',
@@ -138,7 +144,7 @@ const themeDarkPalettes: Record<string, Omit<Theme['colors'], keyof typeof commo
     background: '#121209',
     inputFocus: '#4D3014',
   },
-  'ocean': {
+  ocean: {
     primary: '#4D82F5',
     primaryDark: '#2463EB',
     primaryLight: '#7DA3F7',
@@ -148,7 +154,7 @@ const themeDarkPalettes: Record<string, Omit<Theme['colors'], keyof typeof commo
     background: '#0A0E14',
     inputFocus: '#1A2840',
   },
-  'forest': {
+  forest: {
     primary: '#26C09B',
     primaryDark: '#00A67D',
     primaryLight: '#5DD4B5',
@@ -158,7 +164,7 @@ const themeDarkPalettes: Record<string, Omit<Theme['colors'], keyof typeof commo
     background: '#080F0D',
     inputFocus: '#0F2E24',
   },
-  'lilac': {
+  lilac: {
     primary: '#A46DFF',
     primaryDark: '#8B46FF',
     primaryLight: '#B99DFF',
@@ -176,11 +182,14 @@ const themeDarkPalettes: Record<string, Omit<Theme['colors'], keyof typeof commo
  * @param darkMode - Whether to use dark mode colors
  * @returns A complete Theme object
  */
-export const generateTheme = (themeId: string, darkMode: boolean = false): Theme => {
+export const generateTheme = (
+  themeId: string,
+  darkMode: boolean = false
+): Theme => {
   // Default to 'forest' if theme ID is invalid
   const palette = darkMode
-    ? (themeDarkPalettes[themeId] || themeDarkPalettes['forest'])
-    : (themeLightPalettes[themeId] || themeLightPalettes['forest']);
+    ? themeDarkPalettes[themeId] || themeDarkPalettes['forest']
+    : themeLightPalettes[themeId] || themeLightPalettes['forest'];
 
   const commonColors = darkMode ? commonDarkColors : commonLightColors;
 
@@ -192,4 +201,3 @@ export const generateTheme = (themeId: string, darkMode: boolean = false): Theme
     ...baseTheme,
   };
 };
-

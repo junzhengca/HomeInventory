@@ -85,6 +85,9 @@ export type { SettingsToggleItemProps } from './SettingsToggleItem';
 export { SettingsItem } from './SettingsItem';
 export type { SettingsItemProps } from './SettingsItem';
 
+export { SettingsTextButton } from './SettingsTextButton';
+export type { SettingsTextButtonProps } from './SettingsTextButton';
+
 // Action button molecules
 export { LogoutButton } from './LogoutButton';
 export type { LogoutButtonProps } from './LogoutButton';

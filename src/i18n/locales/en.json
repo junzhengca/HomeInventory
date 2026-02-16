@@ -239,6 +239,8 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Make your home more comfortable",
+    "appearance": "Appearance",
+    "appliesToHome": "The above settings only apply to \"{{homeName}}\"",
     "globalSettings": "Global Settings",
     "homeSettings": "Home Settings",
     "editHome": "Edit Home",

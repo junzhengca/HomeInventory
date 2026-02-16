@@ -41,6 +41,22 @@ export type { NumberInputProps } from './NumberInput';
 export { Toggle } from './Toggle';
 export type { ToggleProps } from './Toggle';
 
+// Icon Container component
+export { IconContainer } from './IconContainer';
+export type { IconContainerProps } from './IconContainer';
+
 // Toast component
 export { Toast } from './Toast';
 export type { ToastProps, ToastType } from './Toast';
+
+// Add Entity Button component
+export { AddEntityButton } from './AddEntityButton';
+export type { AddEntityButtonProps } from './AddEntityButton';
+
+// Section Title component
+export { SectionTitle } from './SectionTitle';
+export type { SectionTitleProps } from './SectionTitle';
+
+// Horizontal Splitter component
+export { HorizontalSplitter } from './HorizontalSplitter';
+export type { HorizontalSplitterProps } from './HorizontalSplitter';

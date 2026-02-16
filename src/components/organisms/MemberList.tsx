@@ -1,13 +1,12 @@
 import React, { useRef, useCallback } from 'react';
 import { View, Text, ActivityIndicator, Alert } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Ionicons } from '@expo/vector-icons';
 import styled from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../../utils/styledComponents';
 import { useTheme } from '../../theme/ThemeProvider';
 import { MemberCard } from '../molecules';
-import { BaseCard, EmptyState } from '../atoms';
+import { EmptyState, AddEntityButton, SectionTitle } from '../atoms';
 import { Member } from '../../types/api';
 
 interface OwnerInfo {
@@ -20,13 +19,6 @@ interface OwnerInfo {
 
 const Container = styled(View)`
   flex: 1;
-`;
-
-const SectionTitle = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
 const LoadingContainer = styled(View)`
@@ -48,37 +40,6 @@ const ErrorText = styled(Text)`
   color: ${({ theme }: StyledProps) => theme.colors.error || '#ff4444'};
   text-align: center;
   margin-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
-`;
-
-const InviteCard = styled(BaseCard)`
-  margin-top: 0;
-`;
-
-const InviteCardContent = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  width: 100%;
-`;
-
-const InviteIconContainer = styled(View)`
-  width: 48px;
-  height: 48px;
-  border-radius: 24px;
-  background-color: ${({ theme }: StyledProps) => theme.colors.primaryExtraLight};
-  align-items: center;
-  justify-content: center;
-  margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;
-`;
-
-const InviteIcon = styled(Ionicons)`
-  color: ${({ theme }: StyledProps) => theme.colors.primary};
-`;
-
-const InviteText = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-  flex: 1;
 `;
 
 export interface MemberListProps {
@@ -162,7 +123,7 @@ export const MemberList: React.FC<MemberListProps> = ({
 
   return (
     <Container>
-      <SectionTitle>{t('share.members.title')}</SectionTitle>
+      <SectionTitle title={t('share.members.title')} icon="people-outline" />
 
       {showEmptyState ? (
         <EmptyState
@@ -198,16 +159,12 @@ export const MemberList: React.FC<MemberListProps> = ({
             />
           ))}
 
-          {/* Invite Card */}
+          {/* Invite Button */}
           {showInviteButton && (
-            <InviteCard onPress={onInvitePress} activeOpacity={0.8}>
-              <InviteCardContent>
-                <InviteIconContainer>
-                  <InviteIcon name="person-add-outline" size={24} />
-                </InviteIconContainer>
-                <InviteText>{t('share.members.invite')}</InviteText>
-              </InviteCardContent>
-            </InviteCard>
+            <AddEntityButton
+              onPress={onInvitePress}
+              label={t('share.members.invite')}
+            />
           )}
         </>
       )}

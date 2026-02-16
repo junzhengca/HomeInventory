@@ -223,6 +223,8 @@
   "settings": {
     "title": "设置",
     "subtitle": "让您的家更舒适",
+    "appearance": "外观",
+    "appliesToHome": "以上设置仅对「{{homeName}}」生效",
     "globalSettings": "全局设置",
     "homeSettings": "小家设置",
     "editHome": "修改小家",

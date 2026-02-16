@@ -4,6 +4,7 @@ import styled from 'styled-components/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
+import { SectionTitle } from '../atoms';
 
 export type ThemeOption = {
   id: string;
@@ -18,30 +19,6 @@ export interface ThemeChooserProps {
 
 const Container = styled(View)`
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xl}px;
-`;
-
-const Header = styled(View)`
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
-`;
-
-const IconContainer = styled(View)`
-  width: 24px;
-  height: 24px;
-  margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-  align-items: center;
-  justify-content: center;
-`;
-
-const Icon = styled(Ionicons)`
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-`;
-
-const Title = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
 `;
 
 const OptionsScroll = styled(ScrollView).attrs(() => ({
@@ -105,12 +82,7 @@ export const ThemeChooser: React.FC<ThemeChooserProps> = ({
 
   return (
     <Container>
-      <Header>
-        <IconContainer>
-          <Icon name="color-palette" size={20} />
-        </IconContainer>
-        <Title>{t('settings.theme')}</Title>
-      </Header>
+      <SectionTitle title={t('settings.theme')} icon="color-palette" />
       <OptionsScroll>
         <OptionsContainer>
           {defaultThemes.map((themeOption) => {

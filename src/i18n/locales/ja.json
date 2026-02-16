@@ -205,6 +205,8 @@
     "settings": {
         "title": "設定",
         "subtitle": "ホームをより快適に",
+        "appearance": "表示",
+        "appliesToHome": "上記の設定は「{{homeName}}」にのみ適用されます",
         "globalSettings": "基本設定",
         "homeSettings": "ホーム設定",
         "editHome": "ホームを編集",

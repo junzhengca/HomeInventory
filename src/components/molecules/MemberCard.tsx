@@ -6,7 +6,6 @@ import styled from 'styled-components/native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../../utils/styledComponents';
-import { BaseCard } from '../atoms';
 import { Member } from '../../types/api';
 
 const CardWrapper = styled(View)`
@@ -20,16 +19,14 @@ const CardContent = styled(View)`
 `;
 
 const AvatarContainer = styled(View)`
-  width: 48px;
-  height: 48px;
-  border-radius: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   overflow: hidden;
   margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;
   background-color: ${({ theme }: StyledProps) => theme.colors.primaryLight};
   align-items: center;
   justify-content: center;
-  border-width: 1.5px;
-  border-color: ${({ theme }: StyledProps) => theme.colors.primary};
 `;
 
 const AvatarImage = styled(Image)`
@@ -134,29 +131,27 @@ export const MemberCard: React.FC<MemberCardProps> = ({
   };
 
   const cardContent = (
-    <BaseCard>
-      <CardContent>
-        <AvatarContainer>
-          {member.avatarUrl ? (
-            <AvatarImage
-              source={{ uri: member.avatarUrl }}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <AvatarPlaceholder>
-              <Ionicons name="person" size={24} color="white" />
-            </AvatarPlaceholder>
-          )}
-        </AvatarContainer>
-        <InfoContainer>
-          <NameRow>
-            <MemberName>{displayName}</MemberName>
-            {isOwner && <OwnerBadge>{t('share.members.ownerBadge')}</OwnerBadge>}
-          </NameRow>
-        </InfoContainer>
-      </CardContent>
-    </BaseCard>
+    <CardContent>
+      <AvatarContainer>
+        {member.avatarUrl ? (
+          <AvatarImage
+            source={{ uri: member.avatarUrl }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <AvatarPlaceholder>
+            <Ionicons name="person" size={24} color="white" />
+          </AvatarPlaceholder>
+        )}
+      </AvatarContainer>
+      <InfoContainer>
+        <NameRow>
+          <MemberName>{displayName}</MemberName>
+          {isOwner && <OwnerBadge>{t('share.members.ownerBadge')}</OwnerBadge>}
+        </NameRow>
+      </InfoContainer>
+    </CardContent>
   );
 
   // If owner or no remove handler, return non-swipeable card

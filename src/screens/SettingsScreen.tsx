@@ -17,7 +17,7 @@ import {
   CurrencySelector,
   LanguageSelector,
   SettingsToggleItem,
-  SettingsItem,
+  SettingsTextButton,
   EditHomeBottomSheet,
   HomeSwitcher,
   PermissionConfigPanel,
@@ -25,7 +25,7 @@ import {
   Button,
   MemberList,
   InviteMenuBottomSheet,
-  HomeCard,
+  HorizontalSplitter,
 } from '../components';
 import { useSettings, useAuth } from '../store/hooks';
 import { useHome } from '../hooks/useHome';
@@ -45,7 +45,10 @@ const Content = styled(ScrollView)`
   padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
-const SettingsSection = styled(View)`
+const SettingsSectionCard = styled(View)`
+  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xl}px;
 `;
 
@@ -96,6 +99,14 @@ const LeaveHomeText = styled(Text)`
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
   margin-left: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+`;
+
+const CardFootnote = styled(Text)`
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
+  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.regular};
+  color: ${({ theme }: StyledProps) => theme.colors.textLight};
+  text-align: center;
+  margin-top: ${({ theme }: StyledProps) => theme.spacing.lg}px;
 `;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -351,9 +362,8 @@ export const SettingsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
-        {/* Sharing Section */}
-        <SettingsSection>
-          <SectionTitle>{t('share.title')}</SectionTitle>
+        {/* Card 1 – Managing current home */}
+        <SettingsSectionCard>
           {!isAuthenticated ? (
             <>
               <LoginPromptContainer>
@@ -374,13 +384,6 @@ export const SettingsScreen: React.FC = () => {
             </>
           ) : (
             <>
-              <HomeCard
-                name={currentHome?.name || t('share.home.currentHome')}
-                isActive={true}
-                canShareInventory={canShareInventory}
-                canShareTodos={canShareTodos}
-              />
-
               <MemberList
                 owner={
                   currentHome?.owner
@@ -415,13 +418,33 @@ export const SettingsScreen: React.FC = () => {
                   isLoading={false}
                 />
               )}
+              {currentHome && (
+                <>
+                  <HorizontalSplitter />
+                  <SettingsTextButton
+                    label={t('settings.editHome')}
+                    icon="pencil-outline"
+                    onPress={handleEditHomePress}
+                  />
+                  <SettingsTextButton
+                    label={t('settings.deleteHome.title')}
+                    icon="trash-outline"
+                    onPress={handleDeleteHomePress}
+                    variant="destructive"
+                  />
+                </>
+              )}
             </>
           )}
-        </SettingsSection>
+          {currentHome && (
+            <CardFootnote>
+              {t('settings.appliesToHome', { homeName: currentHome.name })}
+            </CardFootnote>
+          )}
+        </SettingsSectionCard>
 
-        {/* Global Settings Section */}
-        <SettingsSection>
-          <SectionTitle>{t('settings.globalSettings')}</SectionTitle>
+        {/* Card 2 – Global settings (Appearance) */}
+        <SettingsSectionCard>
           <ThemeChooser
             selectedThemeId={settings.theme}
             onThemeSelect={handleThemeChange}
@@ -434,36 +457,13 @@ export const SettingsScreen: React.FC = () => {
             selectedLanguageId={settings.language}
             onLanguageSelect={handleLanguageChange}
           />
-        </SettingsSection>
-
-        {/* Home Settings Section */}
-        {currentHome && (
-          <SettingsSection>
-            <SectionTitle>{t('settings.homeSettings')}</SectionTitle>
-            <SettingsItem
-              label={t('settings.editHome')}
-              icon="home-outline"
-              onPress={handleEditHomePress}
-            />
-            <SettingsItem
-              label={t('settings.deleteHome.title')}
-              icon="trash-outline"
-              onPress={handleDeleteHomePress}
-              variant="destructive"
-            />
-          </SettingsSection>
-        )}
-
-        {/* Experimental Section */}
-        <SettingsSection>
-          <SectionTitle>{t('settings.experimental')}</SectionTitle>
           <SettingsToggleItem
             label={t('settings.darkMode')}
             description={t('settings.darkModeDescription')}
             value={settings.darkMode ?? false}
             onValueChange={handleDarkModeChange}
           />
-        </SettingsSection>
+        </SettingsSectionCard>
 
         {/* Version Info */}
         <VersionText>
