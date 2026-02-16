@@ -58,7 +58,8 @@ const ContentWrapper = styled(View)`
 
 const ManagedLabel = styled(Text)`
   font-size: 12px;
-  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
+  font-weight: 600;
+  color: ${({ theme }: StyledProps) => theme.colors.primary};
   letter-spacing: 0.5px;
   margin-bottom: 2px;
 `;
