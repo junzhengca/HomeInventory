@@ -139,8 +139,8 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
 
     // Use dynamic sizing or a calculated snap point
     const isOwnHome = useMemo(() => {
-        if (!invitationData || !currentUser?.email) return false;
-        return invitationData.accountEmail?.toLowerCase() === currentUser.email.toLowerCase();
+        if (!invitationData || !currentUser?.email || !invitationData.home) return false;
+        return invitationData.home.owner.email?.toLowerCase() === currentUser.email.toLowerCase();
     }, [invitationData, currentUser]);
 
     const fetchInvitationDetails = useCallback(async (code: string) => {
@@ -158,8 +158,8 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
                 setError(data.message || 'Invalid invitation code');
             }
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to validate invitation');
-            uiLogger.error('Validate invitation error', err);
+            setError(err instanceof Error ? err.message : 'Failed to validate home invitation');
+            uiLogger.error('Validate home invitation error', err);
         } finally {
             setLoading(false);
         }
@@ -168,7 +168,7 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
     const processAccept = useCallback(async () => {
         if (!apiClient || !inviteCode) return;
         setLoading(true);
-        uiLogger.info(`Accepting invite: ${inviteCode}`);
+        uiLogger.info(`Accepting home invitation: ${inviteCode}`);
         try {
             await apiClient.acceptInvitation(inviteCode);
 
@@ -183,7 +183,7 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
             bottomSheetRef.current?.dismiss();
 
         } catch (err: unknown) {
-            uiLogger.error('Accept invitation error', err);
+            uiLogger.error('Accept home invitation error', err);
             showToast(err instanceof Error ? err.message : t('share.invite.acceptError'), 'error');
         } finally {
             setLoading(false);
@@ -253,25 +253,19 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
                                     variant="secondary"
                                 />
                             </>
-                        ) : invitationData ? (
+                        ) : invitationData && invitationData.home ? (
                             <View>
                                 <View style={{ alignItems: 'center' }}>
                                     <AvatarContainer>
-                                        {invitationData.avatarUrl ? (
-                                            <AvatarImage
-                                                source={{ uri: invitationData.avatarUrl }}
-                                            />
-                                        ) : (
-                                            <View style={{
-                                                width: 80, height: 80,
-                                                backgroundColor: theme.colors.primaryLight, borderRadius: 40,
-                                                alignItems: 'center', justifyContent: 'center'
-                                            }}>
-                                                <Text style={{ fontSize: 32, color: theme.colors.primary, fontWeight: 'bold' }}>
-                                                    {(invitationData.nickname || invitationData.accountEmail || '?').charAt(0).toUpperCase()}
-                                                </Text>
-                                            </View>
-                                        )}
+                                        <View style={{
+                                            width: 80, height: 80,
+                                            backgroundColor: theme.colors.primaryLight, borderRadius: 40,
+                                            alignItems: 'center', justifyContent: 'center'
+                                        }}>
+                                            <Text style={{ fontSize: 32, color: theme.colors.primary, fontWeight: 'bold' }}>
+                                                {(invitationData.home.owner.nickname || invitationData.home.owner.email || '?').charAt(0).toUpperCase()}
+                                            </Text>
+                                        </View>
                                         <EnvelopeIcon>
                                             <Ionicons name="mail" size={16} color={theme.colors.text} />
                                         </EnvelopeIcon>
@@ -280,10 +274,10 @@ export const InvitationBottomSheet: React.FC<InvitationBottomSheetProps> = ({
 
                                 <Subtitle>{t('share.invite.receivedSubtitle')}</Subtitle>
                                 <InviteTitle>
-                                    {t('share.invite.receivedTitle', { name: invitationData.nickname || invitationData.accountEmail })}
+                                    {t('share.invite.receivedTitle', { name: invitationData.home.owner.nickname || invitationData.home.owner.email })}
                                 </InviteTitle>
-                                {invitationData.nickname && invitationData.accountEmail && (
-                                    <InviterEmail>({invitationData.accountEmail})</InviterEmail>
+                                {invitationData.home.owner.nickname && invitationData.home.owner.email && (
+                                    <InviterEmail>({invitationData.home.owner.email})</InviterEmail>
                                 )}
                                 {isOwnHome && (
                                     <ErrorRow>

@@ -624,7 +624,7 @@
                 "copyError": "コピーに失敗しました"
             },
             "receivedTitle": "{{name}} があなたをホームに招待しています",
-            "receivedSubtitle": "招待を受け取りました",
+            "receivedSubtitle": "ホーム招待を受け取りました",
             "acceptSuccess": "ホームに参加しました",
             "acceptError": "ホームへの参加に失敗しました。もう一度お試しください。",
             "receivedScope": "共有範囲",
@@ -632,7 +632,7 @@
             "shoppingList": "買い物リスト",
             "visibleToAll": "すべてのメンバーに表示",
             "private": "プライベート",
-            "accept": "招待を承諾する",
+            "accept": "ホーム招待を承諾する",
             "errors": {
                 "ownHome": "自分のホームには参加できません"
             }

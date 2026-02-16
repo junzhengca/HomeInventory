@@ -652,7 +652,7 @@
         "copyError": "复制失败"
       },
       "receivedTitle": "{{name}} 邀请您加入他们的家",
-      "receivedSubtitle": "收到邀请",
+      "receivedSubtitle": "收到家庭邀请",
       "acceptSuccess": "成功加入小家",
       "acceptError": "加入小家失败，请重试。",
       "receivedScope": "分享范围",
@@ -660,7 +660,7 @@
       "shoppingList": "购物清单",
       "visibleToAll": "全员可见",
       "private": "仅自己可见",
-      "accept": "接受邀请",
+      "accept": "接受家庭邀请",
       "errors": {
         "ownHome": "您不能加入自己的家"
       }

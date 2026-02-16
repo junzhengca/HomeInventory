@@ -628,22 +628,22 @@ class ApiClient {
   }
 
   /**
-   * GET /api/invitations/:code
-   * Validate an invitation code
+   * GET /api/invitations/homes/:code
+   * Validate a home invitation code
    */
   async validateInvitation(code: string): Promise<ValidateInvitationResponse> {
-    return this.request<ValidateInvitationResponse>(`/api/invitations/${code}`, {
+    return this.request<ValidateInvitationResponse>(`/api/invitations/homes/${code}`, {
       method: 'GET',
       requiresAuth: false,
     });
   }
 
   /**
-   * POST /api/invitations/:code/accept
-   * Accept an invitation to join an account
+   * POST /api/invitations/homes/:code/accept
+   * Accept a home invitation to join a home
    */
   async acceptInvitation(code: string): Promise<AcceptInvitationResponse> {
-    return this.request<AcceptInvitationResponse>(`/api/invitations/${code}/accept`, {
+    return this.request<AcceptInvitationResponse>(`/api/invitations/homes/${code}/accept`, {
       method: 'POST',
       requiresAuth: true,
     });

@@ -214,9 +214,15 @@ export interface RegenerateInvitationCodeResponse {
 
 export interface ValidateInvitationResponse {
   valid: boolean;
-  accountEmail?: string;
-  nickname?: string;
-  avatarUrl?: string;
+  home?: {
+    homeId: string;
+    name: string;
+    address: string;
+    owner: {
+      email: string;
+      nickname: string;
+    };
+  };
   permissions?: {
     canShareInventory: boolean;
     canShareTodos: boolean;

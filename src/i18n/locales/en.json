@@ -678,7 +678,7 @@
         "copyError": "Failed to copy"
       },
       "receivedTitle": "{{name}} invites you to join their home",
-      "receivedSubtitle": "Received Invitation",
+      "receivedSubtitle": "Received Home Invitation",
       "acceptSuccess": "Successfully joined the home",
       "acceptError": "Failed to join the home. Please try again.",
       "receivedScope": "Shared Scope",
@@ -686,7 +686,7 @@
       "shoppingList": "Shopping List",
       "visibleToAll": "Visible to all",
       "private": "Private",
-      "accept": "Accept Invitation",
+      "accept": "Accept Home Invitation",
       "errors": {
         "ownHome": "You cannot join your own home"
       }
