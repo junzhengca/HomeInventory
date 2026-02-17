@@ -8,8 +8,9 @@ import { useTranslation } from 'react-i18next';
 import type { StyledProps } from '../../utils/styledComponents';
 import { Member } from '../../types/api';
 
-const CardWrapper = styled(View)`
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+const CardWrapper = styled(View)<{ noMarginBottom?: boolean }>`
+  margin-bottom: ${({ theme, noMarginBottom }: StyledProps & { noMarginBottom?: boolean }) =>
+    noMarginBottom ? 0 : theme.spacing.lg}px;
 `;
 
 const CardContent = styled(View)`
@@ -99,6 +100,8 @@ export interface MemberCardProps {
   isOwner?: boolean;
   onRemove?: (memberId: string) => void;
   swipeableRef?: React.RefObject<Swipeable | null>;
+  /** Omit bottom margin (e.g. when this is the last card in the list) */
+  noMarginBottom?: boolean;
 }
 
 export const MemberCard: React.FC<MemberCardProps> = ({
@@ -106,6 +109,7 @@ export const MemberCard: React.FC<MemberCardProps> = ({
   isOwner = false,
   onRemove,
   swipeableRef,
+  noMarginBottom = false,
 }) => {
   const { t } = useTranslation();
   const displayName = member.nickname || member.email;
@@ -156,12 +160,12 @@ export const MemberCard: React.FC<MemberCardProps> = ({
 
   // If owner or no remove handler, return non-swipeable card
   if (isOwner || !onRemove) {
-    return <CardWrapper>{cardContent}</CardWrapper>;
+    return <CardWrapper noMarginBottom={noMarginBottom}>{cardContent}</CardWrapper>;
   }
 
   // Return swipeable card for members
   return (
-    <CardWrapper>
+    <CardWrapper noMarginBottom={noMarginBottom}>
       <Swipeable
         ref={swipeableRef}
         renderRightActions={renderSwipeActions}

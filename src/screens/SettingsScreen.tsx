@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { ScrollView, ActivityIndicator, View, Text, Alert, TouchableOpacity } from 'react-native';
+import { ScrollView, ActivityIndicator, View, Text, Alert } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -7,7 +7,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useTranslation } from 'react-i18next';
 import Constants from 'expo-constants';
-import { Ionicons } from '@expo/vector-icons';
 import type { StyledProps } from '../utils/styledComponents';
 import { uiLogger } from '../utils/Logger';
 
@@ -33,7 +32,6 @@ import {
 import { useSettings, useAuth } from '../store/hooks';
 import { useHome } from '../hooks/useHome';
 import { useToast } from '../hooks/useToast';
-import { useTheme } from '../theme/ThemeProvider';
 import { calculateBottomPadding } from '../utils/layout';
 import { RootStackParamList } from '../navigation/types';
 import { Member } from '../types/api';
@@ -80,21 +78,6 @@ const ButtonContainer = styled(View)`
   width: 100%;
   max-width: 300px;
   margin-top: ${({ theme }: StyledProps) => theme.spacing.lg}px;
-`;
-
-const LeaveHomeButton = styled(TouchableOpacity)`
-  margin-top: ${({ theme }: StyledProps) => theme.spacing.xl}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  align-items: center;
-  justify-content: center;
-  flex-direction: row;
-`;
-
-const LeaveHomeText = styled(Text)`
-  color: ${({ theme }: StyledProps) => theme.colors.error || '#ff4444'};
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  margin-left: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 const CardFootnote = styled(Text)`
@@ -148,7 +131,6 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export const SettingsScreen: React.FC = () => {
   const { settings, updateSettings, isLoading } = useSettings();
   const { t } = useTranslation();
-  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const { user, isAuthenticated, getApiClient } = useAuth();
@@ -440,12 +422,6 @@ export const SettingsScreen: React.FC = () => {
                 showInviteButton={currentHome?.role === 'owner'}
               />
 
-              {currentHome?.role === 'member' && (
-                <LeaveHomeButton onPress={handleLeaveHome} activeOpacity={0.8}>
-                  <Ionicons name="log-out-outline" size={20} color={theme.colors.error || '#ff4444'} />
-                  <LeaveHomeText>{t('share.members.leaveHome', 'Leave Home')}</LeaveHomeText>
-                </LeaveHomeButton>
-              )}
               {currentHome?.role === 'owner' && (
                 <PermissionConfigPanel
                   canShareInventory={canShareInventory}
@@ -458,17 +434,31 @@ export const SettingsScreen: React.FC = () => {
               {currentHome && (
                 <>
                   <HorizontalSplitter />
-                  <SettingsTextButton
-                    label={t('settings.editHome')}
-                    icon="pencil-outline"
-                    onPress={handleEditHomePress}
-                  />
-                  <SettingsTextButton
-                    label={t('settings.deleteHome.title')}
-                    icon="trash-outline"
-                    onPress={handleDeleteHomePress}
-                    variant="destructive"
-                  />
+                  {currentHome.role === 'owner' && (
+                    <>
+                      <SettingsTextButton
+                        label={t('settings.editHome')}
+                        icon="pencil-outline"
+                        onPress={handleEditHomePress}
+                      />
+                      <SettingsTextButton
+                        label={t('settings.deleteHome.title')}
+                        icon="trash-outline"
+                        onPress={handleDeleteHomePress}
+                        variant="destructive"
+                        noMarginBottom
+                      />
+                    </>
+                  )}
+                  {currentHome.role === 'member' && (
+                    <SettingsTextButton
+                      label={t('share.members.leaveHome', 'Leave Home')}
+                      icon="log-out-outline"
+                      onPress={handleLeaveHome}
+                      variant="destructive"
+                      noMarginBottom
+                    />
+                  )}
                 </>
               )}
             </>

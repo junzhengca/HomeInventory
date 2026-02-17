@@ -42,6 +42,10 @@ const ErrorText = styled(Text)`
   margin-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
+const InviteButtonWrapper = styled(View)`
+  margin-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
 export interface MemberListProps {
   owner: OwnerInfo | null;
   members: Member[];
@@ -145,26 +149,30 @@ export const MemberList: React.FC<MemberListProps> = ({
                 isOwner: true,
               }}
               isOwner={true}
+              noMarginBottom={members.length === 0}
             />
           )}
 
           {/* Members List */}
-          {members.map((member) => (
+          {members.map((member, index) => (
             <MemberCard
               key={member.userId}
               member={member}
               isOwner={false}
               onRemove={onRemoveMember ? handleRemoveMember : undefined}
               swipeableRef={getSwipeableRef(member.userId)}
+              noMarginBottom={index === members.length - 1}
             />
           ))}
 
           {/* Invite Button */}
           {showInviteButton && (
-            <AddEntityButton
-              onPress={onInvitePress}
-              label={t('share.members.invite')}
-            />
+            <InviteButtonWrapper>
+              <AddEntityButton
+                onPress={onInvitePress}
+                label={t('share.members.invite')}
+              />
+            </InviteButtonWrapper>
           )}
         </>
       )}
