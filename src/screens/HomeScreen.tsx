@@ -352,7 +352,6 @@ export const HomeScreen: React.FC = () => {
           showRightButtons={true}
           subtitle={undefined} // Subtitle is now shown in the filter panel
           avatarUrl={user?.avatarUrl}
-          ownerAvatarUrl={currentHome?.role === 'member' ? currentHome?.owner?.avatarUrl : undefined}
           onAvatarPress={handleAvatarPress}
         />
         {/* Check if user has access to item library */}
