@@ -80,9 +80,9 @@ export const useHome = () => {
         return await homeService.updateHome(apiClient, id, updates);
     }, []);
 
-    const handleDeleteHome = useCallback(async (apiClient: ApiClient, id: string) => {
+    const handleDeleteHome = useCallback(async (apiClient: ApiClient, id: string, userId?: string) => {
         const wasActiveHome = activeHomeId === id;
-        const success = await homeService.deleteHome(apiClient, id);
+        const success = await homeService.deleteHome(apiClient, id, userId);
         if (success && wasActiveHome) {
             // HomeService has already switched internally; sync Redux with the next available home
             const availableHomes = homeService.getHomes();

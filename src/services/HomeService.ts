@@ -244,8 +244,11 @@ class HomeService {
 
     /**
      * Delete (or leave) a home
+     * @param apiClient - API client instance
+     * @param id - Home ID
+     * @param userId - Optional user ID. Required when leaving as a member. If not provided and role is member, will use owner's userId (for backward compatibility)
      */
-    async deleteHome(apiClient: ApiClient, id: string): Promise<boolean> {
+    async deleteHome(apiClient: ApiClient, id: string, userId?: string): Promise<boolean> {
         this.setLoading('delete');
         try {
             const home = this.homes.find(h => h.id === id);
@@ -254,17 +257,17 @@ class HomeService {
                 return false;
             }
 
-            // Determine if we're deleting (owner) or leaving (member)
-            const userId = home.owner?.userId;
-            if (!userId) {
-                this.setLoading(null, 'User ID not found');
-                return false;
-            }
-
             if (home.role === 'owner') {
+                // Owner deleting the home
                 await apiClient.deleteHome(id) as DeleteHomeResponse;
             } else {
-                await apiClient.leaveHome(id, userId) as LeaveHomeResponse;
+                // Member leaving the home - userId is required
+                const memberUserId = userId || home.owner?.userId;
+                if (!memberUserId) {
+                    this.setLoading(null, 'User ID not found');
+                    return false;
+                }
+                await apiClient.leaveHome(id, memberUserId) as LeaveHomeResponse;
             }
 
             // Remove from local list

@@ -246,6 +246,8 @@ export const SettingsScreen: React.FC = () => {
   }, [canShareTodos, currentHome?.id, getApiClient, toast, t]);
 
   const handleLeaveHome = useCallback(() => {
+    if (!currentHome || !user?.id) return;
+
     Alert.alert(
       t('share.members.leaveConfirm.title', 'Leave Home'),
       t('share.members.leaveConfirm.message', 'Are you sure you want to leave this home?'),
@@ -257,13 +259,35 @@ export const SettingsScreen: React.FC = () => {
         {
           text: t('share.members.leaveConfirm.confirm', 'Leave'),
           style: 'destructive',
-          onPress: () => {
-            toast.showToast('Leave home: Mock mode - not implemented', 'info');
+          onPress: async () => {
+            const apiClient = getApiClient();
+            if (!apiClient) {
+              toast.showToast(t('share.members.leaveError', 'Failed to leave home'), 'error');
+              return;
+            }
+
+            try {
+              const success = await deleteHome(apiClient, currentHome.id, user.id);
+              if (success) {
+                toast.showToast(t('share.members.leaveSuccess', 'Left home successfully'), 'success');
+                // Refresh homes list to reflect the change
+                const apiClient2 = getApiClient();
+                if (apiClient2) {
+                  const { homeService } = await import('../services/HomeService');
+                  await homeService.fetchHomes(apiClient2);
+                }
+              } else {
+                toast.showToast(t('share.members.leaveError', 'Failed to leave home'), 'error');
+              }
+            } catch (error) {
+              uiLogger.error('Error leaving home', error);
+              toast.showToast(t('share.members.leaveError', 'Failed to leave home'), 'error');
+            }
           },
         },
       ]
     );
-  }, [toast, t]);
+  }, [currentHome, user, deleteHome, getApiClient, toast, t]);
 
   const handleLoginPress = useCallback(() => {
     const rootNavigation = navigation.getParent();
