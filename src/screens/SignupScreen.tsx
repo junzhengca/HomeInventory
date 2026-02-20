@@ -7,6 +7,7 @@ import {
     Platform,
     TouchableOpacity,
     TextInput,
+    Image,
 } from 'react-native';
 import styled from 'styled-components/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -205,7 +206,11 @@ export const SignupScreen: React.FC = () => {
                     <Content>
                         <LogoContainer>
                             <MascotPlaceholder>
-                                <Ionicons name="home" size={48} color={theme.colors.primary} />
+                                <Image
+                                    source={require('../../assets/logo-transparent.png')}
+                                    style={{ width: 80, height: 80 }}
+                                    resizeMode="contain"
+                                />
                             </MascotPlaceholder>
                             <TitleText>{t('onboarding.joinTitle')}</TitleText>
                             <SubtitleText>{t('onboarding.joinSubtitle')}</SubtitleText>
