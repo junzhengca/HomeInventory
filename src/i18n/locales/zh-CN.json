@@ -288,7 +288,8 @@
       "warningThreshold": "警告阈值",
       "purchaseDate": "购买时间",
       "expiryDate": "过期时间",
-      "category": "分类"
+      "category": "分类",
+      "advanced": "更多选项 (状态、预警、备注)"
     },
     "placeholders": {
       "name": "例如:可爱的小杯子",
@@ -335,7 +336,8 @@
       "status": "状态",
       "detailedLocation": "具体位置",
       "warningThreshold": "警告阈值",
-      "category": "分类"
+      "category": "分类",
+      "advanced": "更多选项 (状态、预警、备注)"
     },
     "placeholders": {
       "name": "例如:可爱的小杯子",

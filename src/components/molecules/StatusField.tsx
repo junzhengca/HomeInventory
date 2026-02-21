@@ -23,12 +23,6 @@ const StatusButton = styled(TouchableOpacity)<{ isSelected: boolean }>`
     isSelected,
   }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : theme.colors.surface};
-  border-width: 1px;
-  border-color: ${({
-    theme,
-    isSelected,
-  }: StyledPropsWith<{ isSelected: boolean }>) =>
-    isSelected ? theme.colors.primary : theme.colors.border};
   margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 

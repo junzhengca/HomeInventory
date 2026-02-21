@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState, forwardRef, useImperativeHandle, useRef } from 'react';
-import { Keyboard, Alert, Text } from 'react-native';
+import { Keyboard, Alert } from 'react-native';
 import styled from 'styled-components/native';
 import {
   BottomSheetModal,
@@ -53,13 +53,6 @@ const SectionDivider = styled.View`
   height: 1px;
   background-color: ${({ theme }: StyledProps) => theme.colors.border};
   margin-vertical: ${({ theme }: StyledProps) => theme.spacing.md}px;
-`;
-
-const SectionHeader = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 export type FormMode = 'create' | 'edit';
@@ -551,7 +544,6 @@ export const ItemFormBottomSheet = forwardRef<
           {mode === 'create' && (
             <>
               <SectionDivider />
-              <SectionHeader>{t('createItem.batchSection')}</SectionHeader>
               <BatchFormFields
                 formKey={formKey}
                 purchaseDate={purchaseDate}

@@ -12,7 +12,7 @@ import { LocationSelector, CategoryFormSelector, BatchDetailsFormSection, DatePi
 
 const FormContainer = styled.View`
   flex-direction: column;
-  gap: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  gap: ${({ theme }: StyledProps) => theme.spacing.xs}px;
 `;
 
 // ---------------------------------------------------------------------------
@@ -147,7 +147,7 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
     return (
         <FormContainer key={formKey}>
             {/* Row 1 — Name */}
-            <FormSection label={translations.fields.name}>
+            <FormSection compact label={translations.fields.name}>
                 <UncontrolledInput
                     ref={nameInputRef}
                     defaultValue={defaultName}
@@ -159,7 +159,7 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
             </FormSection>
 
             {/* Row 2 — Location */}
-            <FormSection label={translations.fields.location}>
+            <FormSection compact label={translations.fields.location}>
                 <LocationSelector
                     selectedLocationId={selectedLocation}
                     onSelect={(id: string | null) => id && onLocationSelect(id)}
@@ -169,7 +169,7 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
             </FormSection>
 
             {/* Row 3 — Category */}
-            <FormSection label={translations.fields.category}>
+            <FormSection compact label={translations.fields.category}>
                 <CategoryFormSelector
                     selectedCategoryId={selectedCategoryId}
                     onSelect={onCategorySelect}
@@ -178,6 +178,7 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
 
             {/* Row 4 — Batch Details (price, amount, unit, vendor) */}
             <BatchDetailsFormSection
+                compact
                 defaultPrice={defaultPrice}
                 defaultAmount={defaultAmount}
                 defaultUnit={defaultUnit}
@@ -196,8 +197,12 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
                 onVendorBlur={onVendorBlur}
             />
 
-            {/* Row 5 — Expiry Date */}
-            <FormSection label={translations.fields.expiryDate}>
+            {/* Row 5 — Expiry Date (reduced bottom margin so spacing above More Options matches below) */}
+            <FormSection
+                compact
+                label={translations.fields.expiryDate}
+                style={{ marginBottom: theme.spacing.sm }}
+            >
                 <DatePicker
                     value={expiryDate}
                     onChange={onExpiryDateChange}
@@ -208,7 +213,7 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
             {/* Row 6 — Advanced Section */}
             <CollapsibleSection title={translations.fields.advanced}>
                 <FormContainer>
-                    <FormSection label={translations.fields.detailedLocation}>
+                    <FormSection compact label={translations.fields.detailedLocation}>
                         <UncontrolledInput
                             ref={detailedLocationInputRef}
                             defaultValue={defaultDetailedLocation}
@@ -216,18 +221,17 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
                             onBlur={onDetailedLocationBlur}
                             placeholder={translations.placeholders.detailedLocation}
                             placeholderTextColor={theme.colors.textLight}
-                            multiline
                         />
                     </FormSection>
 
-                    <FormSection label={translations.fields.status}>
+                    <FormSection compact label={translations.fields.status}>
                         <StatusFormSelector
                             selectedStatusId={selectedStatusId}
                             onSelect={onStatusSelect}
                         />
                     </FormSection>
 
-                    <FormSection label={translations.fields.warningThreshold}>
+                    <FormSection compact label={translations.fields.warningThreshold}>
                         <UncontrolledInput
                             ref={warningThresholdInputRef}
                             defaultValue={defaultWarningThreshold}

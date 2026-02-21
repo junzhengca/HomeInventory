@@ -305,7 +305,7 @@
       "purchaseDate": "Purchase Date",
       "expiryDate": "Expiry Date",
       "category": "Category",
-      "advanced": "Advanced"
+      "advanced": "More Options (Status, Alert, Notes)"
     },
     "placeholders": {
       "name": "e.g., Cute Cup",
@@ -352,7 +352,8 @@
       "status": "Status",
       "detailedLocation": "Detailed Location",
       "warningThreshold": "Warning Threshold",
-      "category": "Category"
+      "category": "Category",
+      "advanced": "More Options (Status, Alert, Notes)"
     },
     "placeholders": {
       "name": "e.g., Cute Cup",

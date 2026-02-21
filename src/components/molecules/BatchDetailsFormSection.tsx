@@ -1,12 +1,12 @@
 import React from 'react';
-import { TextInput, View } from 'react-native';
+import { TextInput } from 'react-native';
 import styled from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
 
 import type { StyledProps } from '../../utils/styledComponents';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useSettings } from '../../store/hooks';
-import { FormSection, UncontrolledInput, NumberInput, UnitPicker } from '../atoms';
+import { FormSection, UncontrolledInput, NumberInput } from '../atoms';
 import { getCurrencySymbol } from './CurrencySelector';
 
 // ---------------------------------------------------------------------------
@@ -22,29 +22,8 @@ const PriceColumn = styled.View`
   flex: 1;
 `;
 
-const AmountColumn = styled.View`
+const VendorColumn = styled.View`
   flex: 1;
-`;
-
-const SubLabel = styled.Text`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
-  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-`;
-
-const UnitRow = styled.View`
-  flex-direction: row;
-  gap: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-  margin-top: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
-
-const UnitInputWrapper = styled.View`
-  flex: 1;
-`;
-
-const VendorInputWrapper = styled.View`
-  flex: 2;
 `;
 
 // ---------------------------------------------------------------------------
@@ -72,6 +51,8 @@ export interface BatchDetailsFormSectionProps {
   onAmountBlur: () => void;
   onUnitBlur: () => void;
   onVendorBlur: () => void;
+  /** Use smaller vertical spacing (e.g. for add-item bottom sheet) */
+  compact?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -79,18 +60,8 @@ export interface BatchDetailsFormSectionProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Shared form section for item batch details.
- *
- * Updated Layout:
- * ┌──────────────────────────────────────────┐
- * │  Batch Details (section label)           │
- * │  ┌──────────────┐  ┌──────────────────┐  │
- * │  │ Price ($)     │  │ Amount + Unit    │  │
- * │  └──────────────┘  └──────────────────┘  │
- * │  ┌──────────────────────────────────────┐│
- * │  │ Vendor                               ││
- * │  └──────────────────────────────────────┘│
- * └──────────────────────────────────────────┘
+ * Form fields for item batch details: Quantity, Price, Vendor.
+ * Each uses a normal FormSection label like other inputs (no "Batch Details" heading).
  */
 export const BatchDetailsFormSection: React.FC<BatchDetailsFormSectionProps> = ({
   defaultPrice,
@@ -107,6 +78,7 @@ export const BatchDetailsFormSection: React.FC<BatchDetailsFormSectionProps> = (
   onPriceBlur,
   onAmountBlur,
   onVendorBlur,
+  compact = false,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -126,10 +98,8 @@ export const BatchDetailsFormSection: React.FC<BatchDetailsFormSectionProps> = (
   const currencySymbol = getCurrencySymbol(settings.currency);
 
   return (
-    <FormSection label={t('createItem.batchSection')}>
-      {/* Amount Row (Quantity) */}
-      <View>
-        <SubLabel>{t('createItem.fields.amount')}</SubLabel>
+    <>
+      <FormSection compact={compact} label={t('createItem.fields.amount')}>
         <NumberInput
           ref={amountInputRef}
           defaultValue={defaultAmount}
@@ -142,37 +112,35 @@ export const BatchDetailsFormSection: React.FC<BatchDetailsFormSectionProps> = (
           unitValue={unitValue}
           onUnitChange={handleUnitSelect}
         />
-      </View>
+      </FormSection>
 
-      {/* Price & Vendor Row */}
-      <Row style={{ marginTop: theme.spacing.sm }}>
+      <Row>
         <PriceColumn>
-          <SubLabel>
-            {t('createItem.fields.price')} ({currencySymbol})
-          </SubLabel>
-          <UncontrolledInput
-            ref={priceInputRef}
-            defaultValue={defaultPrice}
-            onChangeText={onPriceChange}
-            onBlur={onPriceBlur}
-            placeholder={t('createItem.placeholders.price')}
-            placeholderTextColor={theme.colors.textLight}
-            keyboardType="numeric"
-          />
+          <FormSection compact={compact} label={`${t('createItem.fields.price')} (${currencySymbol})`}>
+            <UncontrolledInput
+              ref={priceInputRef}
+              defaultValue={defaultPrice}
+              onChangeText={onPriceChange}
+              onBlur={onPriceBlur}
+              placeholder={t('createItem.placeholders.price')}
+              placeholderTextColor={theme.colors.textLight}
+              keyboardType="numeric"
+            />
+          </FormSection>
         </PriceColumn>
-
-        <VendorInputWrapper style={{ flex: 1 }}>
-          <SubLabel>{t('createItem.fields.vendor')}</SubLabel>
-          <UncontrolledInput
-            ref={vendorInputRef}
-            defaultValue={defaultVendor}
-            onChangeText={onVendorChange}
-            onBlur={onVendorBlur}
-            placeholder={t('createItem.placeholders.vendor')}
-            placeholderTextColor={theme.colors.textLight}
-          />
-        </VendorInputWrapper>
+        <VendorColumn>
+          <FormSection compact={compact} label={t('createItem.fields.vendor')}>
+            <UncontrolledInput
+              ref={vendorInputRef}
+              defaultValue={defaultVendor}
+              onChangeText={onVendorChange}
+              onBlur={onVendorBlur}
+              placeholder={t('createItem.placeholders.vendor')}
+              placeholderTextColor={theme.colors.textLight}
+            />
+          </FormSection>
+        </VendorColumn>
       </Row>
-    </FormSection>
+    </>
   );
 };

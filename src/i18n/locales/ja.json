@@ -256,7 +256,8 @@
             "warningThreshold": "在庫警告しきい値",
             "purchaseDate": "購入日",
             "expiryDate": "有効期限",
-            "category": "カテゴリー"
+            "category": "カテゴリー",
+            "advanced": "その他オプション（状態、アラート、備考）"
         },
         "placeholders": {
             "name": "例: かわいいカップ",
@@ -303,7 +304,8 @@
             "status": "状態",
             "detailedLocation": "詳細な場所",
             "warningThreshold": "在庫警告しきい値",
-            "category": "カテゴリー"
+            "category": "カテゴリー",
+            "advanced": "その他オプション（状態、アラート、備考）"
         },
         "placeholders": {
             "name": "例: かわいいカップ",

@@ -18,24 +18,23 @@ import { useTheme } from '../../theme/ThemeProvider';
 // ---------------------------------------------------------------------------
 
 const Container = styled.View`
-  margin-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  margin-top: 0;
   overflow: hidden;
 `;
 
 const HeaderButton = styled(TouchableOpacity)`
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 6px;
   padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 const Title = styled.Text`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
-  color: ${({ theme }: StyledProps) => theme.colors.text};
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
+  font-weight: 600;
+  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
 `;
-
-const IconContainer = styled(Animated.View)``;
 
 const ContentContainer = styled(Animated.View)`
   overflow: hidden;
@@ -65,13 +64,11 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 
     // Animation values
     const height = useSharedValue(0);
-    const rotation = useSharedValue(initialExpanded ? 180 : 0);
     const listRef = useAnimatedRef<Animated.View>();
 
     const toggleExpand = () => {
         if (expanded) {
             height.value = withTiming(0);
-            rotation.value = withTiming(0);
         } else {
             runOnUI(() => {
                 const measured = measure(listRef);
@@ -79,7 +76,6 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
                     height.value = withTiming(measured.height);
                 }
             })();
-            rotation.value = withTiming(180);
         }
         setExpanded(!expanded);
     };
@@ -89,21 +85,15 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         opacity: withTiming(expanded ? 1 : 0),
     }));
 
-    const animatedIconStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${rotation.value}deg` }],
-    }));
-
     return (
         <Container>
             <HeaderButton onPress={toggleExpand} activeOpacity={0.7}>
                 <Title>{title}</Title>
-                <IconContainer style={animatedIconStyle}>
-                    <Ionicons
-                        name="chevron-down"
-                        size={20}
-                        color={theme.colors.textSecondary}
-                    />
-                </IconContainer>
+                <Ionicons
+                    name={expanded ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={theme.colors.textSecondary}
+                />
             </HeaderButton>
 
             <ContentContainer style={animatedHeightStyle}>
@@ -120,7 +110,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
                             })();
                         }
                     }}
-                    style={{ position: 'absolute', width: '100%', top: 0 }}
+                    style={{ position: 'absolute', width: '100%', top: 0, paddingTop: theme.spacing.sm }}
                 >
                     {children}
                 </View>

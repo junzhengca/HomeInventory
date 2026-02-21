@@ -5,15 +5,17 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
-import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
+import type { StyledProps } from '../../utils/styledComponents';
 import { formatDate } from '../../utils/formatters';
+import { GlassButton } from '../atoms/GlassButton';
 
 const DatePickerContainer = styled(View)`
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   border-width: 1px;
   border-color: ${({ theme }: StyledProps) => theme.colors.border};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  padding: ${({ theme }: StyledProps) => `${theme.spacing.sm}px ${theme.spacing.xl}px ${theme.spacing.sm}px ${theme.spacing.md}px`};
+  height: 48px;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
@@ -64,45 +66,9 @@ const ModalTitle = styled(Text)`
   color: ${({ theme }: StyledProps) => theme.colors.text};
 `;
 
-const ClearButton = styled(TouchableOpacity)`
-  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.xs}px;
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.sm}px;
-  background-color: ${({ theme }: StyledProps) => theme.colors.background};
-  border-width: 1px;
-  border-color: ${({ theme }: StyledProps) => theme.colors.border};
-`;
-
-const ClearButtonText = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
-`;
-
 const ButtonContainer = styled(View)`
   flex-direction: row;
   gap: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
-
-const Button = styled(TouchableOpacity).attrs({ activeOpacity: 0.7 }) <{ $variant?: 'primary' | 'secondary' }>`
-  flex: 1;
-  background-color: ${({ theme, $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
-    $variant === 'secondary' ? theme.colors.background : theme.colors.primary};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.sm + 2}px;
-  align-items: center;
-  justify-content: center;
-  min-height: 44;
-  border-width: ${({ $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
-    $variant === 'secondary' ? 1 : 0}px;
-  border-color: ${({ theme, $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
-    $variant === 'secondary' ? theme.colors.border : 'transparent'};
-`;
-
-const ButtonText = styled(Text) <{ $variant?: 'primary' | 'secondary' }>`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
-  color: ${({ theme, $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
-    $variant === 'secondary' ? theme.colors.text : theme.colors.surface};
 `;
 
 export interface DatePickerProps {
@@ -261,11 +227,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             >
               <ModalHeader>
                 <ModalTitle>{t('datePicker.selectDate')}</ModalTitle>
-                {tempDate && (
-                  <ClearButton onPress={handleClear} activeOpacity={0.7}>
-                    <ClearButtonText>{t('datePicker.clear')}</ClearButtonText>
-                  </ClearButton>
-                )}
+                <GlassButton onPress={handleClose} icon="close" />
               </ModalHeader>
 
               <DateTimePicker
@@ -283,12 +245,19 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               />
 
               <ButtonContainer>
-                <Button $variant="secondary" onPress={handleClose}>
-                  <ButtonText $variant="secondary">{t('datePicker.cancel')}</ButtonText>
-                </Button>
-                <Button $variant="primary" onPress={handleConfirm}>
-                  <ButtonText $variant="primary">{t('datePicker.confirm')}</ButtonText>
-                </Button>
+                <GlassButton
+                  text={t('datePicker.clear')}
+                  onPress={handleClear}
+                  style={{ flex: 1 }}
+                />
+                <GlassButton
+                  text={t('datePicker.confirm')}
+                  icon="checkmark"
+                  onPress={handleConfirm}
+                  tintColor={theme.colors.primary}
+                  textColor={theme.colors.surface}
+                  style={{ flex: 1 }}
+                />
               </ButtonContainer>
             </ModalContent>
           </ModalContainer>

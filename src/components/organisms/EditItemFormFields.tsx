@@ -153,8 +153,11 @@ export const EditItemFormFields: React.FC<EditItemFormFieldsProps> = ({
                 />
             </FormSection>
 
-            {/* Row 3 — Category */}
-            <FormSection label={translations.fields.category}>
+            {/* Row 3 — Category (reduced bottom margin so spacing above More Options matches below) */}
+            <FormSection
+                label={translations.fields.category}
+                style={{ marginBottom: theme.spacing.sm }}
+            >
                 <CategoryFormSelector
                     selectedCategoryId={selectedCategoryId}
                     onSelect={onCategorySelect}
@@ -172,7 +175,6 @@ export const EditItemFormFields: React.FC<EditItemFormFieldsProps> = ({
                             onBlur={onDetailedLocationBlur}
                             placeholder={translations.placeholders.detailedLocation}
                             placeholderTextColor={theme.colors.textLight}
-                            multiline
                         />
                     </FormSection>
 
