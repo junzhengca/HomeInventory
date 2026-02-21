@@ -264,7 +264,7 @@
     },
     "versionPrefix": "当前版本",
     "logout": {
-      "title": "确认登出",
+      "title": "登出",
       "message": "您确定要登出吗？",
       "cancel": "取消",
       "confirm": "登出"

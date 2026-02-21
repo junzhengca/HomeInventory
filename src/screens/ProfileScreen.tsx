@@ -15,12 +15,14 @@ import type { StyledProps } from '../utils/styledComponents';
 import { uiLogger } from '../utils/Logger';
 import {
   PageHeader,
-  LogoutButton,
   LoginBottomSheet,
   SignupBottomSheet,
   EditNicknameBottomSheet,
   type EditNicknameBottomSheetRef,
   Button,
+  SectionTitle,
+  HorizontalSplitter,
+  SettingsTextButton,
 } from '../components';
 import { useAuth, useAppSelector } from '../store/hooks';
 import { Member } from '../types/api';
@@ -38,12 +40,20 @@ const Content = styled(ScrollView)`
   padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
-const ProfileSection = styled(View)`
-  align-items: center;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xl}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.xl}px;
+const SettingsSectionCard = styled(View)`
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.lg}px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xxl}px;
+  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
+const SectionWrapper = styled(View)`
+  margin-top: ${({ theme }: StyledProps) => theme.spacing.md}px;
+`;
+
+const ProfileCardContent = styled(View)`
+  align-items: center;
+  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
 const AvatarContainer = styled(TouchableOpacity)`
@@ -98,18 +108,11 @@ const UserId = styled(Text)`
   color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
 `;
 
-const InfoSection = styled(View)`
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xl}px;
-`;
-
 const InfoRow = styled(View)`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 const InfoLabel = styled(Text)`
@@ -131,21 +134,14 @@ const LoadingContainer = styled(View)`
 
 const AuthButtonContainer = styled(View)`
   width: 100%;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  margin-top: ${({ theme }: StyledProps) => theme.spacing.lg}px;
   align-items: center;
 `;
 
 const ButtonWrapper = styled(View)`
   width: 100%;
+  max-width: 300px;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-`;
-
-const AuthSection = styled(View)`
-  align-items: center;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xl}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.xl}px;
-  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.lg}px;
 `;
 
 const AuthTitle = styled(Text)`
@@ -159,7 +155,7 @@ const AuthTitle = styled(Text)`
 const AuthSubtitle = styled(Text)`
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
   color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.xl}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   text-align: center;
 `;
 
@@ -361,8 +357,6 @@ export const ProfileScreen: React.FC = () => {
     );
   }
 
-
-
   return (
     <Container>
       <PageHeader
@@ -378,83 +372,113 @@ export const ProfileScreen: React.FC = () => {
       >
         {isAuthenticated && user ? (
           <>
-            <ProfileSection>
-              <AvatarContainer onPress={handleAvatarPress} disabled={isUploading}>
-                {isUploading ? (
-                  <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                    <ActivityIndicator size="small" color="white" />
-                  </View>
-                ) : user.avatarUrl ? (
-                  <AvatarImage source={{ uri: user.avatarUrl }} contentFit="cover" cachePolicy="memory-disk" />
-                ) : (
-                  <AvatarPlaceholder>
-                    <Text style={{ fontSize: 40, color: 'white' }}>👤</Text>
-                  </AvatarPlaceholder>
+            <SectionTitle title={t('profile.title')} icon="person-outline" />
+            <SettingsSectionCard>
+              <ProfileCardContent>
+                <AvatarContainer onPress={handleAvatarPress} disabled={isUploading}>
+                  {isUploading ? (
+                    <View style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                      <ActivityIndicator size="small" color="white" />
+                    </View>
+                  ) : user.avatarUrl ? (
+                    <AvatarImage source={{ uri: user.avatarUrl }} contentFit="cover" cachePolicy="memory-disk" />
+                  ) : (
+                    <AvatarPlaceholder>
+                      <Text style={{ fontSize: 40, color: 'white' }}>👤</Text>
+                    </AvatarPlaceholder>
+                  )}
+                </AvatarContainer>
+                <UserNameContainer>
+                  <UserName>{user.nickname || user.email}</UserName>
+                  <EditNicknameButton onPress={() => editNicknameBottomSheetRef.current?.present(user.nickname || '')}>
+                    <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+                  </EditNicknameButton>
+                </UserNameContainer>
+                {user.nickname && <UserEmail>{user.email}</UserEmail>}
+                {user.id && <UserId>{t('profile.userId')}: {user.id}</UserId>}
+              </ProfileCardContent>
+            </SettingsSectionCard>
+
+            <SectionWrapper>
+              <SectionTitle title={t('profile.accountInfo', 'Account Information')} icon="information-circle-outline" />
+              <SettingsSectionCard>
+                {user.nickname && (
+                  <>
+                    <InfoRow>
+                      <InfoLabel>{t('profile.nickname')}</InfoLabel>
+                      <InfoValue>{user.nickname}</InfoValue>
+                    </InfoRow>
+                    <HorizontalSplitter />
+                  </>
                 )}
-              </AvatarContainer>
-              <UserNameContainer>
-                <UserName>{user.nickname || user.email}</UserName>
-                <EditNicknameButton onPress={() => editNicknameBottomSheetRef.current?.present(user.nickname || '')}>
-                  <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
-                </EditNicknameButton>
-              </UserNameContainer>
-              {user.nickname && <UserEmail>{user.email}</UserEmail>}
-              {user.id && <UserId>{t('profile.userId')}: {user.id}</UserId>}
-            </ProfileSection>
+                <InfoRow>
+                  <InfoLabel>{t('profile.email')}</InfoLabel>
+                  <InfoValue>{user.email}</InfoValue>
+                </InfoRow>
+                {user.createdAt && (
+                  <>
+                    <HorizontalSplitter />
+                    <InfoRow>
+                      <InfoLabel>{t('profile.memberSince')}</InfoLabel>
+                      <InfoValue>{formatDate(user.createdAt, getLocale(), t)}</InfoValue>
+                    </InfoRow>
+                  </>
+                )}
+                {user.updatedAt && (
+                  <>
+                    <HorizontalSplitter />
+                    <InfoRow>
+                      <InfoLabel>{t('profile.lastUpdated')}</InfoLabel>
+                      <InfoValue>{formatDate(user.updatedAt, getLocale(), t)}</InfoValue>
+                    </InfoRow>
+                  </>
+                )}
+              </SettingsSectionCard>
+            </SectionWrapper>
 
-            <InfoSection>
-              {user.nickname && (
-                <InfoRow>
-                  <InfoLabel>{t('profile.nickname')}</InfoLabel>
-                  <InfoValue>{user.nickname}</InfoValue>
-                </InfoRow>
-              )}
-              <InfoRow>
-                <InfoLabel>{t('profile.email')}</InfoLabel>
-                <InfoValue>{user.email}</InfoValue>
-              </InfoRow>
-              {user.createdAt && (
-                <InfoRow>
-                  <InfoLabel>{t('profile.memberSince')}</InfoLabel>
-                  <InfoValue>{formatDate(user.createdAt, getLocale(), t)}</InfoValue>
-                </InfoRow>
-              )}
-              {user.updatedAt && (
-                <InfoRow>
-                  <InfoLabel>{t('profile.lastUpdated')}</InfoLabel>
-                  <InfoValue>{formatDate(user.updatedAt, getLocale(), t)}</InfoValue>
-                </InfoRow>
-              )}
-            </InfoSection>
-
-            <LogoutButton onPress={handleLogout} />
+            <SectionWrapper>
+              <SectionTitle title={t('settings.actions', 'Actions')} icon="options-outline" />
+              <SettingsSectionCard>
+                <SettingsTextButton
+                  label={t('settings.logout.title')}
+                  icon="log-out-outline"
+                  onPress={handleLogout}
+                  variant="destructive"
+                  noMarginBottom
+                />
+              </SettingsSectionCard>
+            </SectionWrapper>
           </>
         ) : (
-          <AuthSection>
-            <AvatarContainer disabled={true}>
-              <AvatarPlaceholder>
-                <Ionicons name="person" size={50} color="white" />
-              </AvatarPlaceholder>
-            </AvatarContainer>
-            <AuthTitle>{t('profile.auth.title')}</AuthTitle>
-            <AuthSubtitle>{t('profile.auth.subtitle')}</AuthSubtitle>
-            <AuthButtonContainer>
-              <ButtonWrapper>
-                <Button
-                  label={t('login.submit')}
-                  onPress={handleLoginPress}
-                  variant="primary"
-                />
-              </ButtonWrapper>
-              <ButtonWrapper>
-                <Button
-                  label={t('signup.submit')}
-                  onPress={handleSignupPress}
-                  variant="secondary"
-                />
-              </ButtonWrapper>
-            </AuthButtonContainer>
-          </AuthSection>
+          <SectionWrapper>
+            <SettingsSectionCard>
+              <ProfileCardContent>
+                <AvatarContainer disabled={true}>
+                  <AvatarPlaceholder>
+                    <Ionicons name="person" size={50} color="white" />
+                  </AvatarPlaceholder>
+                </AvatarContainer>
+                <AuthTitle>{t('profile.auth.title')}</AuthTitle>
+                <AuthSubtitle>{t('profile.auth.subtitle')}</AuthSubtitle>
+                <AuthButtonContainer>
+                  <ButtonWrapper>
+                    <Button
+                      label={t('login.submit')}
+                      onPress={handleLoginPress}
+                      variant="primary"
+                    />
+                  </ButtonWrapper>
+                  <ButtonWrapper>
+                    <Button
+                      label={t('signup.submit')}
+                      onPress={handleSignupPress}
+                      variant="secondary"
+                    />
+                  </ButtonWrapper>
+                </AuthButtonContainer>
+              </ProfileCardContent>
+            </SettingsSectionCard>
+          </SectionWrapper>
         )}
       </Content>
       <LoginBottomSheet
@@ -482,4 +506,3 @@ export const ProfileScreen: React.FC = () => {
     </Container>
   );
 };
-

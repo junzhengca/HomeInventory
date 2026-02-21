@@ -232,7 +232,7 @@
         },
         "versionPrefix": "現在のバージョン",
         "logout": {
-            "title": "ログアウト確認",
+            "title": "ログアウト",
             "message": "本当にログアウトしますか？",
             "cancel": "キャンセル",
             "confirm": "ログアウト"

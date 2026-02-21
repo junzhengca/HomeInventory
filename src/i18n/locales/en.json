@@ -280,7 +280,7 @@
     },
     "versionPrefix": "Current version",
     "logout": {
-      "title": "Confirm Logout",
+      "title": "Log Out",
       "message": "Are you sure you want to log out?",
       "cancel": "Cancel",
       "confirm": "Log Out"
