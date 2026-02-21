@@ -59,7 +59,7 @@ export const CategoryPreviewCard: React.FC<CategoryPreviewCardProps> = ({
   const theme = useTheme();
   const { t } = useTranslation();
 
-  const displayLabel = category.label || getInventoryCategoryDisplayName(category, t);
+  const displayLabel = getInventoryCategoryDisplayName(category, t);
 
   return (
     <BaseCard compact>

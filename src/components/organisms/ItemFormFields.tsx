@@ -11,7 +11,7 @@ import {
 } from '../atoms';
 import {
   LocationSelector,
-  CategoryFormSelector,
+  CategorySelector,
   StatusFormSelector,
   IconColorPicker,
 } from '../molecules';
@@ -52,7 +52,7 @@ export interface ItemFormFieldsProps {
   onColorSelect: (color: string) => void;
   onLocationSelect: (location: string | null) => void;
   onStatusSelect: (status: string) => void;
-  onCategorySelect: (categoryId: string) => void;
+  onCategorySelect: (categoryId: string | null) => void;
   onOpeningNestedModal?: (isOpening: boolean) => void;
   // Input handlers
   onNameChangeText: (text: string) => void;
@@ -159,10 +159,12 @@ export const ItemFormFields: React.FC<ItemFormFieldsProps> = ({
       </FormSection>
 
       <FormSection label={translations.fields.category}>
-        <CategoryFormSelector
+        <CategorySelector
           selectedCategoryId={selectedCategoryId}
           onSelect={onCategorySelect}
           onOpeningNestedModal={onOpeningNestedModal}
+          autoSelectFirst={true}
+          edgeToEdge={true}
         />
       </FormSection>
 

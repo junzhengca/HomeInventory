@@ -4,7 +4,7 @@ import styled from 'styled-components/native';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import { FormSection, UncontrolledInput } from '../atoms';
-import { LocationSelector, CategoryFormSelector, StatusFormSelector, CollapsibleSection, IconColorPicker } from '../molecules';
+import { LocationSelector, CategorySelector, StatusFormSelector, CollapsibleSection, IconColorPicker } from '../molecules';
 import { Ionicons } from '@expo/vector-icons';
 
 // ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ export interface EditItemFormFieldsProps {
     defaultWarningThreshold: string;
     // Handlers — selectors
     onLocationSelect: (location: string) => void;
-    onCategorySelect: (categoryId: string) => void;
+    onCategorySelect: (categoryId: string | null) => void;
     onStatusSelect: (statusId: string) => void;
     onIconSelect: (icon: string) => void;
     onColorSelect: (color: string) => void;
@@ -162,10 +162,12 @@ export const EditItemFormFields: React.FC<EditItemFormFieldsProps> = ({
                 label={translations.fields.category}
                 style={{ marginBottom: theme.spacing.sm }}
             >
-                <CategoryFormSelector
+                <CategorySelector
                     selectedCategoryId={selectedCategoryId}
                     onSelect={onCategorySelect}
                     onOpeningNestedModal={onOpeningNestedModal}
+                    autoSelectFirst={true}
+                    edgeToEdge={true}
                 />
             </FormSection>
 

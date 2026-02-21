@@ -115,7 +115,7 @@ export const CategoryField: React.FC<CategoryFieldProps> = ({
           </CategoryIcon>
         )}
         <CategoryLabel isSelected={selectedId === category.id}>
-          {category.label || getInventoryCategoryDisplayName(category, t)}
+          {getInventoryCategoryDisplayName(category, t)}
         </CategoryLabel>
       </CategoryButton>
     );

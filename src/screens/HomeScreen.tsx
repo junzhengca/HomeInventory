@@ -31,7 +31,7 @@ import {
   PageHeader,
   LocationFilter,
   StatusFilter,
-  CategoryFilter,
+  CategorySelector,
   ItemCard,
   EmptyState,
   LoginBottomSheet,
@@ -399,10 +399,11 @@ export const HomeScreen: React.FC = () => {
                 counts={locationCounts}
               />
               <FilterTitle>{t('common.category')}</FilterTitle>
-              <CategoryFilter
+              <CategorySelector
                 selectedCategoryId={selectedCategoryId}
                 onSelect={setSelectedCategoryId}
                 counts={categoryCounts}
+                showAllOption={true}
               />
             </CollapsibleFilterPanel>
             <ListContainer>

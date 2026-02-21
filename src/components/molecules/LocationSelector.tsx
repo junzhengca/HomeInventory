@@ -46,9 +46,9 @@ const LocationButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
 
   /* Shadow for iOS */
   shadow-color: #000;
-  shadow-offset: 5px 5px;
+  shadow-offset: 0px 2px;
   shadow-opacity: ${({ isSelected }: { isSelected: boolean }) => (isSelected ? 0.1 : 0)};
-  shadow-radius: 4px;
+  shadow-radius: 2px;
 `;
 
 const LocationLabel = styled(Text) <{ isSelected: boolean }>`
@@ -64,11 +64,8 @@ const CreateLocationButton = styled(TouchableOpacity)`
   justify-content: center;
   border-radius: 24px;
   width: 80px;
-  background-color: transparent;
+  background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   margin-right: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  border-width: 1px;
-  border-style: dotted;
-  border-color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
   align-self: stretch;
 `;
 
@@ -218,7 +215,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
                 >
                     <Ionicons
                         name="add"
-                        size={28}
+                        size={32}
                         color={theme.colors.textSecondary}
                     />
                 </CreateLocationButton>

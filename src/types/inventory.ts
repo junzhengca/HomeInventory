@@ -12,9 +12,7 @@ export interface HomeScopedCrudEntity {
 
 export interface InventoryCategory extends HomeScopedCrudEntity {
   name: string;
-  label?: string; // Deprecated - use name instead (kept for backward compatibility)
   description?: string;
-  isCustom?: boolean; // Flag to distinguish system vs user-created categories
   icon?: string; // Icon name
   color?: string; // Hex color code for category display
 }

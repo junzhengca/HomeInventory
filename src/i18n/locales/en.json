@@ -117,6 +117,13 @@
         "enterName": "Please enter a category name",
         "createFailed": "Failed to create category, please try again"
       }
+    },
+    "edit": {
+      "title": "Edit Category",
+      "submit": "Save Changes",
+      "errors": {
+        "updateFailed": "Failed to update category, please try again"
+      }
     }
   },
   "todoCategories": {

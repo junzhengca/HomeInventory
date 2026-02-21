@@ -567,7 +567,6 @@ export interface InventoryCategoryDto {
   description?: string;
   color?: string;
   icon?: string;
-  isCustom?: boolean;
   createdBy: string;
   updatedBy: string;
   createdAt: string;

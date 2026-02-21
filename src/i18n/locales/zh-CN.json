@@ -88,7 +88,27 @@
     "entertainment": "娱乐",
     "apparel": "服饰",
     "home": "家居",
-    "other": "其他"
+    "other": "其他",
+    "create": {
+      "title": "新建分类",
+      "subtitle": "为您的物品添加一个新分类",
+      "nameLabel": "分类名称",
+      "namePlaceholder": "例如：办公用品",
+      "colorLabel": "选择颜色",
+      "submit": "新建分类",
+      "errors": {
+        "title": "错误",
+        "enterName": "请输入分类名称",
+        "createFailed": "创建分类失败，请重试"
+      }
+    },
+    "edit": {
+      "title": "编辑分类",
+      "submit": "保存更改",
+      "errors": {
+        "updateFailed": "更新分类失败，请重试"
+      }
+    }
   },
   "todoCategories": {
     "all": "全部",

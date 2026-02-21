@@ -29,6 +29,15 @@ const StatusButton = styled(TouchableOpacity) <{ isSelected: boolean }>`
 }: StyledPropsWith<{ isSelected: boolean }>) =>
     isSelected ? theme.colors.primary : 'transparent'};
   flex: 1;
+
+  /* Elevation for Android */
+  elevation: ${({ isSelected }: { isSelected: boolean }) => (isSelected ? 4 : 0)};
+
+  /* Shadow for iOS */
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: ${({ isSelected }: { isSelected: boolean }) => (isSelected ? 0.1 : 0)};
+  shadow-radius: 2px;
 `;
 
 const StatusText = styled.Text<{ isSelected: boolean }>`

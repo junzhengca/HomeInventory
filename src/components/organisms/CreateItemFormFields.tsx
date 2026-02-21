@@ -4,7 +4,7 @@ import styled from 'styled-components/native';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import { FormSection, UncontrolledInput } from '../atoms';
-import { LocationSelector, CategoryFormSelector, BatchDetailsFormSection, DatePicker, StatusFormSelector, CollapsibleSection } from '../molecules';
+import { LocationSelector, CategorySelector, BatchDetailsFormSection, DatePicker, StatusFormSelector, CollapsibleSection } from '../molecules';
 
 // ---------------------------------------------------------------------------
 // Styled helpers
@@ -39,7 +39,7 @@ export interface CreateItemFormFieldsProps {
     defaultVendor: string;
     // Handlers — selectors
     onLocationSelect: (location: string) => void;
-    onCategorySelect: (categoryId: string) => void;
+    onCategorySelect: (categoryId: string | null) => void;
     // Handlers — name
     onNameChangeText: (text: string) => void;
     onNameBlur: () => void;
@@ -173,10 +173,12 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
 
             {/* Row 3 — Category */}
             <FormSection compact label={translations.fields.category}>
-                <CategoryFormSelector
+                <CategorySelector
                     selectedCategoryId={selectedCategoryId}
                     onSelect={onCategorySelect}
                     onOpeningNestedModal={onOpeningNestedModal}
+                    autoSelectFirst={true}
+                    edgeToEdge={true}
                 />
             </FormSection>
 

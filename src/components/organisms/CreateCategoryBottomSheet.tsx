@@ -58,12 +58,14 @@ const FooterContainer = styled.View<{
 
 export interface CreateCategoryBottomSheetProps {
     bottomSheetRef: React.RefObject<BottomSheetModal | null>;
+    categoryToEdit?: { id: string; name: string; color?: string; icon?: string } | null;
     onCategoryCreated?: (categoryId: string) => void;
     onClose?: () => void;
 }
 
 export const CreateCategoryBottomSheet: React.FC<CreateCategoryBottomSheetProps> = ({
     bottomSheetRef,
+    categoryToEdit,
     onCategoryCreated,
     onClose,
 }) => {
@@ -71,7 +73,7 @@ export const CreateCategoryBottomSheet: React.FC<CreateCategoryBottomSheetProps>
     const theme = useTheme();
     const insets = useSafeAreaInsets();
 
-    const { createCategory, loading: creatingCategory, error: categoriesError } = useInventoryCategories();
+    const { createCategory, updateCategory, loading: creatingCategory, error: categoriesError } = useInventoryCategories();
     const { isKeyboardVisible } = useKeyboardVisibility();
 
     const [name, setName] = useState('');
@@ -80,11 +82,17 @@ export const CreateCategoryBottomSheet: React.FC<CreateCategoryBottomSheetProps>
 
     const nameInputRef = useRef<TextInput>(null);
 
-    // Initialize with random color
+    // Initialize with selected category or random color
     useEffect(() => {
-        const randomColor = categoryColors[Math.floor(Math.random() * categoryColors.length)];
-        setSelectedColor(randomColor);
-    }, []);
+        if (categoryToEdit) {
+            setName(categoryToEdit.name);
+            setSelectedColor(categoryToEdit.color || categoryColors[Math.floor(Math.random() * categoryColors.length)]);
+        } else {
+            setName('');
+            const randomColor = categoryColors[Math.floor(Math.random() * categoryColors.length)];
+            setSelectedColor(randomColor);
+        }
+    }, [categoryToEdit]);
 
     const handleClose = useCallback(() => {
         Keyboard.dismiss();
@@ -92,12 +100,17 @@ export const CreateCategoryBottomSheet: React.FC<CreateCategoryBottomSheetProps>
 
         // Reset state on close
         setTimeout(() => {
-            setName('');
-            setSelectedColor(categoryColors[Math.floor(Math.random() * categoryColors.length)]);
+            if (categoryToEdit) {
+                setName(categoryToEdit.name);
+                setSelectedColor(categoryToEdit.color || categoryColors[Math.floor(Math.random() * categoryColors.length)]);
+            } else {
+                setName('');
+                setSelectedColor(categoryColors[Math.floor(Math.random() * categoryColors.length)]);
+            }
             setLocalError(null);
             nameInputRef.current?.clear();
         }, 300);
-    }, [bottomSheetRef]);
+    }, [bottomSheetRef, categoryToEdit]);
 
     const renderBackdrop = useCallback(
         (props: BottomSheetBackdropProps) => (
@@ -125,15 +138,21 @@ export const CreateCategoryBottomSheet: React.FC<CreateCategoryBottomSheetProps>
             setLocalError(null);
 
             try {
-                createCategory(trimmedName, undefined, selectedColor, 'folder-outline');
+                if (categoryToEdit) {
+                    updateCategory(categoryToEdit.id, trimmedName, undefined, selectedColor, categoryToEdit.icon || 'folder-outline');
+                } else {
+                    createCategory(trimmedName, undefined, selectedColor, 'folder-outline');
+                }
 
                 handleClose();
 
-                // Pass a temp ID since the creation is async without a direct return
-                onCategoryCreated?.('temp-id');
+                if (!categoryToEdit) {
+                    // Pass a temp ID since the creation is async without a direct return
+                    onCategoryCreated?.('temp-id');
+                }
             } catch (error) {
-                uiLogger.error('Failed to create category', error);
-                setLocalError(t('categories.create.errors.createFailed'));
+                uiLogger.error(categoryToEdit ? 'Failed to update category' : 'Failed to create category', error);
+                setLocalError(t(categoryToEdit ? 'categories.edit.errors.updateFailed' : 'categories.create.errors.createFailed'));
             }
         };
 
@@ -145,7 +164,7 @@ export const CreateCategoryBottomSheet: React.FC<CreateCategoryBottomSheetProps>
                     </ErrorBanner>
                 )}
                 <GlassButton
-                    text={t('categories.create.submit')}
+                    text={t(categoryToEdit ? 'categories.edit.submit' : 'categories.create.submit')}
                     onPress={handleSubmit}
                     tintColor={theme.colors.primary}
                     textColor={theme.colors.surface}
@@ -164,6 +183,8 @@ export const CreateCategoryBottomSheet: React.FC<CreateCategoryBottomSheetProps>
         creatingCategory,
         displayError,
         createCategory,
+        updateCategory,
+        categoryToEdit,
         handleClose,
         onCategoryCreated,
         t,
@@ -189,8 +210,13 @@ export const CreateCategoryBottomSheet: React.FC<CreateCategoryBottomSheetProps>
             onChange={(index) => {
                 if (index === -1) {
                     Keyboard.dismiss();
-                    setName('');
-                    setSelectedColor(categoryColors[Math.floor(Math.random() * categoryColors.length)]);
+                    if (categoryToEdit) {
+                        setName(categoryToEdit.name);
+                        setSelectedColor(categoryToEdit.color || categoryColors[Math.floor(Math.random() * categoryColors.length)]);
+                    } else {
+                        setName('');
+                        setSelectedColor(categoryColors[Math.floor(Math.random() * categoryColors.length)]);
+                    }
                     setLocalError(null);
                     nameInputRef.current?.clear();
                     onClose?.();
@@ -200,8 +226,8 @@ export const CreateCategoryBottomSheet: React.FC<CreateCategoryBottomSheetProps>
             <ContentContainer>
                 <BottomSheetView style={{ paddingBottom: footerHeight }}>
                     <BottomSheetHeader
-                        title={t('categories.create.title')}
-                        subtitle={t('categories.create.subtitle')}
+                        title={t(categoryToEdit ? 'categories.edit.title' : 'categories.create.title')}
+                        subtitle={categoryToEdit ? '' : t('categories.create.subtitle')}
                         onClose={handleClose}
                     />
                     <FormContainer>

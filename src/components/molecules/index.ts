@@ -26,8 +26,9 @@ export type { StatusFilterProps } from './StatusFilter';
 export { LocationFilter } from './LocationFilter';
 export type { LocationFilterProps } from './LocationFilter';
 
-export { CategoryFilter } from './CategoryFilter';
-export type { CategoryFilterProps } from './CategoryFilter';
+// CategoryFilter removed in favor of CategorySelector
+// export { CategoryFilter } from './CategoryFilter';
+// export type { CategoryFilterProps } from './CategoryFilter';
 
 export { TodoCategoryPicker } from './TodoCategoryPicker';
 export type { TodoCategoryPickerProps } from './TodoCategoryPicker';
@@ -43,8 +44,9 @@ export type { LocationSelectorProps } from './LocationSelector';
 export { StatusField } from './StatusField';
 export type { StatusFieldProps } from './StatusField';
 
-export { CategoryFormSelector } from './CategoryFormSelector';
-export type { CategoryFormSelectorProps } from './CategoryFormSelector';
+// CategoryFormSelector removed in favor of CategorySelector
+// export { CategoryFormSelector } from './CategoryFormSelector';
+// export type { CategoryFormSelectorProps } from './CategoryFormSelector';
 
 export { StatusFormSelector } from './StatusFormSelector';
 export type { StatusFormSelectorProps } from './StatusFormSelector';

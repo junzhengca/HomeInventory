@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { StyledProps } from '../../utils/styledComponents';
 import type { Category } from '../../types/inventory';
+import { DEFAULT_INVENTORY_CATEGORY_IDS } from '../../utils/inventoryCategoryI18n';
 import { uiLogger } from '../../utils/Logger';
 import { useInventoryCategories } from '../../store/hooks';
 import { useKeyboardVisibility } from '../../hooks';
@@ -49,7 +50,6 @@ type FormMode = 'list' | 'create' | 'edit';
 
 interface CategoryFormData {
   name: string;
-  label: string;
   icon: keyof typeof Ionicons.glyphMap;
 }
 
@@ -68,7 +68,7 @@ export const CategoryManagerBottomSheet: React.FC<
 
   // Filter to show only custom categories
   const categories = useMemo(
-    () => allCategories.filter((cat) => cat.isCustom !== false),
+    () => allCategories.filter((cat) => !DEFAULT_INVENTORY_CATEGORY_IDS.has(cat.id)),
     [allCategories]
   );
 
@@ -79,7 +79,6 @@ export const CategoryManagerBottomSheet: React.FC<
   // Form state
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
-    label: '',
     icon: categoryIcons[0] || 'cube-outline',
   });
 
@@ -95,7 +94,6 @@ export const CategoryManagerBottomSheet: React.FC<
   const resetForm = useCallback(() => {
     setFormData({
       name: '',
-      label: '',
       icon: categoryIcons[0] || 'cube-outline',
     });
     setEditingId(null);
@@ -110,7 +108,6 @@ export const CategoryManagerBottomSheet: React.FC<
   const handleStartEdit = useCallback((category: Category) => {
     setFormData({
       name: category.name,
-      label: category.label || '',
       icon: (category.icon as keyof typeof Ionicons.glyphMap) || categoryIcons[0] || 'cube-outline',
     });
     setEditingId(category.id);
@@ -132,13 +129,10 @@ export const CategoryManagerBottomSheet: React.FC<
 
     setIsLoading(true);
     try {
-      // Use name for both name and label (label is deprecated)
-      const displayName = formData.label.trim() || formData.name.trim();
-
       if (editingId) {
-        updateCategory(editingId, displayName, formData.label.trim(), undefined, formData.icon);
+        updateCategory(editingId, formData.name.trim(), undefined, undefined, formData.icon);
       } else {
-        createCategory(displayName, formData.label.trim(), undefined, formData.icon);
+        createCategory(formData.name.trim(), undefined, undefined, formData.icon);
       }
 
       resetForm();
@@ -327,17 +321,6 @@ export const CategoryManagerBottomSheet: React.FC<
                     setFormData((prev) => ({ ...prev, name: text }))
                   }
                   placeholder={t('categoryManager.placeholderEn')}
-                  placeholderTextColor={theme.colors.textLight}
-                />
-              </FormSection>
-
-              <FormSection label={t('categoryManager.nameZh')}>
-                <MemoizedInput
-                  value={formData.label}
-                  onChangeText={(text) =>
-                    setFormData((prev) => ({ ...prev, label: text }))
-                  }
-                  placeholder={t('categoryManager.placeholderZh')}
                   placeholderTextColor={theme.colors.textLight}
                 />
               </FormSection>
