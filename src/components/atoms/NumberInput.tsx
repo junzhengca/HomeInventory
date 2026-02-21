@@ -5,12 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import type { StyledProps } from '../../utils/styledComponents';
 import { UncontrolledInput } from './UncontrolledInput';
 import { MemoizedInput } from './MemoizedInput';
+import { UnitPicker } from './UnitPicker';
 
-const ContainerWrapper = styled(View)<{ hasError: boolean }>`
+const ContainerWrapper = styled(View) <{ hasError: boolean }>`
   position: relative;
 `;
 
-const Container = styled(View)<{ hasError: boolean }>`
+const Container = styled(View) <{ hasError: boolean }>`
   flex-direction: row;
   align-items: center;
   background-color: ${({ theme, hasError }: StyledProps & { hasError: boolean }) =>
@@ -22,8 +23,8 @@ const Container = styled(View)<{ hasError: boolean }>`
   overflow: hidden;
 `;
 
-const Button = styled(TouchableOpacity)<{ disabled?: boolean; hasError?: boolean }>`
-  width: 48px;
+const Button = styled(TouchableOpacity) <{ disabled?: boolean; hasError?: boolean }>`
+  width: 44px;
   height: 48px;
   align-items: center;
   justify-content: center;
@@ -36,6 +37,17 @@ const ButtonIcon = styled(Ionicons)`
 
 const InputContainer = styled(View)`
   flex: 1;
+`;
+
+const Separator = styled.View`
+  width: 1px;
+  height: 24px;
+  background-color: ${({ theme }: StyledProps) => theme.colors.border};
+`;
+
+const UnitPickerWrapper = styled.View`
+  height: 48px;
+  min-width: 60px;
 `;
 
 const ErrorContainer = styled(View)`
@@ -77,6 +89,9 @@ export interface NumberInputProps {
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
   error?: boolean;
   errorMessage?: string;
+  // Unit picker props
+  unitValue?: string;
+  onUnitChange?: (unit: string) => void;
 }
 
 /**
@@ -113,6 +128,8 @@ export const NumberInput = memo(
         keyboardType = 'numeric',
         error = false,
         errorMessage,
+        unitValue,
+        onUnitChange,
       },
       ref
     ) => {
@@ -235,14 +252,14 @@ export const NumberInput = memo(
                 activeOpacity={0.7}
                 hasError={error}
               >
-                <ButtonIcon name="remove" size={24} />
+                <ButtonIcon name="remove" size={20} />
               </Button>
               <InputContainer>
                 {isControlled ? (
                   <MemoizedInput
                     value={value || ''}
                     onChangeText={handleChangeText}
-                    onBlur={onBlur ?? (() => {})}
+                    onBlur={onBlur ?? (() => { })}
                     placeholder={placeholder}
                     placeholderTextColor={placeholderTextColor}
                     keyboardType={keyboardType}
@@ -256,7 +273,7 @@ export const NumberInput = memo(
                     ref={inputRef}
                     defaultValue={defaultValue || ''}
                     onChangeText={handleChangeText}
-                    onBlur={onBlur ?? (() => {})}
+                    onBlur={onBlur ?? (() => { })}
                     placeholder={placeholder}
                     placeholderTextColor={placeholderTextColor}
                     keyboardType={keyboardType}
@@ -273,8 +290,21 @@ export const NumberInput = memo(
                 activeOpacity={0.7}
                 hasError={error}
               >
-                <ButtonIcon name="add" size={24} />
+                <ButtonIcon name="add" size={20} />
               </Button>
+
+              {onUnitChange && (
+                <>
+                  <Separator />
+                  <UnitPickerWrapper>
+                    <UnitPicker
+                      variant="compact"
+                      value={unitValue || ''}
+                      onValueChange={onUnitChange}
+                    />
+                  </UnitPickerWrapper>
+                </>
+              )}
             </Container>
           </ContainerWrapper>
           {error && errorMessage && (

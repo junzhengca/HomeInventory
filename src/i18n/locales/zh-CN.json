@@ -301,6 +301,17 @@
       "warningThreshold": "0"
     },
     "batchSection": "批次详情",
+    "units": {
+      "pcs": "件",
+      "box": "盒",
+      "pack": "包",
+      "bottle": "瓶",
+      "kg": "kg",
+      "ml": "ml",
+      "L": "L",
+      "unit": "单位",
+      "custom": "自定义..."
+    },
     "manageCategories": "管理分类",
     "add": "添加",
     "submit": "放入小家",

@@ -269,6 +269,17 @@
             "warningThreshold": "0"
         },
         "batchSection": "バッチ詳細",
+        "units": {
+            "pcs": "個",
+            "box": "箱",
+            "pack": "パック",
+            "bottle": "本",
+            "kg": "kg",
+            "ml": "ml",
+            "L": "L",
+            "unit": "単位",
+            "custom": "カスタム..."
+        },
         "manageCategories": "カテゴリー管理",
         "add": "追加",
         "submit": "ホームに追加",

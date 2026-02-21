@@ -15,6 +15,7 @@ import { homeService } from '../src/services/HomeService';
 import { ErrorBottomSheet, SetupNicknameBottomSheet, ToastProvider, InvitationBottomSheet, OfflineBadge, OfflineExplanationBottomSheet } from '../src/components';
 import { AuthNavigator } from '../src/navigation/AuthNavigator';
 import { ContextMenuProvider } from '../src/components/organisms/ContextMenu/ContextMenuProvider';
+import { UnitPickerProvider } from '../src/components/organisms/UnitPicker/UnitPickerContext';
 import { ErrorDetails } from '../src/types/api';
 import i18n from '../src/i18n/i18n';
 import { store } from '../src/store';
@@ -256,9 +257,11 @@ export default function RootLayout() {
                         <ThemeProvider>
                             <ToastProvider>
                                 <ContextMenuProvider>
-                                    <BottomSheetModalProvider>
-                                        <AppInner />
-                                    </BottomSheetModalProvider>
+                                    <UnitPickerProvider>
+                                        <BottomSheetModalProvider>
+                                            <AppInner />
+                                        </BottomSheetModalProvider>
+                                    </UnitPickerProvider>
                                 </ContextMenuProvider>
                             </ToastProvider>
                         </ThemeProvider>

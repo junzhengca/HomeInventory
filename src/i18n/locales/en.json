@@ -318,6 +318,17 @@
       "warningThreshold": "0"
     },
     "batchSection": "Batch Details",
+    "units": {
+      "pcs": "pcs",
+      "box": "box",
+      "pack": "pack",
+      "bottle": "bottle",
+      "kg": "kg",
+      "ml": "ml",
+      "L": "L",
+      "unit": "unit",
+      "custom": "Custom..."
+    },
     "manageCategories": "Manage Categories",
     "add": "Add",
     "submit": "Add to Home",

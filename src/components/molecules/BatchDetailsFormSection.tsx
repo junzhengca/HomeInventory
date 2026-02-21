@@ -1,12 +1,12 @@
 import React from 'react';
-import { TextInput } from 'react-native';
+import { TextInput, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
 
 import type { StyledProps } from '../../utils/styledComponents';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useSettings } from '../../store/hooks';
-import { FormSection, UncontrolledInput, NumberInput } from '../atoms';
+import { FormSection, UncontrolledInput, NumberInput, UnitPicker } from '../atoms';
 import { getCurrencySymbol } from './CurrencySelector';
 
 // ---------------------------------------------------------------------------
@@ -52,26 +52,26 @@ const VendorInputWrapper = styled.View`
 // ---------------------------------------------------------------------------
 
 export interface BatchDetailsFormSectionProps {
-    /** Default values for uncontrolled inputs (IME-safe) */
-    defaultPrice: string;
-    defaultAmount: string;
-    defaultUnit: string;
-    defaultVendor: string;
-    /** Refs for each input */
-    priceInputRef: React.RefObject<TextInput | null>;
-    amountInputRef: React.RefObject<TextInput | null>;
-    unitInputRef: React.RefObject<TextInput | null>;
-    vendorInputRef: React.RefObject<TextInput | null>;
-    /** Change handlers */
-    onPriceChange: (text: string) => void;
-    onAmountChange: (text: string) => void;
-    onUnitChange: (text: string) => void;
-    onVendorChange: (text: string) => void;
-    /** Blur handlers */
-    onPriceBlur: () => void;
-    onAmountBlur: () => void;
-    onUnitBlur: () => void;
-    onVendorBlur: () => void;
+  /** Default values for uncontrolled inputs (IME-safe) */
+  defaultPrice: string;
+  defaultAmount: string;
+  defaultUnit: string;
+  defaultVendor: string;
+  /** Refs for each input */
+  priceInputRef: React.RefObject<TextInput | null>;
+  amountInputRef: React.RefObject<TextInput | null>;
+  unitInputRef?: React.RefObject<TextInput | null>;
+  vendorInputRef: React.RefObject<TextInput | null>;
+  /** Change handlers */
+  onPriceChange: (text: string) => void;
+  onAmountChange: (text: string) => void;
+  onUnitChange: (text: string) => void;
+  onVendorChange: (text: string) => void;
+  /** Blur handlers */
+  onPriceBlur: () => void;
+  onAmountBlur: () => void;
+  onUnitBlur: () => void;
+  onVendorBlur: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,104 +81,98 @@ export interface BatchDetailsFormSectionProps {
 /**
  * Shared form section for item batch details.
  *
- * Layout (inspired by the reference design):
+ * Updated Layout:
  * ┌──────────────────────────────────────────┐
  * │  Batch Details (section label)           │
  * │  ┌──────────────┐  ┌──────────────────┐  │
- * │  │ Price ($)     │  │ Amount  [- 1 +]  │  │
+ * │  │ Price ($)     │  │ Amount + Unit    │  │
  * │  └──────────────┘  └──────────────────┘  │
- * │  ┌────────┐  ┌──────────────────────────┐│
- * │  │ Unit   │  │ Vendor                   ││
- * │  └────────┘  └──────────────────────────┘│
+ * │  ┌──────────────────────────────────────┐│
+ * │  │ Vendor                               ││
+ * │  └──────────────────────────────────────┘│
  * └──────────────────────────────────────────┘
- *
- * Reuses existing `NumberInput` (with +/- stepper) for the amount field
- * and `UncontrolledInput` for IME-safe text entry on all other fields.
  */
 export const BatchDetailsFormSection: React.FC<BatchDetailsFormSectionProps> = ({
-    defaultPrice,
-    defaultAmount,
-    defaultUnit,
-    defaultVendor,
-    priceInputRef,
-    amountInputRef,
-    unitInputRef,
-    vendorInputRef,
-    onPriceChange,
-    onAmountChange,
-    onUnitChange,
-    onVendorChange,
-    onPriceBlur,
-    onAmountBlur,
-    onUnitBlur,
-    onVendorBlur,
+  defaultPrice,
+  defaultAmount,
+  defaultUnit,
+  defaultVendor,
+  priceInputRef,
+  amountInputRef,
+  vendorInputRef,
+  onPriceChange,
+  onAmountChange,
+  onUnitChange,
+  onVendorChange,
+  onPriceBlur,
+  onAmountBlur,
+  onVendorBlur,
 }) => {
-    const theme = useTheme();
-    const { t } = useTranslation();
-    const { settings } = useSettings();
+  const theme = useTheme();
+  const { t } = useTranslation();
+  const { settings } = useSettings();
 
-    const currencySymbol = getCurrencySymbol(settings.currency);
+  const [unitValue, setUnitValue] = React.useState(defaultUnit);
 
-    return (
-        <FormSection label={t('createItem.batchSection')}>
-            {/* Row 1 — Price + Amount */}
-            <Row>
-                <PriceColumn>
-                    <SubLabel>
-                        {t('createItem.fields.price')} ({currencySymbol})
-                    </SubLabel>
-                    <UncontrolledInput
-                        ref={priceInputRef}
-                        defaultValue={defaultPrice}
-                        onChangeText={onPriceChange}
-                        onBlur={onPriceBlur}
-                        placeholder={t('createItem.placeholders.price')}
-                        placeholderTextColor={theme.colors.textLight}
-                        keyboardType="numeric"
-                    />
-                </PriceColumn>
+  React.useEffect(() => {
+    setUnitValue(defaultUnit);
+  }, [defaultUnit]);
 
-                <AmountColumn>
-                    <SubLabel>{t('createItem.fields.amount')}</SubLabel>
-                    <NumberInput
-                        ref={amountInputRef}
-                        defaultValue={defaultAmount}
-                        onChangeText={onAmountChange}
-                        onBlur={onAmountBlur}
-                        placeholder={t('createItem.placeholders.amount')}
-                        placeholderTextColor={theme.colors.textLight}
-                        keyboardType="numeric"
-                        min={1}
-                    />
-                </AmountColumn>
-            </Row>
+  const handleUnitSelect = (newUnit: string) => {
+    setUnitValue(newUnit);
+    onUnitChange(newUnit);
+  };
 
-            {/* Row 2 — Unit + Vendor */}
-            <UnitRow>
-                <UnitInputWrapper>
-                    <SubLabel>{t('createItem.fields.unit')}</SubLabel>
-                    <UncontrolledInput
-                        ref={unitInputRef}
-                        defaultValue={defaultUnit}
-                        onChangeText={onUnitChange}
-                        onBlur={onUnitBlur}
-                        placeholder={t('createItem.placeholders.unit')}
-                        placeholderTextColor={theme.colors.textLight}
-                    />
-                </UnitInputWrapper>
+  const currencySymbol = getCurrencySymbol(settings.currency);
 
-                <VendorInputWrapper>
-                    <SubLabel>{t('createItem.fields.vendor')}</SubLabel>
-                    <UncontrolledInput
-                        ref={vendorInputRef}
-                        defaultValue={defaultVendor}
-                        onChangeText={onVendorChange}
-                        onBlur={onVendorBlur}
-                        placeholder={t('createItem.placeholders.vendor')}
-                        placeholderTextColor={theme.colors.textLight}
-                    />
-                </VendorInputWrapper>
-            </UnitRow>
-        </FormSection>
-    );
+  return (
+    <FormSection label={t('createItem.batchSection')}>
+      {/* Amount Row (Quantity) */}
+      <View>
+        <SubLabel>{t('createItem.fields.amount')}</SubLabel>
+        <NumberInput
+          ref={amountInputRef}
+          defaultValue={defaultAmount}
+          onChangeText={onAmountChange}
+          onBlur={onAmountBlur}
+          placeholder={t('createItem.placeholders.amount')}
+          placeholderTextColor={theme.colors.textLight}
+          keyboardType="numeric"
+          min={1}
+          unitValue={unitValue}
+          onUnitChange={handleUnitSelect}
+        />
+      </View>
+
+      {/* Price & Vendor Row */}
+      <Row style={{ marginTop: theme.spacing.sm }}>
+        <PriceColumn>
+          <SubLabel>
+            {t('createItem.fields.price')} ({currencySymbol})
+          </SubLabel>
+          <UncontrolledInput
+            ref={priceInputRef}
+            defaultValue={defaultPrice}
+            onChangeText={onPriceChange}
+            onBlur={onPriceBlur}
+            placeholder={t('createItem.placeholders.price')}
+            placeholderTextColor={theme.colors.textLight}
+            keyboardType="numeric"
+          />
+        </PriceColumn>
+
+        <VendorInputWrapper style={{ flex: 1 }}>
+          <SubLabel>{t('createItem.fields.vendor')}</SubLabel>
+          <UncontrolledInput
+            ref={vendorInputRef}
+            defaultValue={defaultVendor}
+            onChangeText={onVendorChange}
+            onBlur={onVendorBlur}
+            placeholder={t('createItem.placeholders.vendor')}
+            placeholderTextColor={theme.colors.textLight}
+          />
+        </VendorInputWrapper>
+      </Row>
+    </FormSection>
+  );
 };

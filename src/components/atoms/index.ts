@@ -37,6 +37,9 @@ export type { UncontrolledInputProps } from './UncontrolledInput';
 export { NumberInput } from './NumberInput';
 export type { NumberInputProps } from './NumberInput';
 
+export { UnitPicker } from './UnitPicker';
+export type { UnitPickerProps } from './UnitPicker';
+
 // Toggle component
 export { Toggle } from './Toggle';
 export type { ToggleProps } from './Toggle';

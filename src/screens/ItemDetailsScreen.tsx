@@ -65,22 +65,27 @@ const EmptyBatchText = styled(Text)`
 const HeaderCard = styled(View)`
   background-color: ${({ theme }: StyledProps) => theme.colors.surface};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.lg}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.lg}px;
+  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
   margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
 `;
 
 const ItemName = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.xl}px;
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.bold};
   color: ${({ theme }: StyledProps) => theme.colors.text};
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.sm}px;
 `;
 
 const BadgesContainer = styled(View)`
   flex-direction: row;
   flex-wrap: wrap;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
   gap: 8px;
+`;
+
+const BadgesAndQuantityRow = styled(View)`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const Badge = styled(View) <{ color?: string }>`
@@ -95,7 +100,7 @@ const Badge = styled(View) <{ color?: string }>`
 const BadgeText = styled(Text)`
   color: white;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 600;
 `;
 
 const TotalAmountRow = styled(View)`
@@ -104,13 +109,13 @@ const TotalAmountRow = styled(View)`
 `;
 
 const TotalAmountLabel = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
   color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
   margin-right: 4px;
 `;
 
 const TotalAmountValue = styled(Text)`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.lg}px;
+  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
   font-weight: ${({ theme }: StyledProps) => theme.typography.fontWeight.medium};
   color: ${({ theme }: StyledProps) => theme.colors.text};
 `;
@@ -334,23 +339,27 @@ export const ItemDetailsScreen: React.FC = () => {
           <HeaderCard>
             <ItemName>{item.name}</ItemName>
 
-            <BadgesContainer>
-              <Badge color={theme.colors.primary}>
-                <BadgeText>{locationName}</BadgeText>
-              </Badge>
-              {categoryName ? (
-                <Badge color={categoryColor || theme.colors.secondary}>
-                  <BadgeText>{categoryName}</BadgeText>
-                </Badge>
-              ) : null}
-            </BadgesContainer>
+            <BadgesAndQuantityRow>
+              <BadgesContainer>
+                {locationName ? (
+                  <Badge color={theme.colors.primary}>
+                    <BadgeText>{t('common.location')}: {locationName}</BadgeText>
+                  </Badge>
+                ) : null}
+                {categoryName ? (
+                  <Badge color={categoryColor || theme.colors.secondary}>
+                    <BadgeText>{t('common.category')}: {categoryName}</BadgeText>
+                  </Badge>
+                ) : null}
+              </BadgesContainer>
 
-            <TotalAmountRow>
-              <TotalAmountLabel>{t('itemDetails.fields.quantity')} : </TotalAmountLabel>
-              <TotalAmountValue>
-                {totalAmount}{item.batches && item.batches.length > 0 && item.batches[0].unit ? ` ${item.batches[0].unit}` : ''}
-              </TotalAmountValue>
-            </TotalAmountRow>
+              <TotalAmountRow>
+                <TotalAmountLabel>{t('itemDetails.fields.quantity')} : </TotalAmountLabel>
+                <TotalAmountValue>
+                  {totalAmount}{item.batches && item.batches.length > 0 && item.batches[0].unit ? ` ${item.batches[0].unit}` : ''}
+                </TotalAmountValue>
+              </TotalAmountRow>
+            </BadgesAndQuantityRow>
           </HeaderCard>
 
 

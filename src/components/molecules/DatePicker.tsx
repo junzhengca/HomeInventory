@@ -92,7 +92,7 @@ const Button = styled(TouchableOpacity).attrs({ activeOpacity: 0.7 }) <{ $varian
   align-items: center;
   justify-content: center;
   min-height: 44;
-  border-width: ({ $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
+  border-width: ${({ $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
     $variant === 'secondary' ? 1 : 0}px;
   border-color: ${({ theme, $variant }: StyledPropsWith<{ $variant?: 'primary' | 'secondary' }>) =>
     $variant === 'secondary' ? theme.colors.border : 'transparent'};

@@ -24,7 +24,7 @@ export interface UseAddBatchFormOptions {
 
 const DEFAULT_PRICE = '';
 const DEFAULT_AMOUNT = '1';
-const DEFAULT_UNIT = '';
+const DEFAULT_UNIT = 'pcs';
 const DEFAULT_VENDOR = '';
 const DEFAULT_NOTE = '';
 

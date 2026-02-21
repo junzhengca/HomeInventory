@@ -38,7 +38,7 @@ export interface UseCreateItemFormOptions {
 const DEFAULT_LOCATION = '';
 const DEFAULT_PRICE = '';
 const DEFAULT_AMOUNT = '1';
-const DEFAULT_UNIT = '';
+const DEFAULT_UNIT = 'pcs';
 const DEFAULT_VENDOR = '';
 const DEFAULT_STATUS = 'using';
 const DEFAULT_WARNING_THRESHOLD = '';
