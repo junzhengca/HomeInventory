@@ -105,7 +105,11 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
                             size={24}
                             color={theme.colors.primary}
                         />
-                        <LocationLabel isSelected={selectedLocationId === null}>
+                        <LocationLabel
+                            isSelected={selectedLocationId === null}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                        >
                             {t('categories.all')}
                         </LocationLabel>
                     </LocationButton>
@@ -125,7 +129,11 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
                                 size={24}
                                 color={theme.colors.primary}
                             />
-                            <LocationLabel isSelected={isSelected}>
+                            <LocationLabel
+                                isSelected={isSelected}
+                                numberOfLines={1}
+                                ellipsizeMode="tail"
+                            >
                                 {getLocationDisplayName(location, t)}
                             </LocationLabel>
                         </LocationButton>
