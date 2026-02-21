@@ -35,6 +35,7 @@ import {
   SignupBottomSheet,
   HomeSwitcher,
   TodoCategoryPicker,
+  GlassButton,
 } from '../components';
 import { useTodos, useAuth, useTodoCategories } from '../store/hooks';
 import { useHome } from '../hooks/useHome';
@@ -96,19 +97,6 @@ const ToggleNotesButton = styled(TouchableOpacity) <{ isActive: boolean }>`
 `;
 
 // Banner Components
-const BannerContainer = styled(View) <{ mode: TodoMode }>`
-  background-color: ${({ theme, mode }: StyledPropsWith<{ mode: TodoMode }>) =>
-    mode === 'shopping' ? theme.colors.primary : theme.colors.surface};
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.xl}px;
-  padding: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  margin-bottom: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  ${({ mode, theme }: StyledPropsWith<{ mode: TodoMode }>) =>
-    mode === 'planning' ? `border-width: 1px; border-color: ${theme.colors.borderLight};` : ''}
-`;
-
 const BannerContent = styled(View)`
   flex-direction: row;
   align-items: center;
@@ -144,20 +132,9 @@ const BannerSubtitle = styled(Text) <{ mode: TodoMode }>`
     mode === 'shopping' ? 'rgba(255, 255, 255, 0.8)' : theme.colors.textSecondary};
 `;
 
-const BannerButton = styled(TouchableOpacity) <{ mode: TodoMode }>`
-  background-color: ${({ theme, mode }: StyledPropsWith<{ mode: TodoMode }>) =>
-    mode === 'shopping' ? '#FFFFFF' : theme.colors.primary};
-  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
-  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
-  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.lg}px;
-`;
-
-const BannerButtonText = styled(Text) <{ mode: TodoMode }>`
-  font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.sm}px;
-  font-weight: 600;
-  color: ${({ theme, mode }: StyledPropsWith<{ mode: TodoMode }>) =>
-    mode === 'shopping' ? theme.colors.primary : '#FFFFFF'};
-`;
+const AnimatedIconContainer = Animated.createAnimatedComponent(IconContainer);
+const AnimatedBannerTitle = Animated.createAnimatedComponent(BannerTitle);
+const AnimatedBannerSubtitle = Animated.createAnimatedComponent(BannerSubtitle);
 
 const AddButton = styled(TouchableOpacity)<{ disabled?: boolean }>`
   background-color: ${({ theme, disabled }: StyledPropsWith<{ disabled?: boolean }>) =>
@@ -285,6 +262,9 @@ export const NotesScreen: React.FC = () => {
   const notesHeight = useRef(new Animated.Value(0)).current;
   const notesOpacity = useRef(new Animated.Value(0)).current;
 
+  // Banner mode transition (0 = planning, 1 = shopping)
+  const bannerProgress = useRef(new Animated.Value(0)).current;
+
   // Grouped todos for shopping mode
   const groupedPendingTodos = useMemo(() => {
     if (mode !== 'shopping') return {};
@@ -326,6 +306,15 @@ export const NotesScreen: React.FC = () => {
   useEffect(() => {
     refreshTodos();
   }, [refreshTodos]);
+
+  // Animate banner when switching between planning and shopping
+  useEffect(() => {
+    Animated.timing(bannerProgress, {
+      toValue: mode === 'shopping' ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [mode]);
 
   // Animate notes field show/hide
   // Using non-native driver for both to avoid conflicts when mixing with height
@@ -538,34 +527,78 @@ export const NotesScreen: React.FC = () => {
               keyboardDismissMode="interactive"
               keyboardShouldPersistTaps="handled"
             >
-              <BannerContainer mode={mode}>
+              <Animated.View
+                style={[
+                  {
+                    borderRadius: theme.borderRadius.xl,
+                    padding: theme.spacing.md,
+                    marginBottom: theme.spacing.md,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderWidth: 1,
+                    overflow: 'hidden',
+                  },
+                  {
+                    backgroundColor: bannerProgress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [theme.colors.surface, theme.colors.primary],
+                    }),
+                    borderColor: bannerProgress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [theme.colors.borderLight, theme.colors.primary],
+                    }),
+                  },
+                ]}
+              >
                 <BannerContent>
-                  <IconContainer mode={mode}>
+                  <AnimatedIconContainer
+                    mode={mode}
+                    style={{
+                      backgroundColor: bannerProgress.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [theme.colors.background, 'rgba(255, 255, 255, 0.2)'],
+                      }),
+                    }}
+                  >
                     <Ionicons
                       name={mode === 'shopping' ? 'cart' : 'grid-outline'}
                       size={18}
                       color={mode === 'shopping' ? '#FFFFFF' : theme.colors.primary}
                     />
-                  </IconContainer>
+                  </AnimatedIconContainer>
                   <TextContainer>
-                    <BannerTitle mode={mode}>
+                    <AnimatedBannerTitle
+                      mode={mode}
+                      style={{
+                        color: bannerProgress.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [theme.colors.text, '#FFFFFF'],
+                        }),
+                      }}
+                    >
                       {t(`notes.banner.${mode}.title`)}
-                    </BannerTitle>
-                    <BannerSubtitle mode={mode}>
+                    </AnimatedBannerTitle>
+                    <AnimatedBannerSubtitle
+                      mode={mode}
+                      style={{
+                        color: bannerProgress.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [theme.colors.textSecondary, 'rgba(255, 255, 255, 0.8)'],
+                        }),
+                      }}
+                    >
                       {t(`notes.banner.${mode}.subtitle`)}
-                    </BannerSubtitle>
+                    </AnimatedBannerSubtitle>
                   </TextContainer>
                 </BannerContent>
-                <BannerButton
-                  mode={mode}
+                <GlassButton
                   onPress={() => setMode(mode === 'planning' ? 'shopping' : 'planning')}
-                  activeOpacity={0.8}
-                >
-                  <BannerButtonText mode={mode}>
-                    {t(`notes.banner.${mode}.button`)}
-                  </BannerButtonText>
-                </BannerButton>
-              </BannerContainer>
+                  text={t(`notes.banner.${mode}.button`)}
+                  tintColor={mode === 'shopping' ? '#FFFFFF' : theme.colors.primary}
+                  textColor={mode === 'shopping' ? theme.colors.primary : '#FFFFFF'}
+                />
+              </Animated.View>
 
               {mode === 'planning' ? (
                 <>
