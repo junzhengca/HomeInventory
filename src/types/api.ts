@@ -20,6 +20,11 @@ export interface GoogleAuthRequest {
   platform: 'ios' | 'android';
 }
 
+export interface AppleAuthRequest {
+  idToken: string;
+  platform: 'ios' | 'android';
+}
+
 export interface UploadImageRequest {
   image: string;
 }

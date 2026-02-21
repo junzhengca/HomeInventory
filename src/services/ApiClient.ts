@@ -2,6 +2,7 @@ import {
   LoginRequest,
   SignupRequest,
   GoogleAuthRequest,
+  AppleAuthRequest,
   UploadImageRequest,
   UpdateAccountSettingsRequest,
   RecognizeItemRequest,
@@ -465,6 +466,19 @@ class ApiClient {
   async googleAuth(idToken: string, platform: 'ios' | 'android'): Promise<AuthResponse> {
     const request: GoogleAuthRequest = { idToken, platform };
     return this.request<AuthResponse>('/api/auth/google', {
+      method: 'POST',
+      body: request,
+      requiresAuth: false,
+    });
+  }
+
+  /**
+   * POST /api/auth/apple
+   * Authenticate with Apple Sign In
+   */
+  async appleAuth(idToken: string, platform: 'ios' | 'android'): Promise<AuthResponse> {
+    const request: AppleAuthRequest = { idToken, platform };
+    return this.request<AuthResponse>('/api/auth/apple', {
       method: 'POST',
       body: request,
       requiresAuth: false,

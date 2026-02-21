@@ -11,6 +11,7 @@ interface GlassButtonProps {
     icon?: keyof typeof Ionicons.glyphMap;
     text?: string;
     tintColor?: string;
+    textColor?: string;
     style?: StyleProp<ViewStyle>;
     disabled?: boolean;
 }
@@ -42,11 +43,11 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
     icon,
     text,
     tintColor,
+    textColor,
     style,
     disabled
-}) => {
-    const theme = useTheme();
-    const iconColor = tintColor || theme.colors.text;
+}) => {    const theme = useTheme();
+    const iconColor = textColor || tintColor || theme.colors.text;
 
     return (
         <View style={style}>
@@ -54,9 +55,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
                 key={theme.colors.background} // Force re-render on theme change
                 glassEffectStyle={'regular'}
                 isInteractive={true}
-                style={{
-                    backgroundColor: tintColor ? `${tintColor}20` : 'rgba(255, 255, 255, 0.05)',
-                }}
+                tintColor={tintColor}
             >
                 <ContentContainer
                     onPress={onPress}
@@ -73,7 +72,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
                         />
                     )}
                     {text && (
-                        <ButtonText tintColor={tintColor}>
+                        <ButtonText tintColor={textColor}>
                             {text}
                         </ButtonText>
                     )}

@@ -112,6 +112,83 @@ Ensure your `app.json` has the scheme configured (it should already be set):
 
 You can set environment variables by creating a `.env` file in the project root, or by setting them in your shell environment before running the app.
 
+### Apple Sign In
+
+The app supports **Apple Sign In** for iOS devices (iOS 13+). Apple Sign In uses native iOS authentication and doesn't require separate client IDs like Google OAuth.
+
+**Required Environment Variables:**
+- None required for frontend (Apple Sign In uses the app's bundle identifier automatically)
+
+**Setting up Apple Sign In:**
+
+**Step 1: Enable Sign in with Apple Capability in Xcode**
+
+1. Open your project in Xcode (or run `npx expo prebuild` to generate native projects)
+2. Select your iOS target
+3. Go to "Signing & Capabilities" tab
+4. Click "+ Capability"
+5. Add "Sign in with Apple" capability
+6. Ensure your bundle identifier matches: `com.cluttrapp.cluttr`
+
+**Step 2: Configure Sign in with Apple in Apple Developer Console**
+
+1. Go to [Apple Developer Console](https://developer.apple.com/account/)
+2. Navigate to "Certificates, Identifiers & Profiles"
+3. Select "Identifiers" → "App IDs"
+4. Find your app identifier (`com.cluttrapp.cluttr`) or create it if it doesn't exist
+5. Edit the app identifier and enable "Sign in with Apple" capability
+6. Save the changes
+
+**Step 3: Configure Backend Environment Variable**
+
+The backend needs your app's bundle identifier to verify Apple ID tokens:
+
+1. Set `APPLE_CLIENT_ID` or `APPLE_BUNDLE_ID` environment variable in your backend `.env` file:
+   ```env
+   APPLE_CLIENT_ID=com.cluttrapp.cluttr
+   ```
+   Or:
+   ```env
+   APPLE_BUNDLE_ID=com.cluttrapp.cluttr
+   ```
+
+**Step 4: Verify app.json Configuration**
+
+Ensure your `app.json` has the correct bundle identifier:
+
+```json
+{
+  "expo": {
+    "ios": {
+      "bundleIdentifier": "com.cluttrapp.cluttr"
+    }
+  }
+}
+```
+
+**Important Notes:**
+- Apple Sign In is **only available on iOS devices** (iOS 13+)
+- The app will show an error message on Android devices indicating Apple Sign In is iOS-only
+- Apple may not provide email on subsequent sign-ins (only on first authorization)
+- The backend handles users by Apple ID (`appleId`) when email is not available
+- No additional client IDs or redirect URIs are needed (unlike Google OAuth)
+
+**Troubleshooting:**
+
+1. **"Apple Sign In is not available on this device"**
+   - Ensure you're testing on a real iOS device (not simulator) or iOS 13+ simulator
+   - Verify the device has an Apple ID signed in
+   - Check that "Sign in with Apple" capability is enabled in Xcode
+
+2. **"Sign in with Apple capability not found"**
+   - Run `npx expo prebuild` to generate native iOS project
+   - Manually add the capability in Xcode under "Signing & Capabilities"
+
+3. **Backend token verification fails**
+   - Verify `APPLE_CLIENT_ID` or `APPLE_BUNDLE_ID` is set in backend environment
+   - Ensure the bundle identifier matches exactly: `com.cluttrapp.cluttr`
+   - Check backend logs for token verification errors
+
 ## Installation
 
 ### Install Dependencies

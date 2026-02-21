@@ -34,6 +34,7 @@ const CHECK_AUTH = 'auth/CHECK_AUTH';
 const LOGIN = 'auth/LOGIN';
 const SIGNUP = 'auth/SIGNUP';
 const GOOGLE_LOGIN = 'auth/GOOGLE_LOGIN';
+const APPLE_LOGIN = 'auth/APPLE_LOGIN';
 const LOGOUT = 'auth/LOGOUT';
 const UPDATE_USER = 'auth/UPDATE_USER';
 const INITIALIZE_API_CLIENT = 'auth/INITIALIZE_API_CLIENT';
@@ -52,6 +53,10 @@ export const signup = (email: string, password: string) => ({
 });
 export const googleLogin = (idToken: string, platform: string) => ({
   type: GOOGLE_LOGIN,
+  payload: { idToken, platform },
+});
+export const appleLogin = (idToken: string, platform: string) => ({
+  type: APPLE_LOGIN,
   payload: { idToken, platform },
 });
 export const logout = () => ({ type: LOGOUT });
@@ -635,6 +640,123 @@ function* googleLoginSaga(action: { type: string; payload: { idToken: string; pl
   }
 }
 
+function* appleLoginSaga(action: { type: string; payload: { idToken: string; platform: string } }): Generator {
+  const { idToken, platform } = action.payload;
+  const apiClient: ApiClient = (yield select((state: RootState) => state.auth.apiClient)) as ApiClient;
+
+  // Clear any previous errors and set loading
+  yield put(setError(null));
+  yield put(setLoading(true));
+
+  if (!apiClient) {
+    const errorMessage = 'API client not initialized';
+    yield put(setError(errorMessage));
+    yield put(setLoading(false));
+    return;
+  }
+
+  try {
+    const response = (yield call(apiClient.appleAuth.bind(apiClient), idToken, platform as 'ios' | 'android')) as { accessToken: string } | null;
+
+    // Validate token before saving
+    if (!response?.accessToken) {
+      authLogger.error('Invalid Apple login response', response);
+      const errorMessage = 'Invalid Apple login response: missing accessToken';
+      yield put(setError(errorMessage));
+      yield put(setLoading(false));
+      return;
+    }
+
+    // Save token
+    const saved = (yield call([authService, 'saveAuthTokens'], response.accessToken)) as boolean;
+    if (!saved) {
+      const errorMessage = 'Failed to save authentication token';
+      yield put(setError(errorMessage));
+      yield put(setLoading(false));
+      return;
+    }
+
+    // Verify token was saved
+    const savedTokens = (yield call([authService, 'getAuthTokens'])) as { accessToken: string } | null;
+    if (!savedTokens || !savedTokens.accessToken) {
+      const errorMessage = 'Failed to save authentication token';
+      yield put(setError(errorMessage));
+      yield put(setLoading(false));
+      return;
+    }
+
+    // Set token in API client
+    apiClient.setAuthToken(response.accessToken);
+
+    // Always get full user info from /me endpoint to ensure we have complete data including avatar
+    const userData: User = (yield call(apiClient.getCurrentUser.bind(apiClient))) as User;
+
+    authLogger.info('User data from /me endpoint', {
+      hasAvatar: !!userData?.avatarUrl,
+      avatarUrl: userData?.avatarUrl,
+      email: userData?.email,
+    });
+
+    // Save user
+    if (userData) {
+      yield call([authService, 'saveUser'], userData);
+      yield put(setUser(userData));
+
+      // Check if nickname is missing
+      if (!userData.nickname || userData.nickname.trim() === '') {
+        yield put(setShowNicknameSetup(true));
+      } else {
+        yield put(setShowNicknameSetup(false));
+      }
+    }
+
+    yield put(setAuthenticated(true));
+    yield put(setError(null)); // Clear error on success
+
+    // Fetch homes from server using CRUD endpoint
+    yield call([homeService, homeService.fetchHomes], apiClient);
+
+    // Ensure we have a default home if none exists
+    yield call(ensureDefaultHomeIfNeeded, apiClient);
+
+    // Restore active home ID or select default
+    yield call(restoreOrSelectActiveHome);
+
+    // Load data with correct context
+    yield put(loadItems());
+    yield put(loadTodos());
+    yield put(loadTodoCategoriesAction());
+    yield put(loadCategories());
+
+    yield put(setLoading(false));
+
+    // Show success toast
+    const toast = getGlobalToast();
+    if (toast) {
+      toast(i18n.t('toast.loginSuccess'), 'success');
+    }
+
+    authLogger.info('Apple login successful');
+  } catch (error) {
+    authLogger.error('Apple login error', error);
+    const errorMessage = error instanceof Error ? error.message : 'Apple login failed. Please try again.';
+
+    // Handle specific error cases
+    const errorWithStatus = error as Error & { status?: number; responseBody?: unknown };
+    if (errorWithStatus.status === 409) {
+      // Email already registered with email/password
+      yield put(setError('Email already registered with email/password. Please login with email and password.'));
+    } else if (errorWithStatus.status === 401) {
+      // Invalid Apple ID token
+      yield put(setError('Invalid Apple account. Please try again.'));
+    } else {
+      yield put(setError(errorMessage));
+    }
+
+    yield put(setLoading(false));
+  }
+}
+
 function* logoutSaga() {
   authLogger.info('logout() called - clearing auth');
 
@@ -709,6 +831,7 @@ export function* authSaga() {
   yield takeLatest(LOGIN, loginSaga);
   yield takeLatest(SIGNUP, signupSaga);
   yield takeLatest(GOOGLE_LOGIN, googleLoginSaga);
+  yield takeLatest(APPLE_LOGIN, appleLoginSaga);
   yield takeLatest(LOGOUT, logoutSaga);
   yield takeLatest(UPDATE_USER, updateUserSaga);
   yield takeLatest(setActiveHomeId.type, handleActiveHomeIdChange);

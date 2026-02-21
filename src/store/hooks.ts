@@ -51,6 +51,13 @@ export const useAuth = () => {
     [dispatch]
   );
 
+  const appleLogin = useCallback(
+    (idToken: string, platform: 'ios' | 'android') => {
+      dispatch({ type: 'auth/APPLE_LOGIN', payload: { idToken, platform } });
+    },
+    [dispatch]
+  );
+
   const logout = useCallback(() => {
     dispatch({ type: 'auth/LOGOUT' });
   }, [dispatch]);
@@ -78,6 +85,7 @@ export const useAuth = () => {
     login,
     signup,
     googleLogin,
+    appleLogin,
     logout,
     checkAuth,
     updateUser,

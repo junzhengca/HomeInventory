@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import type { StyledProps } from '../utils/styledComponents';
-import { AuthTextInput, Button } from '../components';
+import { AuthTextInput, GlassButton } from '../components';
 import { useAuth, useSettings } from '../store/hooks';
 import { useTheme } from '../theme/ThemeProvider';
 import type { AuthStackParamList } from '../navigation/AuthNavigator';
@@ -259,18 +259,17 @@ export const SignupScreen: React.FC = () => {
                             </InputSpacing>
 
                             <ButtonContainer>
-                                <Button
-                                    label={
+                                <GlassButton
+                                    text={
                                         isLoading
                                             ? t('signup.submitting')
                                             : t('signup.submit')
                                     }
                                     onPress={handleSubmit}
-                                    variant="primary"
                                     icon="arrow-forward"
                                     disabled={isLoading}
-                                    fullWidth
-                                    useGlass={false}
+                                    tintColor={theme.colors.primary}
+                                    textColor={theme.colors.surface}
                                 />
                             </ButtonContainer>
 

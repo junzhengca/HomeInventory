@@ -174,6 +174,20 @@ class GoogleAuthService {
       } else if (result.type === 'error') {
         const errorMessage = result.error?.message || 'Unknown error';
         const errorCode = result.error?.code;
+        
+        // Check if this is a user cancellation - handle gracefully without logging as error
+        const isCancellation = 
+          errorMessage.toLowerCase().includes('cancel') ||
+          errorMessage.toLowerCase().includes('cancelled') ||
+          errorCode === 'ERR_REQUEST_CANCELED' ||
+          errorCode === 'user_cancelled';
+        
+        if (isCancellation) {
+          authLogger.info('User cancelled OAuth flow');
+          return null;
+        }
+        
+        // For actual errors, log and throw
         authLogger.error('OAuth error:', {
           errorMessage,
           errorCode,
@@ -188,6 +202,19 @@ class GoogleAuthService {
         return null;
       }
     } catch (error) {
+      // Check if this is a cancellation error - handle gracefully
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isCancellation = 
+        errorMessage.toLowerCase().includes('cancel') ||
+        errorMessage.toLowerCase().includes('cancelled') ||
+        errorMessage.toLowerCase().includes('user canceled');
+      
+      if (isCancellation) {
+        authLogger.info('User cancelled OAuth flow');
+        return null;
+      }
+      
+      // For actual errors, log and throw
       authLogger.error('Error:', error);
       throw error;
     }
