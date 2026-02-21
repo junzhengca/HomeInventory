@@ -183,6 +183,7 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
 
   const isShowingConfirmationRef = useRef(false);
   const isClosingIntentionallyRef = useRef(false);
+  const isOpeningNestedModalRef = useRef(false);
   const isFormDirtyRef = useRef(isFormDirty);
 
   useEffect(() => {
@@ -198,6 +199,10 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
           isClosingIntentionallyRef.current = false;
           Keyboard.dismiss();
           onSheetClose?.();
+          return;
+        }
+
+        if (isOpeningNestedModalRef.current) {
           return;
         }
 
@@ -503,6 +508,9 @@ export const CreateItemBottomSheet: React.FC<CreateItemBottomSheetProps> = ({
             onWarningThresholdChange={handleWarningThresholdChange}
             onWarningThresholdBlur={handleWarningThresholdBlur}
             onStatusSelect={setSelectedStatusId}
+            onOpeningNestedModal={(isOpening) => {
+              isOpeningNestedModalRef.current = isOpening;
+            }}
           />
         </BottomSheetScrollView>
       </ContentContainer>

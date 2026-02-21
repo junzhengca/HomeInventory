@@ -34,7 +34,6 @@ function dtoToInventoryCategory(dto: InventoryCategoryDto): InventoryCategory {
     description: dto.description,
     color: dto.color,
     icon: dto.icon,
-    position: dto.position,
     isCustom: dto.isCustom ?? true,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,

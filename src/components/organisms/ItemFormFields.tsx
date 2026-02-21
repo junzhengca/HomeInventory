@@ -162,6 +162,7 @@ export const ItemFormFields: React.FC<ItemFormFieldsProps> = ({
         <CategoryFormSelector
           selectedCategoryId={selectedCategoryId}
           onSelect={onCategorySelect}
+          onOpeningNestedModal={onOpeningNestedModal}
         />
       </FormSection>
 

@@ -24,8 +24,8 @@ jest.mock('../utils/Logger', () => ({
 
 describe('SettingsService', () => {
   const createMockSettings = (overrides?: Partial<Settings>): Settings => ({
-    theme: 'forest',
-    currency: 'cny',
+    theme: 'ocean',
+    currency: 'usd',
     language: 'en',
     darkMode: false,
     createdAt: '2024-01-01T00:00:00.000Z',
@@ -62,8 +62,8 @@ describe('SettingsService', () => {
 
       const result = await settingsService.getSettings();
 
-      expect(result.theme).toBe('forest');
-      expect(result.currency).toBe('cny');
+      expect(result.theme).toBe('ocean');
+      expect(result.currency).toBe('usd');
       expect(result.language).toBe('en');
       expect(result.darkMode).toBe(false);
       expect(result.createdAt).toBeDefined();
@@ -89,8 +89,8 @@ describe('SettingsService', () => {
 
       const result = await settingsService.getSettings();
 
-      expect(result.theme).toBe('forest');
-      expect(result.currency).toBe('cny');
+      expect(result.theme).toBe('ocean');
+      expect(result.currency).toBe('usd');
       expect(result.language).toBe('en');
       expect(result.darkMode).toBe(false);
       expect(result.createdAt).toBeDefined();
@@ -116,7 +116,7 @@ describe('SettingsService', () => {
       expect(result).not.toBeNull();
       expect(result?.theme).toBe('ocean');
       expect(result?.darkMode).toBe(true);
-      expect(result?.currency).toBe('cny'); // Unchanged
+      expect(result?.currency).toBe('usd'); // Unchanged
       expect(result?.language).toBe('en'); // Unchanged
       expect(result?.createdAt).toBe(currentSettings.createdAt); // Preserved
       expect(result?.updatedAt).toBeDefined();
@@ -132,8 +132,8 @@ describe('SettingsService', () => {
       });
 
       expect(result).not.toBeNull();
-      expect(result?.theme).toBe('forest'); // Default
-      expect(result?.currency).toBe('cny'); // Default
+      expect(result?.theme).toBe('ocean'); // Default
+      expect(result?.currency).toBe('usd'); // Default
       expect(result?.language).toBe('zh-CN'); // Updated
       expect(result?.darkMode).toBe(false); // Default
       expect(result?.createdAt).toBeDefined();
@@ -185,8 +185,8 @@ describe('SettingsService', () => {
       const result = await settingsService.updateSettings({ darkMode: true });
 
       expect(result?.darkMode).toBe(true);
-      expect(result?.theme).toBe('forest'); // Unchanged
-      expect(result?.currency).toBe('cny'); // Unchanged
+      expect(result?.theme).toBe('ocean'); // Unchanged
+      expect(result?.currency).toBe('usd'); // Unchanged
       expect(result?.language).toBe('en'); // Unchanged
     });
   });
@@ -202,8 +202,8 @@ describe('SettingsService', () => {
       const result = await settingsService.resetToDefaults();
 
       expect(result).not.toBeNull();
-      expect(result?.theme).toBe('forest');
-      expect(result?.currency).toBe('cny');
+      expect(result?.theme).toBe('ocean');
+      expect(result?.currency).toBe('usd');
       expect(result?.language).toBe('en');
       expect(result?.darkMode).toBe(false);
     });
@@ -231,7 +231,7 @@ describe('SettingsService', () => {
 
       await settingsService.resetToDefaults();
 
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith('app_settings', expect.stringContaining('"theme":"forest"'));
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('app_settings', expect.stringContaining('"theme":"ocean"'));
     });
   });
 
@@ -282,8 +282,8 @@ describe('SettingsService', () => {
       const result = await settingsService.getSettings();
 
       // Should return defaults on parse error
-      expect(result.theme).toBe('forest');
-      expect(result.currency).toBe('cny');
+      expect(result.theme).toBe('ocean');
+      expect(result.currency).toBe('usd');
       expect(result.language).toBe('en');
       expect(result.darkMode).toBe(false);
     });

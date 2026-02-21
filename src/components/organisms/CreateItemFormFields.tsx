@@ -66,6 +66,7 @@ export interface CreateItemFormFieldsProps {
     onWarningThresholdChange: (text: string) => void;
     onWarningThresholdBlur: () => void;
     onStatusSelect: (statusId: string) => void;
+    onOpeningNestedModal?: (isOpening: boolean) => void;
     // Translations
     translations: {
         fields: {
@@ -140,6 +141,7 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
     onWarningThresholdChange,
     onWarningThresholdBlur,
     onStatusSelect,
+    onOpeningNestedModal,
     translations,
 }) => {
     const theme = useTheme();
@@ -165,6 +167,7 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
                     onSelect={(id: string | null) => id && onLocationSelect(id)}
                     showAllOption={false}
                     edgeToEdge={true}
+                    onOpeningNestedModal={onOpeningNestedModal}
                 />
             </FormSection>
 
@@ -173,6 +176,7 @@ export const CreateItemFormFields: React.FC<CreateItemFormFieldsProps> = ({
                 <CategoryFormSelector
                     selectedCategoryId={selectedCategoryId}
                     onSelect={onCategorySelect}
+                    onOpeningNestedModal={onOpeningNestedModal}
                 />
             </FormSection>
 

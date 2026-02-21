@@ -567,7 +567,6 @@ export interface InventoryCategoryDto {
   description?: string;
   color?: string;
   icon?: string;
-  position?: number;
   isCustom?: boolean;
   createdBy: string;
   updatedBy: string;
@@ -585,7 +584,6 @@ export interface CreateInventoryCategoryRequest {
   description?: string;
   color?: string;
   icon?: string;
-  position?: number;
 }
 
 export interface CreateInventoryCategoryResponse {
@@ -597,7 +595,6 @@ export interface UpdateInventoryCategoryRequest {
   description?: string;
   color?: string;
   icon?: string;
-  position?: number;
 }
 
 export interface UpdateInventoryCategoryResponse {

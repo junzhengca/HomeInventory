@@ -17,7 +17,6 @@ export interface InventoryCategory extends HomeScopedCrudEntity {
   isCustom?: boolean; // Flag to distinguish system vs user-created categories
   icon?: string; // Icon name
   color?: string; // Hex color code for category display
-  position?: number; // Position for ordering
 }
 
 // Backward compatibility alias

@@ -144,6 +144,7 @@ export const EditItemBottomSheet = forwardRef<
 
   const isShowingConfirmationRef = useRef(false);
   const isClosingIntentionallyRef = useRef(false);
+  const isOpeningNestedModalRef = useRef(false);
   const isFormDirtyRef = useRef(isFormDirty);
 
   useEffect(() => {
@@ -188,6 +189,10 @@ export const EditItemBottomSheet = forwardRef<
           Keyboard.dismiss();
           // Reset initial data when sheet closes to avoid stale data next time
           setInitialData(null);
+          return;
+        }
+
+        if (isOpeningNestedModalRef.current) {
           return;
         }
 
@@ -455,6 +460,9 @@ export const EditItemBottomSheet = forwardRef<
             onDetailedLocationBlur={handleDetailedLocationBlur}
             onWarningThresholdChange={handleWarningThresholdChange}
             onWarningThresholdBlur={handleWarningThresholdBlur}
+            onOpeningNestedModal={(isOpening) => {
+              isOpeningNestedModalRef.current = isOpening;
+            }}
             translations={translations}
           />
         </BottomSheetScrollView>

@@ -6,6 +6,9 @@ import { useInventoryCategories } from '../../store/hooks';
 import { getInventoryCategoryDisplayName } from '../../utils/inventoryCategoryI18n';
 import type { StyledProps, StyledPropsWith } from '../../utils/styledComponents';
 import type { Theme } from '../../theme/types';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { Ionicons } from '@expo/vector-icons';
+import { CreateCategoryBottomSheet } from '../organisms/CreateCategoryBottomSheet';
 
 /**
  * Container with negative horizontal margins to enable edge-to-edge scrolling.
@@ -45,9 +48,24 @@ const CategoryText = styled(Text) <{ isSelected: boolean }>`
         isSelected ? theme.colors.surface : theme.colors.text};
 `;
 
+const CreateCategoryButton = styled(TouchableOpacity)`
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  padding-horizontal: ${({ theme }: StyledProps) => theme.spacing.md}px;
+  padding-vertical: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  border-radius: ${({ theme }: StyledProps) => theme.borderRadius.full}px;
+  background-color: transparent;
+  margin-right: ${({ theme }: StyledProps) => theme.spacing.sm}px;
+  border-width: 1.5px;
+  border-style: dotted;
+  border-color: ${({ theme }: StyledProps) => theme.colors.textSecondary};
+`;
+
 export interface CategoryFormSelectorProps {
     selectedCategoryId: string | null;
     onSelect: (categoryId: string) => void;
+    onOpeningNestedModal?: (isOpening: boolean) => void;
 }
 
 /**
@@ -61,10 +79,12 @@ export interface CategoryFormSelectorProps {
 export const CategoryFormSelector: React.FC<CategoryFormSelectorProps> = ({
     selectedCategoryId,
     onSelect,
+    onOpeningNestedModal,
 }) => {
     const theme = useTheme() as Theme;
     const { t } = useTranslation();
     const { categories } = useInventoryCategories();
+    const bottomSheetRef = React.useRef<BottomSheetModal>(null);
 
     const horizontalPadding = theme.spacing.md;
 
@@ -108,7 +128,26 @@ export const CategoryFormSelector: React.FC<CategoryFormSelectorProps> = ({
                         </CategoryButton>
                     );
                 })}
+
+                <CreateCategoryButton
+                    onPress={() => {
+                        onOpeningNestedModal?.(true);
+                        bottomSheetRef.current?.present();
+                    }}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons
+                        name="add"
+                        size={20}
+                        color={theme.colors.textSecondary}
+                    />
+                </CreateCategoryButton>
             </ScrollContainer>
+
+            <CreateCategoryBottomSheet
+                bottomSheetRef={bottomSheetRef}
+                onClose={() => onOpeningNestedModal?.(false)}
+            />
         </Container>
     );
 };

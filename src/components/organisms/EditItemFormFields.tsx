@@ -55,6 +55,7 @@ export interface EditItemFormFieldsProps {
     onDetailedLocationBlur: () => void;
     onWarningThresholdChange: (text: string) => void;
     onWarningThresholdBlur: () => void;
+    onOpeningNestedModal?: (isOpening: boolean) => void;
     // Translations
     translations: {
         fields: {
@@ -116,6 +117,7 @@ export const EditItemFormFields: React.FC<EditItemFormFieldsProps> = ({
     onDetailedLocationBlur,
     onWarningThresholdChange,
     onWarningThresholdBlur,
+    onOpeningNestedModal,
     translations,
 }) => {
     const theme = useTheme();
@@ -130,6 +132,7 @@ export const EditItemFormFields: React.FC<EditItemFormFieldsProps> = ({
                         color={selectedColor}
                         onIconSelect={onIconSelect}
                         onColorSelect={onColorSelect}
+                        onOpeningNestedModal={onOpeningNestedModal}
                     />
                     <UncontrolledInput
                         ref={nameInputRef}
@@ -150,6 +153,7 @@ export const EditItemFormFields: React.FC<EditItemFormFieldsProps> = ({
                     onSelect={(id: string | null) => id && onLocationSelect(id)}
                     showAllOption={false}
                     edgeToEdge={true}
+                    onOpeningNestedModal={onOpeningNestedModal}
                 />
             </FormSection>
 
@@ -161,6 +165,7 @@ export const EditItemFormFields: React.FC<EditItemFormFieldsProps> = ({
                 <CategoryFormSelector
                     selectedCategoryId={selectedCategoryId}
                     onSelect={onCategorySelect}
+                    onOpeningNestedModal={onOpeningNestedModal}
                 />
             </FormSection>
 
