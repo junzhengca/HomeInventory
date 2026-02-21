@@ -101,43 +101,52 @@ export const ContextMenuOverlay: React.FC = () => {
 
 
             <Animated.View style={[styles.menuContainer, menuStyle, { backgroundColor: theme.colors.surface }]}>
-                {items.map((item) => (
-                    <Pressable
-                        key={item.id}
-                        style={({ pressed }) => [
-                            styles.menuItem,
-                            { borderBottomColor: theme.colors.borderLight },
-                            pressed && { backgroundColor: theme.colors.primaryExtraLight }
-                        ]}
-                        onPress={() => {
-                            hideMenu();
-                            // Execute action in next frame to avoid conflict with unmount/state update
-                            // and ensure the menu is hidden first
-                            requestAnimationFrame(() => {
-                                try {
-                                    item.onPress();
-                                } catch (e) {
-                                    uiLogger.error('Context menu action failed', e);
-                                }
-                            });
-                        }}
-                    >
-                        {item.icon && (
-                            <MaterialCommunityIcons
-                                name={item.icon as keyof typeof MaterialCommunityIcons.glyphMap}
-                                size={20}
-                                color={item.isDestructive ? theme.colors.error : theme.colors.text}
-                                style={styles.menuIcon}
-                            />
-                        )}
-                        <Text style={[
-                            styles.menuLabel,
-                            { color: item.isDestructive ? theme.colors.error : theme.colors.text }
-                        ]}>
-                            {item.label}
-                        </Text>
-                    </Pressable>
-                ))}
+                {items.map((item) => {
+                    const isDisabled = item.disabled;
+                    const itemColor = isDisabled
+                        ? theme.colors.textLight
+                        : (item.isDestructive ? theme.colors.error : theme.colors.text);
+
+                    return (
+                        <Pressable
+                            key={item.id}
+                            disabled={isDisabled}
+                            style={({ pressed }) => [
+                                styles.menuItem,
+                                { borderBottomColor: theme.colors.borderLight },
+                                pressed && !isDisabled && { backgroundColor: theme.colors.primaryExtraLight }
+                            ]}
+                            onPress={() => {
+                                if (isDisabled) return;
+                                hideMenu();
+                                // Execute action in next frame to avoid conflict with unmount/state update
+                                // and ensure the menu is hidden first
+                                requestAnimationFrame(() => {
+                                    try {
+                                        item.onPress();
+                                    } catch (e) {
+                                        uiLogger.error('Context menu action failed', e);
+                                    }
+                                });
+                            }}
+                        >
+                            {item.icon && (
+                                <MaterialCommunityIcons
+                                    name={item.icon as keyof typeof MaterialCommunityIcons.glyphMap}
+                                    size={20}
+                                    color={itemColor}
+                                    style={styles.menuIcon}
+                                />
+                            )}
+                            <Text style={[
+                                styles.menuLabel,
+                                { color: itemColor }
+                            ]}>
+                                {item.label}
+                            </Text>
+                        </Pressable>
+                    );
+                })}
             </Animated.View>
         </View>
     );

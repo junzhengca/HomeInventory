@@ -146,6 +146,17 @@
       "submit": "创建位置",
       "add": "新建"
     },
+    "edit": {
+      "title": "编辑位置",
+      "subtitle": "更新位置信息",
+      "submit": "保存更改"
+    },
+    "delete": {
+      "title": "删除位置",
+      "message": "确定要删除此位置吗？该位置下的物品可能会受到影响。",
+      "cancel": "取消",
+      "confirm": "删除"
+    },
     "errors": {
       "title": "错误",
       "enterName": "请输入位置名称",

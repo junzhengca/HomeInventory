@@ -154,6 +154,7 @@ export const ItemFormFields: React.FC<ItemFormFieldsProps> = ({
         <LocationSelector
           selectedLocationId={selectedLocation}
           onSelect={(id) => id && onLocationSelect(id)}
+          onOpeningNestedModal={onOpeningNestedModal}
         />
       </FormSection>
 

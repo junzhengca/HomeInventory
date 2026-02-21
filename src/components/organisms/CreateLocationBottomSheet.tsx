@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Keyboard, TextInput } from 'react-native';
 import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
@@ -60,17 +60,21 @@ const FooterContainer = styled.View<{
 export interface CreateLocationBottomSheetProps {
     bottomSheetRef: React.RefObject<BottomSheetModal | null>;
     onLocationCreated?: (locationId: string) => void;
+    locationToEdit?: { id: string; name: string; icon: string } | null;
+    onClose?: () => void;
 }
 
 export const CreateLocationBottomSheet: React.FC<CreateLocationBottomSheetProps> = ({
     bottomSheetRef,
     onLocationCreated,
+    locationToEdit,
+    onClose,
 }) => {
     const { t } = useTranslation();
     const theme = useTheme();
     const insets = useSafeAreaInsets();
 
-    const { createLocation, addingLocation, error: locationsError } = useLocations();
+    const { createLocation, addingLocation, error: locationsError, updateLocation, updatingLocationIds } = useLocations();
     const { isKeyboardVisible } = useKeyboardVisibility();
 
     const [name, setName] = useState('');
@@ -79,18 +83,33 @@ export const CreateLocationBottomSheet: React.FC<CreateLocationBottomSheetProps>
 
     const nameInputRef = useRef<TextInput>(null);
 
+    useEffect(() => {
+        if (locationToEdit) {
+            setName(locationToEdit.name);
+            setSelectedIcon((locationToEdit.icon as keyof typeof Ionicons.glyphMap) || categoryIcons[0]);
+        } else {
+            setName('');
+            setSelectedIcon(categoryIcons[0]);
+        }
+    }, [locationToEdit]);
+
     const handleClose = useCallback(() => {
         Keyboard.dismiss();
         bottomSheetRef.current?.dismiss();
 
         // Reset state on close
         setTimeout(() => {
-            setName('');
-            setSelectedIcon(categoryIcons[0]);
+            if (locationToEdit) {
+                setName(locationToEdit.name);
+                setSelectedIcon((locationToEdit.icon as keyof typeof Ionicons.glyphMap) || categoryIcons[0]);
+            } else {
+                setName('');
+                setSelectedIcon(categoryIcons[0]);
+            }
             setLocalError(null);
             nameInputRef.current?.clear();
         }, 300);
-    }, [bottomSheetRef]);
+    }, [bottomSheetRef, locationToEdit]);
 
     const renderBackdrop = useCallback(
         (props: BottomSheetBackdropProps) => (
@@ -118,20 +137,27 @@ export const CreateLocationBottomSheet: React.FC<CreateLocationBottomSheetProps>
             setLocalError(null);
 
             try {
-                createLocation(trimmedName, selectedIcon);
+                if (locationToEdit) {
+                    updateLocation(locationToEdit.id, trimmedName, selectedIcon);
+                } else {
+                    createLocation(trimmedName, selectedIcon);
+                }
 
-                // Success handling will happen when 'addingLocation' turns false,
-                // but since createLocation doesn't return a promise in this hook design,
+                // Success handling will happen when 'addingLocation' or 'updatingLocationIds' turns false,
+                // but since these don't return a promise in this hook design,
                 // we'll optimistically close and let the list update via redux.
                 handleClose();
 
-                // If we had a promise, we could pass the ID. For now just call the cb
-                onLocationCreated?.('temp-id');
+                if (!locationToEdit) {
+                    onLocationCreated?.('temp-id');
+                }
             } catch (error) {
-                uiLogger.error('Failed to create location', error);
-                setLocalError(t('locations.errors.createFailed'));
+                uiLogger.error('Failed to save location', error);
+                setLocalError(locationToEdit ? t('locations.errors.updateFailed') : t('locations.errors.createFailed'));
             }
         };
+
+        const isSubmitting = locationToEdit ? updatingLocationIds.includes(locationToEdit.id) : addingLocation;
 
         return (
             <FooterContainer bottomInset={insets.bottom} showSafeArea={!isKeyboardVisible}>
@@ -141,12 +167,12 @@ export const CreateLocationBottomSheet: React.FC<CreateLocationBottomSheetProps>
                     </ErrorBanner>
                 )}
                 <GlassButton
-                    text={t('locations.create.submit')}
+                    text={locationToEdit ? t('locations.edit.submit') : t('locations.create.submit')}
                     onPress={handleSubmit}
                     tintColor={theme.colors.primary}
                     textColor={theme.colors.surface}
-                    disabled={!name.trim() || addingLocation}
-                    loading={addingLocation}
+                    disabled={!name.trim() || isSubmitting}
+                    loading={isSubmitting}
                     icon="checkmark"
                     style={{ width: '100%' }}
                 />
@@ -163,7 +189,10 @@ export const CreateLocationBottomSheet: React.FC<CreateLocationBottomSheetProps>
         handleClose,
         onLocationCreated,
         t,
-        theme
+        theme,
+        locationToEdit,
+        updatingLocationIds,
+        updateLocation
     ]);
 
     // Height considerations for the footer
@@ -179,20 +208,29 @@ export const CreateLocationBottomSheet: React.FC<CreateLocationBottomSheetProps>
             android_keyboardInputMode="adjustResize"
             backgroundStyle={{ backgroundColor: theme.colors.background }}
             topInset={insets.top}
+            stackBehavior="push"
             index={0}
             footerComponent={renderFooter}
-            onDismiss={() => {
-                Keyboard.dismiss();
-                setName('');
-                setSelectedIcon(categoryIcons[0]);
-                setLocalError(null);
-                nameInputRef.current?.clear();
+            onChange={(index) => {
+                if (index === -1) {
+                    Keyboard.dismiss();
+                    if (locationToEdit) {
+                        setName(locationToEdit.name);
+                        setSelectedIcon((locationToEdit.icon as keyof typeof Ionicons.glyphMap) || categoryIcons[0]);
+                    } else {
+                        setName('');
+                        setSelectedIcon(categoryIcons[0]);
+                    }
+                    setLocalError(null);
+                    nameInputRef.current?.clear();
+                    onClose?.();
+                }
             }}
         >
             <ContentContainer>
                 <BottomSheetHeader
-                    title={t('locations.create.title')}
-                    subtitle={t('locations.create.subtitle')}
+                    title={locationToEdit ? t('locations.edit.title') : t('locations.create.title')}
+                    subtitle={locationToEdit ? t('locations.edit.subtitle') : t('locations.create.subtitle')}
                     onClose={handleClose}
                 />
                 <BottomSheetScrollView

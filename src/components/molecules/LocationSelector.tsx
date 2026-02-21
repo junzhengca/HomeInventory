@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { TouchableOpacity, ScrollView, View, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { TouchableOpacity, ScrollView, View, Text, Alert, Keyboard } from 'react-native';
 import styled, { useTheme } from 'styled-components/native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,8 +10,9 @@ import type {
 } from '../../utils/styledComponents';
 import type { Theme } from '../../theme/types';
 import { useLocations } from '../../store/hooks';
-import { getLocationDisplayName } from '../../utils/locationI18n';
+import { getLocationDisplayName, DEFAULT_LOCATION_IDS } from '../../utils/locationI18n';
 import { CreateLocationBottomSheet } from '../organisms/CreateLocationBottomSheet';
+import { ContextMenu } from '../organisms/ContextMenu/ContextMenu';
 
 const SelectorContainer = styled(View) <{ edgeToEdge?: boolean }>`
   flex-direction: column;
@@ -80,6 +81,7 @@ export interface LocationSelectorProps {
     showCounts?: boolean;
     counts?: Record<string, number>;
     edgeToEdge?: boolean;
+    onOpeningNestedModal?: (isOpening: boolean) => void;
 }
 
 export const LocationSelector: React.FC<LocationSelectorProps> = ({
@@ -87,16 +89,45 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
     onSelect,
     showAllOption = false,
     edgeToEdge = false,
+    onOpeningNestedModal,
 }) => {
     const { t } = useTranslation();
     const theme = useTheme() as Theme;
-    const { locations, refreshLocations } = useLocations();
+    const { locations, refreshLocations, deleteLocation } = useLocations();
     const bottomSheetRef = React.useRef<BottomSheetModal>(null);
+    const [locationToEdit, setLocationToEdit] = useState<{ id: string; name: string; icon: string } | null>(null);
 
     // Load locations on mount
     useEffect(() => {
         refreshLocations();
     }, [refreshLocations]);
+
+    const handleEditLocation = (location: any) => {
+        Keyboard.dismiss();
+        onOpeningNestedModal?.(true);
+        setLocationToEdit({
+            id: location.id,
+            name: location.name,
+            icon: location.icon || 'location-outline'
+        });
+        bottomSheetRef.current?.present();
+    };
+
+    const confirmDeleteLocation = (location: any) => {
+        Alert.alert(
+            t('locations.delete.title'),
+            t('locations.delete.message'),
+            [
+                { text: t('locations.delete.cancel'), style: 'cancel' },
+                {
+                    text: t('locations.delete.confirm'),
+                    style: 'destructive',
+                    onPress: () => deleteLocation(location.id),
+                },
+            ],
+            { cancelable: true }
+        );
+    };
 
     // Scroll content padding uses theme spacing for consistency
     const scrollContentStyle = {
@@ -134,31 +165,55 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
 
                 {locations.map((location) => {
                     const isSelected = selectedLocationId === location.id;
+                    const isDefault = DEFAULT_LOCATION_IDS.has(location.id);
+                    const menuItems = [
+                        {
+                            id: 'edit',
+                            label: t('itemDetails.actions.modify'),
+                            icon: 'pencil-outline',
+                            onPress: () => handleEditLocation(location),
+                            disabled: isDefault,
+                        },
+                        {
+                            id: 'delete',
+                            label: t('common.delete'),
+                            icon: 'trash-can-outline',
+                            onPress: () => confirmDeleteLocation(location),
+                            isDestructive: true,
+                        },
+                    ];
+
                     return (
-                        <LocationButton
-                            key={location.id}
-                            isSelected={isSelected}
-                            onPress={() => onSelect(location.id)}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons
-                                name={(location.icon || 'location-outline') as keyof typeof Ionicons.glyphMap}
-                                size={24}
-                                color={theme.colors.primary}
-                            />
-                            <LocationLabel
+                        <ContextMenu key={location.id} items={menuItems}>
+                            <LocationButton
                                 isSelected={isSelected}
-                                numberOfLines={1}
-                                ellipsizeMode="tail"
+                                onPress={() => onSelect(location.id)}
+                                activeOpacity={0.7}
                             >
-                                {getLocationDisplayName(location, t)}
-                            </LocationLabel>
-                        </LocationButton>
+                                <Ionicons
+                                    name={(location.icon || 'location-outline') as keyof typeof Ionicons.glyphMap}
+                                    size={24}
+                                    color={theme.colors.primary}
+                                />
+                                <LocationLabel
+                                    isSelected={isSelected}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                >
+                                    {getLocationDisplayName(location, t)}
+                                </LocationLabel>
+                            </LocationButton>
+                        </ContextMenu>
                     );
                 })}
                 {/* Add New Location Option */}
                 <CreateLocationButton
-                    onPress={() => bottomSheetRef.current?.present()}
+                    onPress={() => {
+                        Keyboard.dismiss();
+                        onOpeningNestedModal?.(true);
+                        setLocationToEdit(null);
+                        bottomSheetRef.current?.present();
+                    }}
                     activeOpacity={0.7}
                 >
                     <Ionicons
@@ -172,6 +227,8 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
             {/* Create Location Modal - do not change selection when a new location is created */}
             <CreateLocationBottomSheet
                 bottomSheetRef={bottomSheetRef}
+                locationToEdit={locationToEdit}
+                onClose={() => onOpeningNestedModal?.(false)}
             />
         </SelectorContainer>
     );

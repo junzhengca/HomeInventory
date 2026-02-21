@@ -6,6 +6,7 @@ export interface ContextMenuItemData {
     icon?: string;
     onPress: () => void;
     isDestructive?: boolean;
+    disabled?: boolean;
 }
 
 export interface ContextMenuLayout {

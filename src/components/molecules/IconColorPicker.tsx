@@ -26,7 +26,7 @@ const PickerTrigger = styled(TouchableOpacity)`
   justify-content: center;
 `;
 
-const IconContainer = styled(View)<{ backgroundColor: string }>`
+const IconContainer = styled(View) <{ backgroundColor: string }>`
   width: 50px;
   height: 50px;
   border-radius: 25px;
@@ -136,7 +136,7 @@ export const IconColorPicker: React.FC<IconColorPickerProps> = ({
   const handleSheetClose = useCallback(() => {
     // Notify parent that nested modal is closing
     onOpeningNestedModal?.(false);
-    
+
     // Reset temp state when modal closes without saving
     setTempIcon(icon);
     setTempColor(color);
@@ -191,6 +191,7 @@ export const IconColorPicker: React.FC<IconColorPickerProps> = ({
         handleComponent={null}
         topInset={insets.top}
         enableDynamicSizing={false}
+        stackBehavior="push"
         footerComponent={renderFooter}
         backgroundStyle={{ backgroundColor: 'transparent' }}
         onChange={(index) => {

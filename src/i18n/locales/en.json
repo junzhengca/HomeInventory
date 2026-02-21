@@ -162,6 +162,17 @@
       "submit": "Create Location",
       "add": "Add New"
     },
+    "edit": {
+      "title": "Edit Location",
+      "subtitle": "Update location information",
+      "submit": "Save Changes"
+    },
+    "delete": {
+      "title": "Delete Location",
+      "message": "Are you sure you want to delete this location? Items in this location might be affected.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
     "errors": {
       "title": "Error",
       "enterName": "Please enter a location name",
