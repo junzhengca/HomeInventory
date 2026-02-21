@@ -15,17 +15,19 @@ const InputInnerWrapper = styled.View<{ hasError: boolean }>`
   width: 100%;
 `;
 
-const Input = styled(BottomSheetTextInput) <{ hasError: boolean; isFocused: boolean; noBorder?: boolean; textAlign?: 'left' | 'center' | 'right' }>`
-  background-color: ${({ theme, hasError }: StyledProps & { hasError: boolean }) =>
-    hasError ? theme.colors.errorLight : theme.colors.surface};
+const Input = styled(BottomSheetTextInput) <{ hasError: boolean; isFocused: boolean; noBorder?: boolean; textAlign?: 'left' | 'center' | 'right'; editable?: boolean }>`
+  background-color: ${({ theme, hasError, editable }: StyledProps & { hasError: boolean; editable?: boolean }) =>
+    hasError ? theme.colors.errorLight : !editable ? theme.colors.background : theme.colors.surface};
   border-width: ${({ noBorder, isFocused }: { noBorder?: boolean; isFocused: boolean }) =>
     noBorder ? '0px' : isFocused ? '2px' : '1px'};
-  border-color: ${({ theme, hasError, isFocused, noBorder }: StyledProps & { hasError: boolean; isFocused: boolean; noBorder?: boolean }) =>
+  border-color: ${({ theme, hasError, isFocused, noBorder, editable }: StyledProps & { hasError: boolean; isFocused: boolean; noBorder?: boolean; editable?: boolean }) =>
     noBorder ? 'transparent' : hasError
       ? theme.colors.error
       : isFocused
         ? theme.colors.primary
-        : theme.colors.border};
+        : !editable
+          ? theme.colors.border
+          : theme.colors.border};
   border-radius: ${({ theme }: StyledProps) => theme.borderRadius.md}px;
   padding: ${({ theme, textAlign }: StyledProps & { textAlign?: 'left' | 'center' | 'right' }) =>
     textAlign === 'center'
@@ -33,7 +35,8 @@ const Input = styled(BottomSheetTextInput) <{ hasError: boolean; isFocused: bool
       : `${theme.spacing.sm}px ${theme.spacing.xl}px ${theme.spacing.sm}px ${theme.spacing.md}px`};
   height: 48px;
   font-size: ${({ theme }: StyledProps) => theme.typography.fontSize.md}px;
-  color: ${({ theme }: StyledProps) => theme.colors.text};
+  color: ${({ theme, editable }: StyledProps & { editable?: boolean }) =>
+    editable !== false ? theme.colors.text : theme.colors.textLight};
   text-align: ${({ textAlign }: { textAlign?: 'left' | 'center' | 'right' }) => textAlign || 'left'};
 `;
 
@@ -79,6 +82,7 @@ export interface UncontrolledInputProps {
   secureTextEntry?: boolean;
   multiline?: boolean;
   numberOfLines?: number;
+  editable?: boolean;
 }
 
 /**
@@ -118,6 +122,7 @@ export const UncontrolledInput = memo(
         secureTextEntry = false,
         multiline = false,
         numberOfLines,
+        editable = true,
       },
       ref
     ) => {
@@ -154,6 +159,7 @@ export const UncontrolledInput = memo(
               secureTextEntry={secureTextEntry}
               multiline={multiline}
               numberOfLines={numberOfLines}
+              editable={editable}
               textAlignVertical={multiline ? 'top' : 'center'}
             />
             {error && (

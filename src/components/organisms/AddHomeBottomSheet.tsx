@@ -154,6 +154,8 @@ export const AddHomeBottomSheet: React.FC<AddHomeBottomSheetProps> = ({
                     tintColor={theme.colors.primary}
                     textColor={theme.colors.surface}
                     disabled={!name.trim() || isLoading}
+                    loading={isLoading}
+                    icon="checkmark"
                     style={{ width: '100%' }}
                 />
             </FooterContainer>
@@ -192,6 +194,7 @@ export const AddHomeBottomSheet: React.FC<AddHomeBottomSheetProps> = ({
                                 onBlur={() => { }}
                                 placeholder={t(nicknamePlaceholderKey)}
                                 placeholderTextColor={theme.colors.textLight}
+                                editable={!isLoading}
                             />
                         </FormSection>
                         <FormSection label={t(addressLabelKey)}>
@@ -202,6 +205,7 @@ export const AddHomeBottomSheet: React.FC<AddHomeBottomSheetProps> = ({
                                 onBlur={() => { }}
                                 placeholder={t(addressPlaceholderKey)}
                                 placeholderTextColor={theme.colors.textLight}
+                                editable={!isLoading}
                             />
                         </FormSection>
                     </FormContainer>
